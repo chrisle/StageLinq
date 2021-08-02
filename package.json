@@ -1,0 +1,22 @@
+{
+  "name": "stagelinq",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@types/assert": "^1.5.5",
+    "@types/ip": "^1.1.0",
+    "@types/minimist": "^1.2.2",
+    "@types/node": "^16.4.0",
+    "console-stamp": "^3.0.3",
+    "ip": "^1.1.5",
+    "minimist": "^1.2.5",
+    "promise-socket": "^7.0.0"
+  },
+  "description": "Package to connect to Denon StageLinq",
+  "main": "main.ts",
+  "dependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Martijn Reuvers",
+  "license": "GNU GPLv3"
+}
