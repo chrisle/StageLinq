@@ -1,5 +1,5 @@
 # StageLinq
-NodeJS implementation of the Denon StageLinq protocol
+NodeJS library implementation to access information through the Denon StageLinq protocol
 
 ## About
 
