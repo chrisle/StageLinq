@@ -11,7 +11,7 @@ async function main() {
 	const controller = new Controller();
 	await controller.connect();
 	await controller.connectToService("StateMap", (p_data: StateData) =>  {
-		console.log(`${p_data.name} => ${JSON.stringify(p_data.json)}`);
+		console.log(`${p_data.name} => ${p_data.json ? JSON.stringify(p_data.json) : p_data.interval}`);
 	});
 
 	// Endless loop
