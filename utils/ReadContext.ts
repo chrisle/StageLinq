@@ -54,7 +54,7 @@ export class ReadContext extends Context {
 
 	readUInt64(): bigint {
 		const offset = this.pos;
-		if (offset + 7 < this.buffer.byteLength) {
+		if (offset + 8 <= this.buffer.byteLength) {
 			const value = new DataView(this.buffer).getBigUint64(this.pos, this.littleEndian);
 			this.pos += 8;
 			return value;
@@ -66,8 +66,20 @@ export class ReadContext extends Context {
 
 	readUInt32(): number {
 		const offset = this.pos;
-		if (offset + 3 < this.buffer.byteLength) {
+		if (offset + 4 <= this.buffer.byteLength) {
 			const value = new DataView(this.buffer).getUint32(this.pos, this.littleEndian);
+			this.pos += 4;
+			return value;
+		}
+
+		assert.fail(`Read outside buffer`);
+		return null;
+	}
+
+	readInt32(): number {
+		const offset = this.pos;
+		if (offset + 4 <= this.buffer.byteLength) {
+			const value = new DataView(this.buffer).getInt32(this.pos, this.littleEndian);
 			this.pos += 4;
 			return value;
 		}
@@ -78,7 +90,7 @@ export class ReadContext extends Context {
 
 	readUInt16(): number {
 		const offset = this.pos;
-		if (offset + 1 < this.buffer.byteLength) {
+		if (offset + 2 <= this.buffer.byteLength) {
 			const value = new DataView(this.buffer).getUint16(this.pos, this.littleEndian);
 			this.pos += 2;
 			return value;
