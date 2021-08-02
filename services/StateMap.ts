@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { StageLinqValue, STATE_MESSAGE_MARKER } from "../common";
+import { StageLinqValue } from "../common";
 import { ReadContext } from "../utils/ReadContext";
 import { WriteContext } from "../utils/WriteContext";
 import { Service } from "./Service";
@@ -61,9 +61,15 @@ export const States = [
 
 ];
 
+const MAGIC_MARKER = 'smaa';
+// FIXME: Is this thing really an interval?
+const MAGIC_MARKER_INTERVAL = 0x000007d2;
+const MAGIC_MARKER_JSON     = 0x00000000;
+
 export interface StateData {
 	name: string,
-	json: object
+	json?: object,
+	interval?: number
 }
 
 export class StateMap extends Service {
@@ -74,21 +80,41 @@ export class StateMap extends Service {
 	}
 
 	parseData(p_ctx: ReadContext): StateData {
-		p_ctx.seek(8); // FIXME: Verify magic bytes
-		const name = p_ctx.readNetworkStringUTF16();
-		const json = JSON.parse(p_ctx.readNetworkStringUTF16());
+		const marker = p_ctx.getString(4);
+		assert(marker === MAGIC_MARKER);
 
-		return {
-			name: name,
-			json: json
-		};
+		const type = p_ctx.readUInt32();
+		switch (type) {
+			case MAGIC_MARKER_JSON: {
+				const name = p_ctx.readNetworkStringUTF16();
+				const json = JSON.parse(p_ctx.readNetworkStringUTF16());
+				return {
+					name: name,
+					json: json
+				}
+			}
+
+			case MAGIC_MARKER_INTERVAL: {
+				const name = p_ctx.readNetworkStringUTF16();
+				const interval = p_ctx.readInt32();
+				return {
+					name: name,
+					interval: interval
+				}
+			}
+
+			default:
+				break;
+		}
+		assert.fail(`Unhandled type ${type}`);
 	}
 
 	private async subscribeState(p_state: string, p_interval: number) {
-		console.info(`Subscribe to state '${p_state}'`);
+		//console.log(`Subscribe to state '${p_state}'`);
 		const getMessage = function(): Buffer {
 			const ctx = new WriteContext({littleEndian: false});
-			ctx.write(STATE_MESSAGE_MARKER);
+			ctx.writeFixedSizedString(MAGIC_MARKER);
+			ctx.writeUInt32(MAGIC_MARKER_INTERVAL);
 			ctx.writeNetworkStringUTF16(p_state);
 			ctx.writeUInt32(p_interval);
 			return ctx.getBuffer();
