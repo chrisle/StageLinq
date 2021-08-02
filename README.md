@@ -5,6 +5,10 @@ NodeJS implementation of the Denon StageLinq protocol
 
 This is a WIP demo that tries to find a Denon Stagelinq device (e.g., Prime4, Prime2 and Prime Go) on the local network, connects with it and outputs all input a user makes.
 
+## Thanks
+
+Big thanks to @erikrichardlarson and specifically @icedream for his [Go reference code](https://github.com/icedream/go-stagelinq) upon which this code is based.
+
 ## Prerequisites
 
 Ensure typescript is installed, if not run the following
