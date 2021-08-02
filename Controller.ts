@@ -161,7 +161,12 @@ export class Controller {
 			while (true) {
 				// FIXME: How to determine when all services have been announced?
 				if (Object.keys(this.servicePorts).length > 3) {
+					console.info("Discovered the following services:");
+					for (const [name, port] of Object.entries(this.servicePorts)) {
+						console.info(`\tport: ${port} => ${name}`);
+					}
 					resolve();
+					break;
 				}
 				await sleep(250);
 			}
