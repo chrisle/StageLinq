@@ -11,11 +11,20 @@ Big thanks to @erikrichardlarson and specifically @icedream for his [Go referenc
 
 ## Prerequisites
 
+This code is built and tested on 
+```
+node v14.16.0
+npm v6.14.11
+tsc v4.3.5
+```
+
 Ensure typescript is installed, if not run the following
 
 ```bash
 npm install -g typescript
 ```
+
+
 
 ## Install NPM Modules
 
