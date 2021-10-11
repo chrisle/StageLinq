@@ -25,9 +25,13 @@ async function main() {
 	try {
 		process.on('SIGINT', async function() {
 			console.info("... exiting");
+			// Ensure SIGINT won't be impeded by some error
 			try {
 				await unannounce();
-			} catch {} // Ensure SIGINT won't be impeded by some error
+			} catch (err) {
+				const message = err.stack.toString();
+				console.error(message);
+			}
 			process.exit(returnCode);
 		});
 
