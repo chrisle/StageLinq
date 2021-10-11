@@ -34,7 +34,7 @@ async function discover(): Promise<DiscoveryMessage> {
 		client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
 			const ctx = new ReadContext(p_announcement.buffer, false);
 			const result = readDiscoveryMessage(ctx);
-			if (result === null || result.source === 'testing' || result.source === 'OfflineAnalyzer') {
+			if (result === null || result.source === 'testing' || result.software.name === 'OfflineAnalyzer') {
 				return;
 			}
 			client.close();
