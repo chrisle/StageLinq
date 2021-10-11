@@ -5,10 +5,21 @@
 			"type": "typescript",
 			"tsconfig": "tsconfig.json",
 			"option": "watch",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared"
+			},
+			"isBackground": true,
+			"runOptions": {"runOn": "folderOpen"},
 			"problemMatcher": [
 				"$tsc-watch"
 			],
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"label": "tsc: watch - tsconfig.json"
 		}
 	]
