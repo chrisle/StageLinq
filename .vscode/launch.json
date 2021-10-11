@@ -8,12 +8,26 @@
 			"type": "node",
 			"request": "launch",
 			"name": "launch",
+			"program": "${workspaceFolder}/dist/main.js",
+			"sourceMaps": true,
+			"smartStep": true,
+			"outputCapture": "std",
+			"skipFiles": [
+				"${workspaceFolder}/node_modules/**/*.js",
+				"${workspaceFolder}/lib/**/*.js",
+				"<node_internals>/**/*.js"
+			]
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "build",
 			"program": "${workspaceFolder}/main.ts",
 			"preLaunchTask": "tsc: build - tsconfig.json",
 			"internalConsoleOptions": "openOnSessionStart",
 			"outFiles": ["${workspaceFolder}/dist/**/*.js"],
 			"sourceMaps": true,
-            "smartStep": true,
+			"smartStep": true,
 			"outputCapture": "std",
 			"skipFiles": [
 				"${workspaceFolder}/node_modules/**/*.js",
