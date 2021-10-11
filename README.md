@@ -16,6 +16,7 @@ This code is built and tested on
 node v14.16.0
 npm v6.14.11
 tsc v4.3.5
+engine os 1.6.2 and 2.0.0
 ```
 
 Ensure typescript is installed, if not run the following
