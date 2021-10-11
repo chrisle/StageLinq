@@ -35,6 +35,10 @@ export class Context {
 		return this.pos >= this.buffer.byteLength;
 	}
 
+	isLittleEndian() {
+		return this.littleEndian;
+	}
+
 	rewind() {
 		this.pos = 0;
 	}

@@ -125,11 +125,11 @@ export class Controller {
 	getPort(): number { return this.port; }
 	getTimeAlive(): number { return this.timeAlive; }
 
-	async connectToService(p_service: string, p_messageHandler?: MessageHandler): Promise<void> {
+	async connectToService(p_service: string, p_messageHandler?: MessageHandler): Promise<Service> {
 		assert(this.connection);
 
 		if (this.services[p_service]) {
-			return;
+			return null;
 		}
 
 		assert(this.servicePorts.hasOwnProperty(p_service));
@@ -139,6 +139,7 @@ export class Controller {
 		const service = new services[p_service](p_service, this.source, port, p_messageHandler);
 		await service.connect();
 		this.services[p_service] = service;
+		return service;
 	}
 
 	///////////////////////////////////////////////////////////////////////////
@@ -148,7 +149,7 @@ export class Controller {
 		assert(this.connection);
 		return new Promise(async (resolve, reject) => {
 			// FIXME: Refactor into message writer helper class
-			const ctx = new WriteContext({littleEndian: false});
+			const ctx = new WriteContext();
 			ctx.writeUInt32(MessageId.ServicesRequest);
 			ctx.write(CLIENT_TOKEN);
 			const written = await this.connection.write(ctx.getBuffer());

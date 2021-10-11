@@ -112,7 +112,7 @@ export class StateMap extends Service {
 	private async subscribeState(p_state: string, p_interval: number) {
 		//console.log(`Subscribe to state '${p_state}'`);
 		const getMessage = function(): Buffer {
-			const ctx = new WriteContext({littleEndian: false});
+			const ctx = new WriteContext();
 			ctx.writeFixedSizedString(MAGIC_MARKER);
 			ctx.writeUInt32(MAGIC_MARKER_INTERVAL);
 			ctx.writeNetworkStringUTF16(p_state);
@@ -122,7 +122,7 @@ export class StateMap extends Service {
 
 		const message = getMessage();
 		{
-			const ctx = new WriteContext({littleEndian: false});
+			const ctx = new WriteContext();
 			ctx.writeUInt32(message.length);
 			const written = await this.connection.write(ctx.getBuffer());
 			assert(written === 4);

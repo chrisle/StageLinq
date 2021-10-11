@@ -65,7 +65,7 @@ export async function unannounce(): Promise<void> {
 	announceTimer = null;
 
 	announcementMessage.action = Action.Logout;
-	const ctx = new WriteContext({littleEndian: false});
+	const ctx = new WriteContext();
 	writeDiscoveryMessage(ctx, announcementMessage);
 	const msg = new Uint8Array(ctx.getBuffer());
 	await broadcastMessage(msg);
@@ -79,7 +79,7 @@ export async function announce(): Promise<void> {
 	}
 
 	announcementMessage.action = Action.Login;
-	const ctx = new WriteContext({littleEndian: false});
+	const ctx = new WriteContext();
 	writeDiscoveryMessage(ctx, announcementMessage);
 	const msg = new Uint8Array(ctx.getBuffer());
 
