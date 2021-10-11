@@ -9,6 +9,7 @@
 			"request": "launch",
 			"name": "launch",
 			"program": "${workspaceFolder}/dist/main.js",
+			"internalConsoleOptions": "openOnSessionStart",
 			"sourceMaps": true,
 			"smartStep": true,
 			"outputCapture": "std",
