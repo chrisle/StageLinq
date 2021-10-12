@@ -99,4 +99,16 @@ export class ReadContext extends Context {
 		assert.fail(`Read outside buffer`);
 		return null;
 	}
+
+	readUInt8(): number {
+		const offset = this.pos;
+		if (offset + 1 <= this.buffer.byteLength) {
+			const value = new DataView(this.buffer).getUint8(this.pos);
+			this.pos += 1;
+			return value;
+		}
+
+		assert.fail(`Read outside buffer`);
+		return null;
+	}
 }
