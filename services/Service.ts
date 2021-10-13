@@ -1,26 +1,26 @@
 import { strict as assert } from 'assert';
-import { CLIENT_TOKEN, MessageId } from "../common";
+import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from "../common";
 import { ReadContext } from "../utils/ReadContext";
 import { WriteContext } from "../utils/WriteContext";
 import * as tcp from "../utils/tcp";
+import * as EventEmitter from 'events';
 
-export class Service {
-	private name: string;
-	private source: string;
+export abstract class Service<T> extends EventEmitter {
+	private address: string;
 	private port: number;
+	private name: string;
 	protected connection: tcp.Connection = null;
-	protected messageHandler: MessageHandler = null;
 
-	constructor(p_name: string, p_source: string, p_port: number, p_messageHandler: MessageHandler) {
-		this.name = p_name;
-		this.source = p_source;
+	constructor(p_address: string, p_port: number) {
+		super();
+		this.address = p_address;
 		this.port = p_port;
-		this.messageHandler = p_messageHandler;
+		this.name = this.constructor.name;
 	}
 
 	async connect(): Promise<void> {
 		assert(!this.connection);
-		this.connection = await tcp.connect(this.source, this.port);
+		this.connection = await tcp.connect(this.address, this.port);
 		let queue: Buffer = null;
 
 		this.connection.socket.on('data', (p_data: Buffer) => {
@@ -47,12 +47,12 @@ export class Service {
 					if (length <= ctx.sizeLeft()) {
 						const message = ctx.read(length);
 						// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
-						const parsedData = this.parseData(new ReadContext(message.buffer.slice(message.byteOffset, message.byteOffset + length), false));
+						const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
+						const parsedData = this.parseData(new ReadContext(data, false));
 
-						// Forward parsed data to optional message handler
-						if (this.messageHandler) {
-							this.messageHandler(parsedData);
-						}
+						// Forward parsed data to message handler
+						this.messageHandler(parsedData);
+						this.emit("message", parsedData);
 					} else {
 						ctx.seek(-4); // Rewind 4 bytes to include the length again
 						queue = ctx.readRemainingAsNewBuffer();
@@ -66,13 +66,12 @@ export class Service {
 		});
 
 		// FIXME: Is this required for all Services?
-		const ctx = new WriteContext({littleEndian: false});
+		const ctx = new WriteContext();
 		ctx.writeUInt32(MessageId.ServicesAnnouncement);
 		ctx.write(CLIENT_TOKEN);
 		ctx.writeNetworkStringUTF16(this.name);
-		ctx.writeUInt16(0); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
-		const written = await this.connection.write(ctx.getBuffer());
-		assert(written === ctx.tell());
+		ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
+		await this.write(ctx);
 
 		await this.init();
 
@@ -85,13 +84,49 @@ export class Service {
 		this.connection = null;
 	}
 
-	// FIXME: Cannot use abstract because of async; is there another way to get this
-	async init() {
+	async waitForMessage(p_messageId: number): Promise<T> {
+		return await new Promise((resolve, reject) => {
+			const listener = (p_message: ServiceMessage<T>) => {
+				if (p_message.id === p_messageId) {
+					this.removeListener("message", listener);
+					resolve(p_message.message);
+				}
+			};
+			this.addListener("message", listener);
+			setTimeout(() => {
+				reject(new Error(`Failed to receive message '${p_messageId}' on time`));
+			}, MESSAGE_TIMEOUT);
+		});
+	}
+
+	async write(p_ctx: WriteContext) {
+		assert(p_ctx.isLittleEndian() === false);
+		assert(this.connection);
+		const buf = p_ctx.getBuffer();
+		const written = await this.connection.write(buf);
+		assert(written === buf.byteLength);
+		return written;
+	}
+
+	async writeWithLength(p_ctx: WriteContext) {
+		assert(p_ctx.isLittleEndian() === false);
+		assert(this.connection);
+		const newCtx = new WriteContext({size: p_ctx.tell() + 4, autoGrow: false});
+		newCtx.writeUInt32(p_ctx.tell());
+		newCtx.write(p_ctx.getBuffer());
+		assert(newCtx.isEOF());
+		const buf = newCtx.getBuffer();
+		const written = await this.connection.write(buf);
+		assert(written === buf.byteLength);
+		return written;
+	}
+
+	// FIXME: Cannot use abstract because of async; is there another way to get this?
+	protected async init() {
 		assert.fail("Implement this");
 	}
 
-	parseData(p_ctx: ReadContext): object {
-		assert.fail("Implement this" + p_ctx);
-		return null;
-	}
+	protected abstract parseData(p_ctx: ReadContext): ServiceMessage<T>;
+
+	protected abstract messageHandler(p_data: ServiceMessage<T>) : void;
 }

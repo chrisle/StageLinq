@@ -3,18 +3,21 @@ import { Action, MessageId, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT,
 import { createSocket, RemoteInfo } from 'dgram';
 import { ReadContext } from './utils/ReadContext';
 import { WriteContext } from './utils/WriteContext';
-import * as tcp from './utils/tcp';
 import { sleep } from './utils/sleep';
+import * as tcp from './utils/tcp';
 import * as services from './services';
-import { Service } from './services/Service';
 
-function readDiscoveryMessage(p_ctx: ReadContext): DiscoveryMessage {
+interface ConnectionInfo extends DiscoveryMessage {
+	address: string
+}
+
+function readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {
 	const magic = p_ctx.getString(4);
 	if (magic !== DISCOVERY_MESSAGE_MARKER) {
 		return null;
 	}
 
-	const result: DiscoveryMessage = {
+	const result: ConnectionInfo = {
 		token: p_ctx.read(16),
 		source: p_ctx.readNetworkStringUTF16(),
 		action: p_ctx.readNetworkStringUTF16(),
@@ -22,25 +25,27 @@ function readDiscoveryMessage(p_ctx: ReadContext): DiscoveryMessage {
 			name: p_ctx.readNetworkStringUTF16(),
 			version: p_ctx.readNetworkStringUTF16()
 		},
-		port: p_ctx.readUInt16()
+		port: p_ctx.readUInt16(),
+		address: p_address
 	}
 	assert(p_ctx.isEOF());
 	return result;
 }
 
-async function discover(): Promise<DiscoveryMessage> {
+async function discover(): Promise<ConnectionInfo> {
 	return await new Promise((resolve, reject) => {
 		const client = createSocket('udp4');
 		client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
 			const ctx = new ReadContext(p_announcement.buffer, false);
-			const result = readDiscoveryMessage(ctx);
+			const result = readConnectionInfo(ctx, p_remote.address);
 			if (result === null || result.source === 'testing' || result.software.name === 'OfflineAnalyzer') {
 				return;
 			}
 			client.close();
 			assert(ctx.tell() === p_remote.size);
 			assert(result.action === Action.Login);
-			console.info(`Found '${result.source}' Controller at '${p_remote.address}:${result.port}' with following software:`, result.software);
+			console.info(`Found '${result.source}' Controller at '${result.address}:${result.port}' with following software:`, result.software);
+
 			resolve(result);
 		});
 		client.bind(LISTEN_PORT);
@@ -51,39 +56,47 @@ async function discover(): Promise<DiscoveryMessage> {
 	});
 }
 
+// FIXME: Pretty sure this can be improved upon
 interface Services {
-	[key: string]: Service;
+	StateMap: services.StateMap,
+	FileTransfer: services.FileTransfer
 }
+type SupportedTypes = services.StateMap | services.FileTransfer;
 
 export class Controller {
 	private connection: tcp.Connection = null;
-	private source: string = null;
+	//private source: string = null;
+	private address: string = null;
 	private port: number = 0;
 	private servicePorts: ServicePorts = {};
-	private services: Services = {};
+	private services: Services = {
+		StateMap: null,
+		FileTransfer: null
+	};
 	private timeAlive: number = 0;
 
 	///////////////////////////////////////////////////////////////////////////
 	// Connect / Disconnect
 
 	async connect(): Promise<void> {
-		const announcement = await discover();
-		this.connection = await tcp.connect(announcement.source, announcement.port);
+		const info = await discover();
+		this.connection = await tcp.connect(info.address, info.port);
 		this.connection.socket.on('data', (p_message: Buffer) => {
 			this.messageHandler(p_message)
 		});
-		this.source = announcement.source;
-		this.port = announcement.port;
+		//this.source = info.source;
+		this.address = info.address;
+		this.port = info.port;
 
 		await this.requestAllServicePorts();
 	}
 
 	disconnect(): void {
 		// Disconnect all services
-		for (const service of Object.values(this.services)) {
+		for (const [key, service] of Object.entries(this.services)) {
 			service.disconnect();
+			this.services[key] = null;
 		}
-		this.services = {};
 
 		assert(this.connection);
 		this.connection.destroy();
@@ -125,20 +138,24 @@ export class Controller {
 	getPort(): number { return this.port; }
 	getTimeAlive(): number { return this.timeAlive; }
 
-	async connectToService(p_service: string, p_messageHandler?: MessageHandler): Promise<Service> {
+	// Factory function
+	async connectToService<T extends SupportedTypes>(c: { new (p_address: string, p_port: number): T}): Promise<T> {
 		assert(this.connection);
 
-		if (this.services[p_service]) {
-			return null;
+		const serviceName = c.name;
+
+		if (this.services[serviceName]) {
+			return this.services[serviceName];
 		}
 
-		assert(this.servicePorts.hasOwnProperty(p_service));
-		assert(this.servicePorts[p_service] > 0);
-		const port = this.servicePorts[p_service];
+		assert(this.servicePorts.hasOwnProperty(serviceName));
+		assert(this.servicePorts[serviceName] > 0);
+		const port = this.servicePorts[serviceName];
 
-		const service = new services[p_service](p_service, this.source, port, p_messageHandler);
+		const service = new c(this.address, port);
+
 		await service.connect();
-		this.services[p_service] = service;
+		this.services[serviceName] = service;
 		return service;
 	}
 

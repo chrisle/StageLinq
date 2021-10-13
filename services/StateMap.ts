@@ -72,14 +72,15 @@ export interface StateData {
 	interval?: number
 }
 
-export class StateMap extends Service {
+
+export class StateMap extends Service<StateData> {
 	async init() {
 		for (const state of States) {
 			await this.subscribeState(state, 0);
 		}
 	}
 
-	parseData(p_ctx: ReadContext): StateData {
+	protected parseData(p_ctx: ReadContext): ServiceMessage<StateData> {
 		const marker = p_ctx.getString(4);
 		assert(marker === MAGIC_MARKER);
 
@@ -89,8 +90,11 @@ export class StateMap extends Service {
 				const name = p_ctx.readNetworkStringUTF16();
 				const json = JSON.parse(p_ctx.readNetworkStringUTF16());
 				return {
-					name: name,
-					json: json
+					id: MAGIC_MARKER_JSON,
+					message: {
+						name: name,
+						json: json
+					}
 				}
 			}
 
@@ -98,8 +102,11 @@ export class StateMap extends Service {
 				const name = p_ctx.readNetworkStringUTF16();
 				const interval = p_ctx.readInt32();
 				return {
-					name: name,
-					interval: interval
+					id: MAGIC_MARKER_INTERVAL,
+					message: {
+						name: name,
+						interval: interval
+					}
 				}
 			}
 
@@ -107,6 +114,11 @@ export class StateMap extends Service {
 				break;
 		}
 		assert.fail(`Unhandled type ${type}`);
+		return null;
+	}
+
+	protected messageHandler(p_data: ServiceMessage<StateData>) : void {
+		console.log(`${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval}`);
 	}
 
 	private async subscribeState(p_state: string, p_interval: number) {

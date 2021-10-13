@@ -1,7 +1,7 @@
 import { sleep } from './utils/sleep';
 import { Controller } from './Controller';
 import { announce, unannounce } from './announce';
-import { StateData } from './services/StateMap';
+import { StateMap } from './services';
 
 require('console-stamp')(console, {
     format: ':date(HH:MM:ss) :label'
@@ -10,9 +10,7 @@ require('console-stamp')(console, {
 async function main() {
 	const controller = new Controller();
 	await controller.connect();
-	await controller.connectToService("StateMap", (p_data: StateData) =>  {
-		console.log(`${p_data.name} => ${p_data.json ? JSON.stringify(p_data.json) : p_data.interval}`);
-	});
+	await controller.connectToService(StateMap);
 
 	// Endless loop
 	while (true) {

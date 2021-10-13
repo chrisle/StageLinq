@@ -1,4 +1,4 @@
-type DiscoveryMessage = {
+interface DiscoveryMessage {
 	token: Uint8Array,
 	source: string,
 	action: string,
@@ -7,10 +7,13 @@ type DiscoveryMessage = {
 		version: string,
 	},
 	port: number
-};
+}
 
 interface ServicePorts {
 	[key: string]: number;
 }
 
-type MessageHandler = (p_data: object) => void;
+interface ServiceMessage<T> {
+	id: number,
+	message: T;
+}
