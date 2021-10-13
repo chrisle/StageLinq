@@ -128,9 +128,9 @@ export class StateMap extends Service<StateData> {
 
 			// Now pretend as if this is a value outputted by the device
 			if (path) {
-				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": "${path}", "type:0"}`);
+				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": "${path}", "type":0}`);
 			} else {
-				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": null, "type:-1"}`);
+				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": null, "type":-1}`);
 			}
 		}
 	}
