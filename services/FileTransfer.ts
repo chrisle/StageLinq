@@ -13,9 +13,9 @@ type FileTransferData = any;
 
 enum MessageId {
 	TimeCode = 0x0,
-	SourceLocations = 0x3,
-	EndOfMessage = 0x2,
 	FileStat = 0x1,
+	EndOfMessage = 0x2,
+	SourceLocations = 0x3,
 	FileTransferId = 0x4,
 	FileTransferChunk = 0x5,
 	Unknown0 = 0x8,

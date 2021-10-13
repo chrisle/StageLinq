@@ -1,11 +1,15 @@
-import { strict as assert } from 'assert';
-import { Action, MessageId, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT } from './common';
-import { createSocket, RemoteInfo } from 'dgram';
-import { ReadContext } from './utils/ReadContext';
-import { WriteContext } from './utils/WriteContext';
-import { sleep } from './utils/sleep';
-import * as tcp from './utils/tcp';
-import * as services from './services';
+import { strict as assert } from 'assert'
+import { Action, MessageId, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT } from './common'
+import { createSocket, RemoteInfo } from 'dgram'
+import { ReadContext } from './utils/ReadContext'
+import { WriteContext } from './utils/WriteContext'
+import { sleep } from './utils/sleep'
+import * as FileType from 'file-type'
+import * as tcp from './utils/tcp'
+import * as services from './services'
+import * as fs from 'fs'
+import Database = require('better-sqlite3')
+import { exit } from 'process'
 
 interface ConnectionInfo extends DiscoveryMessage {
 	address: string
@@ -63,6 +67,11 @@ interface Services {
 }
 type SupportedTypes = services.StateMap | services.FileTransfer;
 
+interface SourceAndTrackPath {
+	source: string,
+	trackPath: string
+}
+
 export class Controller {
 	private connection: tcp.Connection = null;
 	//private source: string = null;
@@ -74,6 +83,17 @@ export class Controller {
 		FileTransfer: null
 	};
 	private timeAlive: number = 0;
+	private connectedSources: {
+		[key: string]: {
+			db: Database.Database,
+			albumArt: {
+				path: string
+				extensions: {
+					[key: string]: string
+				}
+			}
+		}
+	} = {};
 
 	///////////////////////////////////////////////////////////////////////////
 	// Connect / Disconnect
@@ -139,7 +159,7 @@ export class Controller {
 	getTimeAlive(): number { return this.timeAlive; }
 
 	// Factory function
-	async connectToService<T extends SupportedTypes>(c: { new (p_address: string, p_port: number): T}): Promise<T> {
+	async connectToService<T extends SupportedTypes>(c: { new (p_address: string, p_port: number, p_controller: Controller): T}): Promise<T> {
 		assert(this.connection);
 
 		const serviceName = c.name;
@@ -152,15 +172,108 @@ export class Controller {
 		assert(this.servicePorts[serviceName] > 0);
 		const port = this.servicePorts[serviceName];
 
-		const service = new c(this.address, port);
+		const service = new c(this.address, port, this);
 
 		await service.connect();
 		this.services[serviceName] = service;
 		return service;
 	}
 
+	async addSource(p_sourceName: string, p_localDbPath: string, p_localAlbumArtPath: string) {
+		if (this.connectedSources[p_sourceName]) {
+			return;
+		}
+		const db = new Database(p_localDbPath);
+
+		// Get all album art extensions
+		const stmt = db.prepare('SELECT * FROM AlbumArt WHERE albumArt NOT NULL');
+		const result = stmt.all();
+		const albumArtExtensions = {};
+		for (const entry of result) {
+			const filetype = await FileType.fromBuffer(entry.albumArt);
+			albumArtExtensions[entry.id] = filetype ? filetype.ext : null;
+		}
+
+		this.connectedSources[p_sourceName] = {
+			db: db,
+			albumArt: {
+				path: p_localAlbumArtPath,
+				extensions: albumArtExtensions
+			}
+		};
+	}
+
+	async dumpAlbumArt(p_sourceName: string) {
+		if (!this.connectedSources[p_sourceName]) {
+			assert.fail(`Source '${p_sourceName}' not connected`);
+			return;
+		}
+		const path = this.connectedSources[p_sourceName].albumArt.path;
+		if (fs.existsSync(path) === false) {
+			fs.mkdirSync(path, {recursive: true});
+		}
+
+		const result = await this.querySource(p_sourceName, 'SELECT * FROM AlbumArt WHERE albumArt NOT NULL');
+		for (const entry of result) {
+			const filetype = await FileType.fromBuffer(entry.albumArt);
+			const ext = filetype ? '.' + filetype.ext : '';
+			const filepath = `${path}/${entry.id}${ext}`;
+			fs.writeFileSync(filepath, entry.albumArt);
+		}
+		console.info(`dumped ${result.length} albums arts in '${path}'`);
+	}
+
+	// Database helpers
+
+	querySource(p_sourceName: string, p_query: string, ...p_params: any[]): any[] {
+		if (!this.connectedSources[p_sourceName]) {
+			assert.fail(`Source '${p_sourceName}' not connected`);
+			return [];
+		}
+		const db = this.connectedSources[p_sourceName].db;
+		const stmt = db.prepare(p_query);
+
+		return stmt.all(p_params);
+	}
+
+	getAlbumArtPath(p_networkPath: string) : string {
+		const result = this.getSourceAndTrackFromNetworkPath(p_networkPath);
+		const sql = "SELECT * FROM Track WHERE path = ?";
+		const dbResult = this.querySource(result.source, sql, result.trackPath);
+		if (dbResult.length === 0) {
+			return null;
+		}
+
+		assert(dbResult.length === 1); // there can only be one path
+		const id = dbResult[0].idAlbumArt;
+		const ext = this.connectedSources[result.source].albumArt.extensions[id];
+		if (!ext) {
+			return null;
+		}
+
+		return `${this.connectedSources[result.source].albumArt.path}${id}.${ext}`;
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	// Private methods
+
+	private getSourceAndTrackFromNetworkPath(p_path: string) : SourceAndTrackPath {
+		const parts = p_path.split('/');
+		//assert(parts.length > )
+		assert(parts[0] === 'net:');
+		assert(parts[1] === '');
+		assert(parts[2].length === 36);
+		const source = parts[3];
+		let trackPath = parts.slice(5).join('/');
+		if (parts[4] !== "Engine Library") {
+			// This probably occurs with RekordBox conversions; tracks are outside Engine Library folder
+			trackPath = `../${parts[4]}/${trackPath}`;
+		}
+		return {
+			source: source,
+			trackPath: trackPath
+		}
+	}
 
 	private async requestAllServicePorts(): Promise<void> {
 		assert(this.connection);

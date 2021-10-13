@@ -4,19 +4,22 @@ import { ReadContext } from "../utils/ReadContext";
 import { WriteContext } from "../utils/WriteContext";
 import * as tcp from "../utils/tcp";
 import * as EventEmitter from 'events';
+import { Controller } from '../Controller';
 //import { hex } from '../utils/hex';
 
 export abstract class Service<T> extends EventEmitter {
 	private address: string;
 	private port: number;
 	private name: string;
+	protected controller: Controller;
 	protected connection: tcp.Connection = null;
 
-	constructor(p_address: string, p_port: number) {
+	constructor(p_address: string, p_port: number, p_controller: Controller) {
 		super();
 		this.address = p_address;
 		this.port = p_port;
 		this.name = this.constructor.name;
+		this.controller = p_controller;
 	}
 
 	async connect(): Promise<void> {

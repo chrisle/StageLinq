@@ -68,10 +68,13 @@ const MAGIC_MARKER_JSON     = 0x00000000;
 
 export interface StateData {
 	name: string,
-	json?: object,
+	json?: {
+		type: number,
+		string?: string,
+		value?: number
+	},
 	interval?: number
 }
-
 
 export class StateMap extends Service<StateData> {
 	async init() {
@@ -119,6 +122,17 @@ export class StateMap extends Service<StateData> {
 
 	protected messageHandler(p_data: ServiceMessage<StateData>) : void {
 		console.log(`${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval}`);
+
+		if (p_data.message.name.includes('TrackNetworkPath')) {
+			const path = this.controller.getAlbumArtPath(p_data.message.json.string);
+
+			// Now pretend as if this is a value outputted by the device
+			if (path) {
+				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": "${path}", "type:0"}`);
+			} else {
+				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": null, "type:-1"}`);
+			}
+		}
 	}
 
 	private async subscribeState(p_state: string, p_interval: number) {
