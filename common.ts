@@ -3,6 +3,7 @@ export const LISTEN_PORT = 51337;
 export const LISTEN_TIMEOUT = 5000; // in ms
 export const MESSAGE_TIMEOUT = 3000; // in ms
 export const CONNECT_TIMEOUT = 5000; // in ms
+export const DOWNLOAD_TIMEOUT = 10000; // in ms
 export const DISCOVERY_MESSAGE_MARKER = "airD";
 export const CLIENT_TOKEN = new Uint8Array([82, 253 , 252, 7, 33, 130, 101, 79, 22, 63, 95, 15, 154, 98, 29, 114]);
 

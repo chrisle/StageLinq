@@ -1,7 +1,10 @@
 {
   "name": "stagelinq",
   "version": "0.0.1",
-  "devDependencies": {
+  "devDependencies": {},
+  "description": "Package to connect to Denon StageLinq",
+  "main": "main.ts",
+  "dependencies": {
     "@types/assert": "^1.5.5",
     "@types/ip": "^1.1.0",
     "@types/minimist": "^1.2.2",
@@ -9,11 +12,10 @@
     "console-stamp": "^3.0.3",
     "ip": "^1.1.5",
     "minimist": "^1.2.5",
-    "promise-socket": "^7.0.0"
+    "promise-socket": "^7.0.0",
+    "sqlite": "^4.0.23",
+    "sqlite3": "^5.0.2"
   },
-  "description": "Package to connect to Denon StageLinq",
-  "main": "main.ts",
-  "dependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

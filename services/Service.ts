@@ -4,6 +4,7 @@ import { ReadContext } from "../utils/ReadContext";
 import { WriteContext } from "../utils/WriteContext";
 import * as tcp from "../utils/tcp";
 import * as EventEmitter from 'events';
+//import { hex } from '../utils/hex';
 
 export abstract class Service<T> extends EventEmitter {
 	private address: string;
@@ -48,6 +49,8 @@ export abstract class Service<T> extends EventEmitter {
 						const message = ctx.read(length);
 						// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 						const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
+						//console.info("RECV", length);
+						//hex(message);
 						const parsedData = this.parseData(new ReadContext(data, false));
 
 						// Forward parsed data to message handler
@@ -103,6 +106,8 @@ export abstract class Service<T> extends EventEmitter {
 		assert(p_ctx.isLittleEndian() === false);
 		assert(this.connection);
 		const buf = p_ctx.getBuffer();
+		//console.info("SEND");
+		//hex(buf);
 		const written = await this.connection.write(buf);
 		assert(written === buf.byteLength);
 		return written;
@@ -115,10 +120,7 @@ export abstract class Service<T> extends EventEmitter {
 		newCtx.writeUInt32(p_ctx.tell());
 		newCtx.write(p_ctx.getBuffer());
 		assert(newCtx.isEOF());
-		const buf = newCtx.getBuffer();
-		const written = await this.connection.write(buf);
-		assert(written === buf.byteLength);
-		return written;
+		return await this.write(newCtx);
 	}
 
 	// FIXME: Cannot use abstract because of async; is there another way to get this?
