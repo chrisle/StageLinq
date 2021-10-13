@@ -214,7 +214,7 @@ export class FileTransfer extends Service<FileTransferData> {
 	private async requestStat(p_filepath: string) : Promise<void> {
 		// 0x7d1: seems to request some sort of fstat on a file
 		const ctx = new WriteContext();
-		ctx.writeFixedSizedString('fltx');
+		ctx.writeFixedSizedString(MAGIC_MARKER);
 		ctx.writeUInt32(0x0);
 		ctx.writeUInt32(0x7d1);
 		ctx.writeNetworkStringUTF16(p_filepath);
@@ -224,7 +224,7 @@ export class FileTransfer extends Service<FileTransferData> {
 	private async requestSources() : Promise<void> {
 		// 0x7d2: Request available sources
 		const ctx = new WriteContext();
-		ctx.writeFixedSizedString('fltx');
+		ctx.writeFixedSizedString(MAGIC_MARKER);
 		ctx.writeUInt32(0x0);
 		ctx.writeUInt32(0x7d2); // Database query
 		ctx.writeUInt32(0x0);
@@ -234,7 +234,7 @@ export class FileTransfer extends Service<FileTransferData> {
 	private async requestFileTransferId(p_filepath: string) : Promise<void> {
 		// 0x7d4: Request transfer id?
 		const ctx = new WriteContext();
-		ctx.writeFixedSizedString('fltx');
+		ctx.writeFixedSizedString(MAGIC_MARKER);
 		ctx.writeUInt32(0x0);
 		ctx.writeUInt32(0x7d4);
 		ctx.writeNetworkStringUTF16(p_filepath);
@@ -245,7 +245,7 @@ export class FileTransfer extends Service<FileTransferData> {
 	private async requestChunkRange(p_txid: number, p_chunkStartId: number, p_chunkEndId: number) : Promise<void> {
 		// 0x7d5: seems to be the code to request chunk range
 		const ctx = new WriteContext();
-		ctx.writeFixedSizedString('fltx');
+		ctx.writeFixedSizedString(MAGIC_MARKER);
 		ctx.writeUInt32(0x0);
 		ctx.writeUInt32(0x7d5);
 		ctx.writeUInt32(0x0);
@@ -260,7 +260,7 @@ export class FileTransfer extends Service<FileTransferData> {
 	private async signalTransferComplete() : Promise<void> {
 		// 0x7d6: seems to be the code to signal transfer completed
 		const ctx = new WriteContext();
-		ctx.writeFixedSizedString('fltx');
+		ctx.writeFixedSizedString(MAGIC_MARKER);
 		ctx.writeUInt32(0x0);
 		ctx.writeUInt32(0x7d6);
 		await this.writeWithLength(ctx);
