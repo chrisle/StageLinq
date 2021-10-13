@@ -23,27 +23,32 @@ function makeDownloadPath(p_filepath: string) {
 async function main() {
 	const controller = new Controller();
 	await controller.connect();
-	await controller.connectToService(StateMap);
 
 	const ftx = await controller.connectToService(FileTransfer);
-	const sources = await ftx.getSources();
-	console.log(sources);
-	for (const source of sources) {
-		const file = await ftx.getFile(source.database.location);
-		const filepath = makeDownloadPath(source.database.location);
+	if (ftx) {
+		const sources = await ftx.getSources();
 
-		fs.writeFileSync(filepath, file);
-		console.info(`downloaded: '${source.database.location}' and stored in '${filepath}''`);
+		console.info("CONNECTED SOURCES", sources);
+		for (const source of sources) {
+			const file = await ftx.getFile(source.database.location);
+			const filepath = makeDownloadPath(source.database.location);
 
-		// Now query something from the database
-		const db = await sqlite.open({
-			filename: filepath,
-			driver: sqlite3.Database
-		});
+			fs.writeFileSync(filepath, file);
+			console.info(`downloaded: '${source.database.location}' and stored in '${filepath}''`);
 
-		const result = await db.get('SELECT COUNT(*) as total FROM AlbumArt');
-		console.info(`database contains ${result.total} album arts`);
+			// Now query something from the database
+			const db = await sqlite.open({
+				filename: filepath,
+				driver: sqlite3.Database
+			});
+
+			const result = await db.get('SELECT COUNT(*) as total FROM AlbumArt');
+			console.info(`database contains ${result.total} album arts`);
+		}
+		ftx.disconnect();
 	}
+
+	await controller.connectToService(StateMap);
 
 	// Endless loop
 	while (true) {

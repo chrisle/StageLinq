@@ -141,7 +141,7 @@ export class FileTransfer extends Service<FileTransferData> {
 			assert(this.receivedFile.sizeLeft() >= p_data.message.size);
 			this.receivedFile.write(p_data.message.data);
 		} else {
-			console.log(p_data);
+			//console.log(p_data);
 		}
 	}
 
@@ -177,7 +177,9 @@ export class FileTransfer extends Service<FileTransferData> {
 			await this.signalTransferComplete();
 		}
 
-		return this.receivedFile ? this.receivedFile.getBuffer() : null;
+		const buf = this.receivedFile ? this.receivedFile.getBuffer() : null;
+		this.receivedFile = null;
+		return buf;
 	}
 
 	async getSources() : Promise<Source[]> {
@@ -192,7 +194,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
 				await this.requestStat(database);
 				const fstatMessage = await this.waitForMessage(MessageId.FileStat);
-				console.log(fstatMessage);
+				//console.log(fstatMessage);
 				result.push({
 					name: source,
 					database: {
