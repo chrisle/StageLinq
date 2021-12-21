@@ -1,7 +1,9 @@
 {
 	"name": "stagelinq",
 	"version": "0.0.1",
-	"devDependencies": {},
+	"devDependencies": {
+		"prettier": "^2.5.1"
+	},
 	"description": "Package to connect to Denon StageLinq",
 	"main": "main.ts",
 	"dependencies": {
