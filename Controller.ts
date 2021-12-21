@@ -9,7 +9,6 @@ import * as tcp from './utils/tcp';
 import * as services from './services';
 import * as fs from 'fs';
 import Database = require('better-sqlite3');
-import { exit } from 'process';
 
 interface ConnectionInfo extends DiscoveryMessage {
 	address: string;
