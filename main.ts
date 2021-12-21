@@ -20,7 +20,7 @@ function makeDownloadPath(p_path: string) {
 		paths.pop();
 	}
 	const newPath = paths.join('/');
-	fs.mkdirSync(newPath, {recursive: true});
+	fs.mkdirSync(newPath, { recursive: true });
 	return newPath + ('/' + filename);
 }
 
@@ -28,7 +28,7 @@ async function main() {
 	const args = minimist(process.argv.slice(2));
 	const controller = new Controller();
 	await controller.connect();
-	const sync = true;// !args.skipsync;
+	const sync = !args.skipsync;
 
 	const ftx = await controller.connectToService(FileTransfer);
 	assert(ftx);
