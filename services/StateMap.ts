@@ -1,8 +1,8 @@
 import { strict as assert } from 'assert';
-import { StageLinqValue } from "../common";
-import { ReadContext } from "../utils/ReadContext";
-import { WriteContext } from "../utils/WriteContext";
-import { Service } from "./Service";
+import { StageLinqValue } from '../common';
+import { ReadContext } from '../utils/ReadContext';
+import { WriteContext } from '../utils/WriteContext';
+import { Service } from './Service';
 
 export const States = [
 	// Mixer
@@ -57,23 +57,22 @@ export const States = [
 	StageLinqValue.EngineDeck4TrackTrackData,
 	StageLinqValue.EngineDeck4TrackTrackName,
 	StageLinqValue.EngineDeck4CurrentBPM,
-	StageLinqValue.EngineDeck4ExternalMixerVolume
-
+	StageLinqValue.EngineDeck4ExternalMixerVolume,
 ];
 
 const MAGIC_MARKER = 'smaa';
 // FIXME: Is this thing really an interval?
 const MAGIC_MARKER_INTERVAL = 0x000007d2;
-const MAGIC_MARKER_JSON     = 0x00000000;
+const MAGIC_MARKER_JSON = 0x00000000;
 
 export interface StateData {
-	name: string,
+	name: string;
 	json?: {
-		type: number,
-		string?: string,
-		value?: number
-	},
-	interval?: number
+		type: number;
+		string?: string;
+		value?: number;
+	};
+	interval?: number;
 }
 
 export class StateMap extends Service<StateData> {
@@ -96,9 +95,9 @@ export class StateMap extends Service<StateData> {
 					id: MAGIC_MARKER_JSON,
 					message: {
 						name: name,
-						json: json
-					}
-				}
+						json: json,
+					},
+				};
 			}
 
 			case MAGIC_MARKER_INTERVAL: {
@@ -108,9 +107,9 @@ export class StateMap extends Service<StateData> {
 					id: MAGIC_MARKER_INTERVAL,
 					message: {
 						name: name,
-						interval: interval
-					}
-				}
+						interval: interval,
+					},
+				};
 			}
 
 			default:
@@ -120,31 +119,45 @@ export class StateMap extends Service<StateData> {
 		return null;
 	}
 
-	protected messageHandler(p_data: ServiceMessage<StateData>) : void {
-		console.log(`${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval}`);
+	protected messageHandler(p_data: ServiceMessage<StateData>): void {
+		console.log(
+			`${p_data.message.name} => ${
+				p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
+			}`
+		);
 
 		if (p_data.message.name.includes('TrackNetworkPath')) {
 			const path = this.controller.getAlbumArtPath(p_data.message.json.string);
 
 			// Now pretend as if this is a value outputted by the device
 			if (path) {
-				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": "${path}", "type":0}`);
+				console.log(
+					`${p_data.message.name.replace(
+						'TrackNetworkPath',
+						'TrackLocalAlbumArtPath'
+					)} => {"string": "${path}", "type":0}`
+				);
 			} else {
-				console.log(`${p_data.message.name.replace('TrackNetworkPath', 'TrackLocalAlbumArtPath')} => {"string": null, "type":-1}`);
+				console.log(
+					`${p_data.message.name.replace(
+						'TrackNetworkPath',
+						'TrackLocalAlbumArtPath'
+					)} => {"string": null, "type":-1}`
+				);
 			}
 		}
 	}
 
 	private async subscribeState(p_state: string, p_interval: number) {
 		//console.log(`Subscribe to state '${p_state}'`);
-		const getMessage = function(): Buffer {
+		const getMessage = function (): Buffer {
 			const ctx = new WriteContext();
 			ctx.writeFixedSizedString(MAGIC_MARKER);
 			ctx.writeUInt32(MAGIC_MARKER_INTERVAL);
 			ctx.writeNetworkStringUTF16(p_state);
 			ctx.writeUInt32(p_interval);
 			return ctx.getBuffer();
-		}
+		};
 
 		const message = getMessage();
 		{

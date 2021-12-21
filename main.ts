@@ -1,22 +1,22 @@
-import { strict as assert } from 'assert'
-import { sleep } from './utils/sleep'
-import { Controller } from './Controller'
-import { announce, unannounce } from './announce'
-import { FileTransfer, StateMap } from './services'
-import * as fs from 'fs'
-import minimist = require('minimist')
+import { strict as assert } from 'assert';
+import { sleep } from './utils/sleep';
+import { Controller } from './Controller';
+import { announce, unannounce } from './announce';
+import { FileTransfer, StateMap } from './services';
+import * as fs from 'fs';
+import minimist = require('minimist');
 
 require('console-stamp')(console, {
-    format: ':date(HH:MM:ss) :label'
+	format: ':date(HH:MM:ss) :label',
 });
 
 function makeDownloadPath(p_path: string) {
 	const path = `./localdb/${p_path}`;
-	let paths = path.split(/[/\\]/).filter(e => e.length > 0);
-	const isFolder = (p_path.endsWith("/") || p_path.endsWith("\\"));
+	let paths = path.split(/[/\\]/).filter((e) => e.length > 0);
+	const isFolder = p_path.endsWith('/') || p_path.endsWith('\\');
 	let filename = '';
 	if (isFolder === false) {
-		filename = paths[paths.length-1];
+		filename = paths[paths.length - 1];
 		paths.pop();
 	}
 	const newPath = paths.join('/');
@@ -62,8 +62,8 @@ async function main() {
 (async () => {
 	let returnCode = 0;
 	try {
-		process.on('SIGINT', async function() {
-			console.info("... exiting");
+		process.on('SIGINT', async function () {
+			console.info('... exiting');
 			// Ensure SIGINT won't be impeded by some error
 			try {
 				await unannounce();

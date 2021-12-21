@@ -1,8 +1,8 @@
 import { strict as assert } from 'assert';
-import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from "../common";
-import { ReadContext } from "../utils/ReadContext";
-import { WriteContext } from "../utils/WriteContext";
-import * as tcp from "../utils/tcp";
+import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from '../common';
+import { ReadContext } from '../utils/ReadContext';
+import { WriteContext } from '../utils/WriteContext';
+import * as tcp from '../utils/tcp';
 import * as EventEmitter from 'events';
 import { Controller } from '../Controller';
 //import { hex } from '../utils/hex';
@@ -58,7 +58,7 @@ export abstract class Service<T> extends EventEmitter {
 
 						// Forward parsed data to message handler
 						this.messageHandler(parsedData);
-						this.emit("message", parsedData);
+						this.emit('message', parsedData);
 					} else {
 						ctx.seek(-4); // Rewind 4 bytes to include the length again
 						queue = ctx.readRemainingAsNewBuffer();
@@ -94,11 +94,11 @@ export abstract class Service<T> extends EventEmitter {
 		return await new Promise((resolve, reject) => {
 			const listener = (p_message: ServiceMessage<T>) => {
 				if (p_message.id === p_messageId) {
-					this.removeListener("message", listener);
+					this.removeListener('message', listener);
 					resolve(p_message.message);
 				}
 			};
-			this.addListener("message", listener);
+			this.addListener('message', listener);
 			setTimeout(() => {
 				reject(new Error(`Failed to receive message '${p_messageId}' on time`));
 			}, MESSAGE_TIMEOUT);
@@ -119,7 +119,7 @@ export abstract class Service<T> extends EventEmitter {
 	async writeWithLength(p_ctx: WriteContext) {
 		assert(p_ctx.isLittleEndian() === false);
 		assert(this.connection);
-		const newCtx = new WriteContext({size: p_ctx.tell() + 4, autoGrow: false});
+		const newCtx = new WriteContext({ size: p_ctx.tell() + 4, autoGrow: false });
 		newCtx.writeUInt32(p_ctx.tell());
 		newCtx.write(p_ctx.getBuffer());
 		assert(newCtx.isEOF());
@@ -128,10 +128,10 @@ export abstract class Service<T> extends EventEmitter {
 
 	// FIXME: Cannot use abstract because of async; is there another way to get this?
 	protected async init() {
-		assert.fail("Implement this");
+		assert.fail('Implement this');
 	}
 
 	protected abstract parseData(p_ctx: ReadContext): ServiceMessage<T>;
 
-	protected abstract messageHandler(p_data: ServiceMessage<T>) : void;
+	protected abstract messageHandler(p_data: ServiceMessage<T>): void;
 }

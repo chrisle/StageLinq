@@ -1,12 +1,12 @@
 {
 	"compilerOptions": {
-	  "target": "es2020",
-	  "module": "commonjs",
-	  "outDir": "dist",
-	  "sourceMap": true,
-	  "allowJs": false,
-	  "alwaysStrict": true,
-	  "noUnusedLocals": true,
-	  "noUnusedParameters": true
+		"target": "es2020",
+		"module": "commonjs",
+		"outDir": "dist",
+		"sourceMap": true,
+		"allowJs": false,
+		"alwaysStrict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true
 	}
-  }
+}

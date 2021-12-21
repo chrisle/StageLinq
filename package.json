@@ -1,25 +1,25 @@
 {
-  "name": "stagelinq",
-  "version": "0.0.1",
-  "devDependencies": {},
-  "description": "Package to connect to Denon StageLinq",
-  "main": "main.ts",
-  "dependencies": {
-    "@types/assert": "^1.5.5",
-    "@types/better-sqlite3": "^7.4.0",
-    "@types/ip": "^1.1.0",
-    "@types/minimist": "^1.2.2",
-    "@types/node": "^16.4.0",
-    "better-sqlite3": "^7.4.3",
-    "console-stamp": "^3.0.3",
-    "file-type": "^16.5.3",
-    "ip": "^1.1.5",
-    "minimist": "^1.2.5",
-    "promise-socket": "^7.0.0"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Martijn Reuvers",
-  "license": "GNU GPLv3"
+	"name": "stagelinq",
+	"version": "0.0.1",
+	"devDependencies": {},
+	"description": "Package to connect to Denon StageLinq",
+	"main": "main.ts",
+	"dependencies": {
+		"@types/assert": "^1.5.5",
+		"@types/better-sqlite3": "^7.4.0",
+		"@types/ip": "^1.1.0",
+		"@types/minimist": "^1.2.2",
+		"@types/node": "^16.4.0",
+		"better-sqlite3": "^7.4.3",
+		"console-stamp": "^3.0.3",
+		"file-type": "^16.5.3",
+		"ip": "^1.1.5",
+		"minimist": "^1.2.5",
+		"promise-socket": "^7.0.0"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Martijn Reuvers",
+	"license": "GNU GPLv3"
 }

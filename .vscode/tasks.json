@@ -12,10 +12,8 @@
 				"panel": "shared"
 			},
 			"isBackground": true,
-			"runOptions": {"runOn": "folderOpen"},
-			"problemMatcher": [
-				"$tsc-watch"
-			],
+			"runOptions": { "runOn": "folderOpen" },
+			"problemMatcher": ["$tsc-watch"],
 			"group": {
 				"kind": "build",
 				"isDefault": true

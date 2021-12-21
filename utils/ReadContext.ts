@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import { Context } from './Context';
 
 function fromCString(p_buffer: Uint8Array): string {
-	const arr = String.fromCharCode.apply(null, p_buffer).split('\0')
+	const arr = String.fromCharCode.apply(null, p_buffer).split('\0');
 	assert(arr.length > 0);
 	return arr[0];
 }
@@ -43,9 +43,9 @@ export class ReadContext extends Context {
 		// node.js only supports little endian of UTF16, and we need big endian, so read one by one
 		const bytes = this.readUInt32();
 		assert(bytes <= this.sizeLeft());
-		assert((bytes % 2) === 0); // Should be 2 bytes per character; otherwise assert
+		assert(bytes % 2 === 0); // Should be 2 bytes per character; otherwise assert
 
-		let result = "";
+		let result = '';
 		for (let i = 0; i < bytes / 2; ++i) {
 			result += String.fromCharCode(this.readUInt16());
 		}

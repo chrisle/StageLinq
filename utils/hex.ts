@@ -5,23 +5,23 @@ const zero = function (n: number, max: number) {
 		str = '0' + str;
 	}
 	return str;
-  };
+};
 
-export function hex(p_buffer: Uint8Array, p_columns: number = 16 ) {
+export function hex(p_buffer: Uint8Array, p_columns: number = 16) {
 	const rows = Math.ceil(p_buffer.length / p_columns);
-	const last = (p_buffer.length % p_columns) || p_columns;
+	const last = p_buffer.length % p_columns || p_columns;
 	let offsetLength = p_buffer.length.toString(16).length;
 	if (offsetLength < 6) offsetLength = 6;
 
 	let str = 'Offset';
 	while (str.length < offsetLength) {
-	  str += ' ';
+		str += ' ';
 	}
 
 	str = '\u001b[36m' + str + '  ';
 
 	for (let i = 0; i < p_columns; i++) {
-	  str += ' ' + zero(i, 2);
+		str += ' ' + zero(i, 2);
 	}
 
 	str += '\u001b[0m';
@@ -30,7 +30,7 @@ export function hex(p_buffer: Uint8Array, p_columns: number = 16 ) {
 	let b = 0;
 	let lastBytes: number;
 	let lastSpaces: number;
-	let v : number;
+	let v: number;
 
 	for (let i = 0; i < rows; i++) {
 		str += '\u001b[36m' + zero(b, offsetLength) + '\u001b[0m  ';

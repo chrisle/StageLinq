@@ -1,9 +1,9 @@
 import { strict as assert } from 'assert';
 import { DOWNLOAD_TIMEOUT } from '../common';
-import { ReadContext } from "../utils/ReadContext";
+import { ReadContext } from '../utils/ReadContext';
 import { sleep } from '../utils/sleep';
 import { WriteContext } from '../utils/WriteContext';
-import { Service } from "./Service";
+import { Service } from './Service';
 
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
@@ -24,8 +24,7 @@ enum MessageId {
 export class FileTransfer extends Service<FileTransferData> {
 	private receivedFile: WriteContext = null;
 
-	async init() {
-	}
+	async init() {}
 
 	protected parseData(p_ctx: ReadContext): ServiceMessage<FileTransferData> {
 		const check = p_ctx.getString(4);
@@ -41,9 +40,9 @@ export class FileTransfer extends Service<FileTransferData> {
 			return {
 				id: MessageId.TimeCode,
 				message: {
-					timecode: code
-				}
-			}
+					timecode: code,
+				},
+			};
 		}
 
 		// Else
@@ -65,9 +64,9 @@ export class FileTransfer extends Service<FileTransferData> {
 				return {
 					id: messageId,
 					message: {
-						sources: sources
-					}
-				}
+						sources: sources,
+					},
+				};
 			}
 
 			case MessageId.FileStat: {
@@ -78,17 +77,17 @@ export class FileTransfer extends Service<FileTransferData> {
 				return {
 					id: messageId,
 					message: {
-						size: size
-					}
-				}
+						size: size,
+					},
+				};
 			}
 
 			case MessageId.EndOfMessage: {
 				// End of result indication?
 				return {
 					id: messageId,
-					message: null
-				}
+					message: null,
+				};
 			}
 
 			case MessageId.FileTransferId: {
@@ -97,13 +96,13 @@ export class FileTransfer extends Service<FileTransferData> {
 				const filesize = p_ctx.readUInt32();
 				const id = p_ctx.readUInt32();
 
-				return  {
+				return {
 					id: messageId,
 					message: {
 						size: filesize,
-						txid: id
-					}
-				}
+						txid: id,
+					},
+				};
 			}
 
 			case MessageId.FileTransferChunk: {
@@ -118,25 +117,27 @@ export class FileTransfer extends Service<FileTransferData> {
 					message: {
 						data: p_ctx.readRemainingAsNewBuffer(),
 						offset: offset,
-						size: chunksize
-					}
-				}
+						size: chunksize,
+					},
+				};
 			}
 
 			case MessageId.Unknown0: {
 				return {
 					id: messageId,
-					message: null
-				}
+					message: null,
+				};
 			}
 
-			default: {
-				assert.fail(`Unhandled message id '${messageId}'`);
-			} break;
+			default:
+				{
+					assert.fail(`Unhandled message id '${messageId}'`);
+				}
+				break;
 		}
 	}
 
-	protected messageHandler(p_data: ServiceMessage<FileTransferData>) : void {
+	protected messageHandler(p_data: ServiceMessage<FileTransferData>): void {
 		if (p_data.id === MessageId.FileTransferChunk && this.receivedFile) {
 			assert(this.receivedFile.sizeLeft() >= p_data.message.size);
 			this.receivedFile.write(p_data.message.data);
@@ -145,18 +146,18 @@ export class FileTransfer extends Service<FileTransferData> {
 		}
 	}
 
-	async getFile(p_location: string) : Promise<Uint8Array> {
+	async getFile(p_location: string): Promise<Uint8Array> {
 		assert(this.receivedFile === null);
 
 		await this.requestFileTransferId(p_location);
 		const txinfo = await this.waitForMessage(MessageId.FileTransferId);
 
 		if (txinfo) {
-			this.receivedFile = new WriteContext({size: txinfo.size});
+			this.receivedFile = new WriteContext({ size: txinfo.size });
 
 			const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
 
-			await this.requestChunkRange(txinfo.txid, 0, totalChunks-1);
+			await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1);
 
 			try {
 				await new Promise(async (resolve, reject) => {
@@ -169,7 +170,7 @@ export class FileTransfer extends Service<FileTransferData> {
 					}
 					resolve(true);
 				});
-			} catch(err) {
+			} catch (err) {
 				console.error(err.message);
 				this.receivedFile = null;
 			}
@@ -182,8 +183,7 @@ export class FileTransfer extends Service<FileTransferData> {
 		return buf;
 	}
 
-	async getSources() : Promise<Source[]> {
-
+	async getSources(): Promise<Source[]> {
 		const result: Source[] = [];
 
 		await this.requestSources();
@@ -199,8 +199,8 @@ export class FileTransfer extends Service<FileTransferData> {
 					name: source,
 					database: {
 						location: database,
-						size: fstatMessage.size
-					}
+						size: fstatMessage.size,
+					},
 				});
 			}
 		}
@@ -211,7 +211,7 @@ export class FileTransfer extends Service<FileTransferData> {
 	///////////////////////////////////////////////////////////////////////////
 	// Private methods
 
-	private async requestStat(p_filepath: string) : Promise<void> {
+	private async requestStat(p_filepath: string): Promise<void> {
 		// 0x7d1: seems to request some sort of fstat on a file
 		const ctx = new WriteContext();
 		ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -221,7 +221,7 @@ export class FileTransfer extends Service<FileTransferData> {
 		await this.writeWithLength(ctx);
 	}
 
-	private async requestSources() : Promise<void> {
+	private async requestSources(): Promise<void> {
 		// 0x7d2: Request available sources
 		const ctx = new WriteContext();
 		ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -231,7 +231,7 @@ export class FileTransfer extends Service<FileTransferData> {
 		await this.writeWithLength(ctx);
 	}
 
-	private async requestFileTransferId(p_filepath: string) : Promise<void> {
+	private async requestFileTransferId(p_filepath: string): Promise<void> {
 		// 0x7d4: Request transfer id?
 		const ctx = new WriteContext();
 		ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -242,7 +242,7 @@ export class FileTransfer extends Service<FileTransferData> {
 		await this.writeWithLength(ctx);
 	}
 
-	private async requestChunkRange(p_txid: number, p_chunkStartId: number, p_chunkEndId: number) : Promise<void> {
+	private async requestChunkRange(p_txid: number, p_chunkStartId: number, p_chunkEndId: number): Promise<void> {
 		// 0x7d5: seems to be the code to request chunk range
 		const ctx = new WriteContext();
 		ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -257,7 +257,7 @@ export class FileTransfer extends Service<FileTransferData> {
 		await this.writeWithLength(ctx);
 	}
 
-	private async signalTransferComplete() : Promise<void> {
+	private async signalTransferComplete(): Promise<void> {
 		// 0x7d6: seems to be the code to signal transfer completed
 		const ctx = new WriteContext();
 		ctx.writeFixedSizedString(MAGIC_MARKER);

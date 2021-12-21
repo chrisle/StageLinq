@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 
 export class Context {
-	protected buffer : ArrayBuffer;
+	protected buffer: ArrayBuffer;
 	protected pos: number;
 	protected readonly littleEndian: boolean;
 

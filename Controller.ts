@@ -1,18 +1,18 @@
-import { strict as assert } from 'assert'
-import { Action, MessageId, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT } from './common'
-import { createSocket, RemoteInfo } from 'dgram'
-import { ReadContext } from './utils/ReadContext'
-import { WriteContext } from './utils/WriteContext'
-import { sleep } from './utils/sleep'
-import * as FileType from 'file-type'
-import * as tcp from './utils/tcp'
-import * as services from './services'
-import * as fs from 'fs'
-import Database = require('better-sqlite3')
-import { exit } from 'process'
+import { strict as assert } from 'assert';
+import { Action, MessageId, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT } from './common';
+import { createSocket, RemoteInfo } from 'dgram';
+import { ReadContext } from './utils/ReadContext';
+import { WriteContext } from './utils/WriteContext';
+import { sleep } from './utils/sleep';
+import * as FileType from 'file-type';
+import * as tcp from './utils/tcp';
+import * as services from './services';
+import * as fs from 'fs';
+import Database = require('better-sqlite3');
+import { exit } from 'process';
 
 interface ConnectionInfo extends DiscoveryMessage {
-	address: string
+	address: string;
 }
 
 function readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {
@@ -27,11 +27,11 @@ function readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionIn
 		action: p_ctx.readNetworkStringUTF16(),
 		software: {
 			name: p_ctx.readNetworkStringUTF16(),
-			version: p_ctx.readNetworkStringUTF16()
+			version: p_ctx.readNetworkStringUTF16(),
 		},
 		port: p_ctx.readUInt16(),
-		address: p_address
-	}
+		address: p_address,
+	};
 	assert(p_ctx.isEOF());
 	return result;
 }
@@ -48,28 +48,31 @@ async function discover(): Promise<ConnectionInfo> {
 			client.close();
 			assert(ctx.tell() === p_remote.size);
 			assert(result.action === Action.Login);
-			console.info(`Found '${result.source}' Controller at '${result.address}:${result.port}' with following software:`, result.software);
+			console.info(
+				`Found '${result.source}' Controller at '${result.address}:${result.port}' with following software:`,
+				result.software
+			);
 
 			resolve(result);
 		});
 		client.bind(LISTEN_PORT);
 
 		setTimeout(() => {
-			reject(new Error("Failed to find controller"));
+			reject(new Error('Failed to find controller'));
 		}, LISTEN_TIMEOUT);
 	});
 }
 
 // FIXME: Pretty sure this can be improved upon
 interface Services {
-	StateMap: services.StateMap,
-	FileTransfer: services.FileTransfer
+	StateMap: services.StateMap;
+	FileTransfer: services.FileTransfer;
 }
 type SupportedTypes = services.StateMap | services.FileTransfer;
 
 interface SourceAndTrackPath {
-	source: string,
-	trackPath: string
+	source: string;
+	trackPath: string;
 }
 
 export class Controller {
@@ -80,19 +83,19 @@ export class Controller {
 	private servicePorts: ServicePorts = {};
 	private services: Services = {
 		StateMap: null,
-		FileTransfer: null
+		FileTransfer: null,
 	};
 	private timeAlive: number = 0;
 	private connectedSources: {
 		[key: string]: {
-			db: Database.Database,
+			db: Database.Database;
 			albumArt: {
-				path: string
+				path: string;
 				extensions: {
-					[key: string]: string
-				}
-			}
-		}
+					[key: string]: string;
+				};
+			};
+		};
 	} = {};
 
 	///////////////////////////////////////////////////////////////////////////
@@ -102,7 +105,7 @@ export class Controller {
 		const info = await discover();
 		this.connection = await tcp.connect(info.address, info.port);
 		this.connection.socket.on('data', (p_message: Buffer) => {
-			this.messageHandler(p_message)
+			this.messageHandler(p_message);
 		});
 		//this.source = info.source;
 		this.address = info.address;
@@ -137,17 +140,17 @@ export class Controller {
 					ctx.seek(16); // Skip token; present in all messages
 					// Time Alive is in nanoseconds; convert back to seconds
 					this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
-				break;
+					break;
 				case MessageId.ServicesAnnouncement:
 					const service = ctx.readNetworkStringUTF16();
 					const port = ctx.readUInt16();
 					this.servicePorts[service] = port;
-				break;
+					break;
 				case MessageId.ServicesRequest:
-				break;
+					break;
 				default:
 					assert.fail(`Unhandled message id '${id}'`);
-				break;
+					break;
 			}
 		}
 	}
@@ -155,11 +158,17 @@ export class Controller {
 	///////////////////////////////////////////////////////////////////////////
 	// Public methods
 
-	getPort(): number { return this.port; }
-	getTimeAlive(): number { return this.timeAlive; }
+	getPort(): number {
+		return this.port;
+	}
+	getTimeAlive(): number {
+		return this.timeAlive;
+	}
 
 	// Factory function
-	async connectToService<T extends SupportedTypes>(c: { new (p_address: string, p_port: number, p_controller: Controller): T}): Promise<T> {
+	async connectToService<T extends SupportedTypes>(c: {
+		new (p_address: string, p_port: number, p_controller: Controller): T;
+	}): Promise<T> {
 		assert(this.connection);
 
 		const serviceName = c.name;
@@ -198,8 +207,8 @@ export class Controller {
 			db: db,
 			albumArt: {
 				path: p_localAlbumArtPath,
-				extensions: albumArtExtensions
-			}
+				extensions: albumArtExtensions,
+			},
 		};
 	}
 
@@ -210,7 +219,7 @@ export class Controller {
 		}
 		const path = this.connectedSources[p_sourceName].albumArt.path;
 		if (fs.existsSync(path) === false) {
-			fs.mkdirSync(path, {recursive: true});
+			fs.mkdirSync(path, { recursive: true });
 		}
 
 		const result = await this.querySource(p_sourceName, 'SELECT * FROM AlbumArt WHERE albumArt NOT NULL');
@@ -236,9 +245,9 @@ export class Controller {
 		return stmt.all(p_params);
 	}
 
-	getAlbumArtPath(p_networkPath: string) : string {
+	getAlbumArtPath(p_networkPath: string): string {
 		const result = this.getSourceAndTrackFromNetworkPath(p_networkPath);
-		const sql = "SELECT * FROM Track WHERE path = ?";
+		const sql = 'SELECT * FROM Track WHERE path = ?';
 		const dbResult = this.querySource(result.source, sql, result.trackPath);
 		if (dbResult.length === 0) {
 			return null;
@@ -257,7 +266,7 @@ export class Controller {
 	///////////////////////////////////////////////////////////////////////////
 	// Private methods
 
-	private getSourceAndTrackFromNetworkPath(p_path: string) : SourceAndTrackPath {
+	private getSourceAndTrackFromNetworkPath(p_path: string): SourceAndTrackPath {
 		const parts = p_path.split('/');
 		//assert(parts.length > )
 		assert(parts[0] === 'net:');
@@ -265,14 +274,14 @@ export class Controller {
 		assert(parts[2].length === 36);
 		const source = parts[3];
 		let trackPath = parts.slice(5).join('/');
-		if (parts[4] !== "Engine Library") {
+		if (parts[4] !== 'Engine Library') {
 			// This probably occurs with RekordBox conversions; tracks are outside Engine Library folder
 			trackPath = `../${parts[4]}/${trackPath}`;
 		}
 		return {
 			source: source,
-			trackPath: trackPath
-		}
+			trackPath: trackPath,
+		};
 	}
 
 	private async requestAllServicePorts(): Promise<void> {
@@ -286,13 +295,13 @@ export class Controller {
 			assert(written === ctx.tell());
 
 			setTimeout(() => {
-				reject(new Error("Failed to requestServices"));
+				reject(new Error('Failed to requestServices'));
 			}, LISTEN_TIMEOUT);
 
 			while (true) {
 				// FIXME: How to determine when all services have been announced?
 				if (Object.keys(this.servicePorts).length > 3) {
-					console.info("Discovered the following services:");
+					console.info('Discovered the following services:');
 					for (const [name, port] of Object.entries(this.servicePorts)) {
 						console.info(`\tport: ${port} => ${name}`);
 					}
@@ -304,4 +313,3 @@ export class Controller {
 		});
 	}
 }
-

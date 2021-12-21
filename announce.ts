@@ -1,5 +1,12 @@
 import { strict as assert } from 'assert';
-import { Action, LISTEN_PORT, CONNECT_TIMEOUT, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from './common';
+import {
+	Action,
+	LISTEN_PORT,
+	CONNECT_TIMEOUT,
+	CLIENT_TOKEN,
+	DISCOVERY_MESSAGE_MARKER,
+	ANNOUNCEMENT_INTERVAL,
+} from './common';
 import { createSocket, Socket as UDPSocket } from 'dgram';
 import { subnet } from 'ip';
 import { networkInterfaces } from 'os';
@@ -23,11 +30,11 @@ const announcementMessage: DiscoveryMessage = {
 	port: 0,
 	software: {
 		name: "MarByteBeep's StageLinq Handler",
-		version: "0.0.1"
+		version: '0.0.1',
 	},
-	source: "testing",
-	token: CLIENT_TOKEN
-}
+	source: 'testing',
+	token: CLIENT_TOKEN,
+};
 
 const announceClient: UDPSocket = createSocket('udp4');
 let announceTimer: NodeJS.Timer = null;
@@ -54,7 +61,7 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
 		});
 
 		setTimeout(() => {
-			reject(new Error("Failed to send announcement"));
+			reject(new Error('Failed to send announcement'));
 		}, CONNECT_TIMEOUT);
 	});
 }
@@ -71,7 +78,6 @@ export async function unannounce(): Promise<void> {
 	await broadcastMessage(msg);
 	//console.info("Unannounced myself");
 }
-
 
 export async function announce(): Promise<void> {
 	if (announceTimer) {

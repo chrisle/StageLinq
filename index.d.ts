@@ -1,12 +1,12 @@
 interface DiscoveryMessage {
-	token: Uint8Array,
-	source: string,
-	action: string,
+	token: Uint8Array;
+	source: string;
+	action: string;
 	software: {
-		name: string,
-		version: string,
-	},
-	port: number
+		name: string;
+		version: string;
+	};
+	port: number;
 }
 
 interface ServicePorts {
@@ -14,19 +14,19 @@ interface ServicePorts {
 }
 
 interface ServiceMessage<T> {
-	id: number,
+	id: number;
 	message: T;
 }
 
 interface Source {
-	name: string,
+	name: string;
 	database: {
-		location: string,
-		size: number
-	}
+		location: string;
+		size: number;
+	};
 }
 
 interface FileTransferInfo {
-	txid: number,
-	size: number
+	txid: number;
+	size: number;
 }
