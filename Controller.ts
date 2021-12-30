@@ -235,7 +235,7 @@ export class Controller {
 
 	querySource(p_sourceName: string, p_query: string, ...p_params: any[]): any[] {
 		if (!this.connectedSources[p_sourceName]) {
-			assert.fail(`Source '${p_sourceName}' not connected`);
+			//assert.fail(`Source '${p_sourceName}' not connected`);
 			return [];
 		}
 		const db = this.connectedSources[p_sourceName].db;
@@ -266,6 +266,10 @@ export class Controller {
 	// Private methods
 
 	private getSourceAndTrackFromNetworkPath(p_path: string): SourceAndTrackPath {
+		if (p_path.length === 0) {
+			return null;
+		}
+
 		const parts = p_path.split('/');
 		//assert(parts.length > )
 		assert(parts[0] === 'net:');
