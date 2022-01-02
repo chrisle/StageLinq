@@ -245,6 +245,8 @@ export class Controller {
 	}
 
 	getAlbumArtPath(p_networkPath: string): string {
+		if (!p_networkPath) return null // no track loaded to deck at all?
+
 		const result = this.getSourceAndTrackFromNetworkPath(p_networkPath);
 		const sql = 'SELECT * FROM Track WHERE path = ?';
 		const dbResult = this.querySource(result.source, sql, result.trackPath);
