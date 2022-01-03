@@ -36,7 +36,7 @@ const announcementMessage: DiscoveryMessage = {
 	token: CLIENT_TOKEN,
 };
 
-const announceClient: UDPSocket = createSocket('udp4');
+let announceClient: UDPSocket = null;
 let announceTimer: NodeJS.Timer = null;
 
 function writeDiscoveryMessage(p_ctx: WriteContext, p_message: DiscoveryMessage): number {
@@ -49,6 +49,23 @@ function writeDiscoveryMessage(p_ctx: WriteContext, p_message: DiscoveryMessage)
 	written += p_ctx.writeNetworkStringUTF16(p_message.software.version);
 	written += p_ctx.writeUInt16(p_message.port);
 	return written;
+}
+
+async function initUdpSocket():Promise<UDPSocket> {
+	return new Promise<UDPSocket>((resolve, reject) => {
+
+		try {
+			const client = createSocket('udp4');
+			client.bind(); // we need to bind to a random port in order to enable broadcasting
+			client.on('listening', () => {
+				client.setBroadcast(true); // needs to be true in order to UDP multicast on MacOS
+				resolve(client)
+			})
+		} catch (err) {
+			console.error(`Failed to create UDP socket for announcing: ${err}`)
+			reject(err)
+		}
+	})
 }
 
 async function broadcastMessage(p_message: Uint8Array): Promise<void> {
@@ -83,6 +100,8 @@ export async function announce(): Promise<void> {
 	if (announceTimer) {
 		return;
 	}
+
+	if (!announceClient) announceClient = await initUdpSocket();
 
 	announcementMessage.action = Action.Login;
 	const ctx = new WriteContext();
