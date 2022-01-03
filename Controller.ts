@@ -245,9 +245,11 @@ export class Controller {
 	}
 
 	getAlbumArtPath(p_networkPath: string): string {
-		if (!p_networkPath) return null // no track loaded to deck at all?
-
 		const result = this.getSourceAndTrackFromNetworkPath(p_networkPath);
+		if (!result) {
+			return null;
+		}
+
 		const sql = 'SELECT * FROM Track WHERE path = ?';
 		const dbResult = this.querySource(result.source, sql, result.trackPath);
 		if (dbResult.length === 0) {
@@ -268,7 +270,7 @@ export class Controller {
 	// Private methods
 
 	private getSourceAndTrackFromNetworkPath(p_path: string): SourceAndTrackPath {
-		if (p_path.length === 0) {
+		if (!p_path || p_path.length === 0) {
 			return null;
 		}
 

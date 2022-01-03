@@ -142,7 +142,7 @@ export class StateMap extends Service<StateData> {
 					`${p_data.message.name.replace(
 						'TrackNetworkPath',
 						'TrackLocalAlbumArtPath'
-					)} => {"string": null, "type":-1}`
+					)} => {"string": "", "type":-1}`
 				);
 			}
 		}
