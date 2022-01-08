@@ -300,13 +300,6 @@ export class Controller {
 				reject(new Error('Failed to requestServices'));
 			}, LISTEN_TIMEOUT);
 
-			// FIXME: Refactor into message writer helper class
-			const ctx = new WriteContext();
-			ctx.writeUInt32(MessageId.ServicesRequest);
-			ctx.write(CLIENT_TOKEN);
-			const written = await this.connection.write(ctx.getBuffer());
-			assert(written === ctx.tell());
-
 			// Wait for serviceRequestAllowed
 			while (true) {
 				if (this.serviceRequestAllowed) {
@@ -314,6 +307,13 @@ export class Controller {
 				}
 				await sleep(250);
 			}
+
+			// FIXME: Refactor into message writer helper class
+			const ctx = new WriteContext();
+			ctx.writeUInt32(MessageId.ServicesRequest);
+			ctx.write(CLIENT_TOKEN);
+			const written = await this.connection.write(ctx.getBuffer());
+			assert(written === ctx.tell());
 
 			while (true) {
 				// FIXME: How to determine when all services have been announced?
