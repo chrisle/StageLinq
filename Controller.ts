@@ -171,6 +171,8 @@ export class Controller {
 		new (p_address: string, p_port: number, p_controller: Controller): T;
 	}): Promise<T> {
 		assert(this.connection);
+		// FIXME: find out why we need these waits before connecting to a service
+		await sleep(500);
 
 		const serviceName = c.name;
 
