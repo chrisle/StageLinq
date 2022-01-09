@@ -70,6 +70,7 @@ async function initUdpSocket(): Promise<UDPSocket> {
 
 async function broadcastMessage(p_message: Uint8Array): Promise<void> {
 	const ips = findBroadcastIPs();
+	assert(ips.length > 0, 'No broadcast IPs have been found');
 
 	const send = async function (p_ip: string): Promise<void> {
 		return new Promise((resolve, reject) => {
