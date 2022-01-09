@@ -72,7 +72,7 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
 	const ips = findBroadcastIPs();
 
 	const send = async function (p_ip: string): Promise<void> {
-		return await new Promise((resolve, reject) => {
+		return new Promise((resolve, reject) => {
 			setTimeout(() => {
 				reject(new Error('Failed to send announcement'));
 			}, CONNECT_TIMEOUT);
