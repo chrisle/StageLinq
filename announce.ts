@@ -12,17 +12,18 @@ import { subnet } from 'ip';
 import { networkInterfaces } from 'os';
 import { WriteContext } from './utils/WriteContext';
 
-function findBroadcastIP(): string {
+function findBroadcastIPs(): string[] {
 	const interfaces = Object.values(networkInterfaces());
+	const ips = [];
 	for (const i of interfaces) {
 		for (const entry of i) {
 			if (entry.family === 'IPv4' && entry.internal === false) {
 				const info = subnet(entry.address, entry.netmask);
-				return info.broadcastAddress;
+				ips.push(info.broadcastAddress);
 			}
 		}
 	}
-	return null;
+	return ips;
 }
 
 const announcementMessage: DiscoveryMessage = {
@@ -51,36 +52,41 @@ function writeDiscoveryMessage(p_ctx: WriteContext, p_message: DiscoveryMessage)
 	return written;
 }
 
-async function initUdpSocket():Promise<UDPSocket> {
+async function initUdpSocket(): Promise<UDPSocket> {
 	return new Promise<UDPSocket>((resolve, reject) => {
-
 		try {
 			const client = createSocket('udp4');
 			client.bind(); // we need to bind to a random port in order to enable broadcasting
 			client.on('listening', () => {
 				client.setBroadcast(true); // needs to be true in order to UDP multicast on MacOS
-				resolve(client)
-			})
+				resolve(client);
+			});
 		} catch (err) {
-			console.error(`Failed to create UDP socket for announcing: ${err}`)
-			reject(err)
+			console.error(`Failed to create UDP socket for announcing: ${err}`);
+			reject(err);
 		}
-	})
+	});
 }
 
 async function broadcastMessage(p_message: Uint8Array): Promise<void> {
-	const bip = findBroadcastIP();
+	const ips = findBroadcastIPs();
+	assert(ips.length > 0, 'No broadcast IPs have been found');
 
-	return await new Promise((resolve, reject) => {
-		announceClient.send(p_message, LISTEN_PORT, bip, () => {
-			//console.log('UDP message sent to ' + bip);
-			resolve();
+	const send = async function (p_ip: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			setTimeout(() => {
+				reject(new Error('Failed to send announcement'));
+			}, CONNECT_TIMEOUT);
+
+			announceClient.send(p_message, LISTEN_PORT, p_ip, () => {
+				//console.log('UDP message sent to ' + p_ip);
+				resolve();
+			});
 		});
+	};
 
-		setTimeout(() => {
-			reject(new Error('Failed to send announcement'));
-		}, CONNECT_TIMEOUT);
-	});
+	const promises = ips.map((ip) => send(ip));
+	await Promise.all(promises);
 }
 
 export async function unannounce(): Promise<void> {

@@ -79,6 +79,7 @@ export class Controller {
 	//private source: string = null;
 	private address: string = null;
 	private port: number = 0;
+	private serviceRequestAllowed = false;
 	private servicePorts: ServicePorts = {};
 	private services: Services = {
 		StateMap: null,
@@ -146,6 +147,7 @@ export class Controller {
 					this.servicePorts[service] = port;
 					break;
 				case MessageId.ServicesRequest:
+					this.serviceRequestAllowed = true;
 					break;
 				default:
 					assert.fail(`Unhandled message id '${id}'`);
@@ -169,6 +171,8 @@ export class Controller {
 		new (p_address: string, p_port: number, p_controller: Controller): T;
 	}): Promise<T> {
 		assert(this.connection);
+		// FIXME: find out why we need these waits before connecting to a service
+		await sleep(500);
 
 		const serviceName = c.name;
 
@@ -294,16 +298,24 @@ export class Controller {
 	private async requestAllServicePorts(): Promise<void> {
 		assert(this.connection);
 		return new Promise(async (resolve, reject) => {
+			setTimeout(() => {
+				reject(new Error('Failed to requestServices'));
+			}, LISTEN_TIMEOUT);
+
+			// Wait for serviceRequestAllowed
+			while (true) {
+				if (this.serviceRequestAllowed) {
+					break;
+				}
+				await sleep(250);
+			}
+
 			// FIXME: Refactor into message writer helper class
 			const ctx = new WriteContext();
 			ctx.writeUInt32(MessageId.ServicesRequest);
 			ctx.write(CLIENT_TOKEN);
 			const written = await this.connection.write(ctx.getBuffer());
 			assert(written === ctx.tell());
-
-			setTimeout(() => {
-				reject(new Error('Failed to requestServices'));
-			}, LISTEN_TIMEOUT);
 
 			while (true) {
 				// FIXME: How to determine when all services have been announced?

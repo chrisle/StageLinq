@@ -77,6 +77,9 @@ async function main() {
 		});
 
 		await announce();
+
+		// FIXME: main should be called when we found a device; not after waiting some random amount of time
+		await sleep(500);
 		await main();
 	} catch (err) {
 		const message = err.stack.toString();
