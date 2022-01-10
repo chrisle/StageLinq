@@ -80,7 +80,7 @@ export class Listener {
 		}, this.listenTimeout);
 
 		this.socket = createSocket('udp4');
-		let idx = 0;
+		let id = 0;
 		this.socket.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
 			const ctx = new ReadContext(p_announcement.buffer, false);
 			const result = readConnectionInfo(ctx, p_remote.address);
@@ -94,17 +94,18 @@ export class Listener {
 			this.listenTimer = null;
 
 			assert(result.action === Action.Login);
-			const id = `${JSON.stringify(result.token)}`;
+			// FIXME: find other way to generate unique key for this device
+			const key = `${JSON.stringify(result.token)}`;
 
 			const timeStamp = getTimeStamp();
-			if (this.foundDevices.hasOwnProperty(id)) {
-				this.foundDevices[id].time = timeStamp;
+			if (this.foundDevices.hasOwnProperty(key)) {
+				this.foundDevices[key].time = timeStamp;
 			} else {
-				this.foundDevices[id] = {
+				this.foundDevices[key] = {
 					time: timeStamp,
-					id: idx++,
+					id: id++,
 				};
-				this.detected(this.foundDevices[id].id, result);
+				this.detected(this.foundDevices[key].id, result);
 			}
 		});
 

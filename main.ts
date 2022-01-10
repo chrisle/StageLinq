@@ -26,15 +26,15 @@ function makeDownloadPath(p_path: string) {
 }
 
 async function listenerTest() {
-	const detected = function (p_idx: number, p_info: ConnectionInfo) {
+	const detected = function (p_id: number, p_info: ConnectionInfo) {
 		console.info(
-			`Found '${p_info.source}' Controller with index '${p_idx}' at '${p_info.address}:${p_info.port}' with following software:`,
+			`Found '${p_info.source}' Controller with ID '${p_id}' at '${p_info.address}:${p_info.port}' with following software:`,
 			p_info.software
 		);
 	};
 
-	const lost = function (p_idx: number) {
-		console.info(`Controller with index '${p_idx}' is lost`);
+	const lost = function (p_id: number) {
+		console.info(`Controller with ID '${p_id}' is lost`);
 	};
 
 	new Listener(detected, lost, 1000);
