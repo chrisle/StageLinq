@@ -5,6 +5,7 @@ import { announce, unannounce } from './announce';
 import { FileTransfer, StateMap } from './services';
 import * as fs from 'fs';
 import minimist = require('minimist');
+import { ConnectionInfo, Listener } from './Listener';
 
 require('console-stamp')(console, {
 	format: ':date(HH:MM:ss) :label',
@@ -24,8 +25,32 @@ function makeDownloadPath(p_path: string) {
 	return newPath + ('/' + filename);
 }
 
+async function listenerTest() {
+	const detected = function (p_idx: number, p_info: ConnectionInfo) {
+		console.info(
+			`Found '${p_info.source}' Controller with index '${p_idx}' at '${p_info.address}:${p_info.port}' with following software:`,
+			p_info.software
+		);
+	};
+
+	const lost = function (p_idx: number) {
+		console.info(`Controller with index '${p_idx}' is lost`);
+	};
+
+	new Listener(detected, lost, 1000);
+
+	while (true) {
+		await sleep(1000);
+	}
+}
+
 async function main() {
 	const args = minimist(process.argv.slice(2));
+	if (args.listen) {
+		await listenerTest();
+		return;
+	}
+
 	const controller = new Controller();
 	await controller.connect();
 
