@@ -1,6 +1,5 @@
 import { strict as assert } from 'assert';
-import { Action, MessageId, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT } from './common';
-import { createSocket, RemoteInfo } from 'dgram';
+import { MessageId, CLIENT_TOKEN, CONNECT_TIMEOUT } from './common';
 import { ReadContext } from './utils/ReadContext';
 import { WriteContext } from './utils/WriteContext';
 import { sleep } from './utils/sleep';
@@ -12,54 +11,6 @@ import Database = require('better-sqlite3');
 
 interface ConnectionInfo extends DiscoveryMessage {
 	address: string;
-}
-
-function readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {
-	const magic = p_ctx.getString(4);
-	if (magic !== DISCOVERY_MESSAGE_MARKER) {
-		return null;
-	}
-
-	const result: ConnectionInfo = {
-		token: p_ctx.read(16),
-		source: p_ctx.readNetworkStringUTF16(),
-		action: p_ctx.readNetworkStringUTF16(),
-		software: {
-			name: p_ctx.readNetworkStringUTF16(),
-			version: p_ctx.readNetworkStringUTF16(),
-		},
-		port: p_ctx.readUInt16(),
-		address: p_address,
-	};
-	assert(p_ctx.isEOF());
-	return result;
-}
-
-async function discover(): Promise<ConnectionInfo> {
-	return await new Promise((resolve, reject) => {
-		const client = createSocket('udp4');
-		client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
-			const ctx = new ReadContext(p_announcement.buffer, false);
-			const result = readConnectionInfo(ctx, p_remote.address);
-			if (result === null || result.source === 'testing' || result.software.name === 'OfflineAnalyzer') {
-				return;
-			}
-			client.close();
-			assert(ctx.tell() === p_remote.size);
-			assert(result.action === Action.Login);
-			console.info(
-				`Found '${result.source}' Controller at '${result.address}:${result.port}' with following software:`,
-				result.software
-			);
-
-			resolve(result);
-		});
-		client.bind(LISTEN_PORT);
-
-		setTimeout(() => {
-			reject(new Error('Failed to find controller'));
-		}, LISTEN_TIMEOUT);
-	});
 }
 
 // FIXME: Pretty sure this can be improved upon
@@ -75,10 +26,9 @@ interface SourceAndTrackPath {
 }
 
 export class Controller {
+	private _id: number = null;
 	private connection: tcp.Connection = null;
-	//private source: string = null;
-	private address: string = null;
-	private port: number = 0;
+	private connectionInfo: ConnectionInfo = null;
 	private serviceRequestAllowed = false;
 	private servicePorts: ServicePorts = {};
 	private services: Services = {
@@ -99,25 +49,39 @@ export class Controller {
 	} = {};
 
 	///////////////////////////////////////////////////////////////////////////
+	// Constructor
+
+	constructor(p_id: number, p_connectionInfo: ConnectionInfo) {
+		assert(p_id >= 0);
+		this._id = p_id;
+		this.connectionInfo = p_connectionInfo;
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	// Getters / Setters
+
+	public get id() {
+		return this._id;
+	}
+
+	///////////////////////////////////////////////////////////////////////////
 	// Connect / Disconnect
 
-	async connect(): Promise<void> {
-		const info = await discover();
-		this.connection = await tcp.connect(info.address, info.port);
+	async connect(): Promise<ServicePorts> {
+		assert(this.connectionInfo);
+		this.connection = await tcp.connect(this.connectionInfo.address, this.connectionInfo.port);
 		this.connection.socket.on('data', (p_message: Buffer) => {
 			this.messageHandler(p_message);
 		});
-		//this.source = info.source;
-		this.address = info.address;
-		this.port = info.port;
-
-		await this.requestAllServicePorts();
+		return await this.requestAvailableServices();
 	}
 
 	disconnect(): void {
 		// Disconnect all services
 		for (const [key, service] of Object.entries(this.services)) {
-			service.disconnect();
+			if (service) {
+				service.disconnect();
+			}
 			this.services[key] = null;
 		}
 
@@ -159,9 +123,6 @@ export class Controller {
 	///////////////////////////////////////////////////////////////////////////
 	// Public methods
 
-	getPort(): number {
-		return this.port;
-	}
 	getTimeAlive(): number {
 		return this.timeAlive;
 	}
@@ -184,7 +145,7 @@ export class Controller {
 		assert(this.servicePorts[serviceName] > 0);
 		const port = this.servicePorts[serviceName];
 
-		const service = new c(this.address, port, this);
+		const service = new c(this.connectionInfo.address, port, this);
 
 		await service.connect();
 		this.services[serviceName] = service;
@@ -295,12 +256,12 @@ export class Controller {
 		};
 	}
 
-	private async requestAllServicePorts(): Promise<void> {
+	private async requestAvailableServices(): Promise<ServicePorts> {
 		assert(this.connection);
 		return new Promise(async (resolve, reject) => {
 			setTimeout(() => {
 				reject(new Error('Failed to requestServices'));
-			}, LISTEN_TIMEOUT);
+			}, CONNECT_TIMEOUT);
 
 			// Wait for serviceRequestAllowed
 			while (true) {
@@ -324,7 +285,7 @@ export class Controller {
 					for (const [name, port] of Object.entries(this.servicePorts)) {
 						console.info(`\tport: ${port} => ${name}`);
 					}
-					resolve();
+					resolve(this.servicePorts);
 					break;
 				}
 				await sleep(250);

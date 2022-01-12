@@ -1,16 +1,17 @@
-import { strict as assert } from 'assert';
+//import { strict as assert } from 'assert';
+//import { Controller } from './Controller';
 import { sleep } from './utils/sleep';
-import { Controller } from './Controller';
 import { announce, unannounce } from './announce';
-import { FileTransfer, StateMap } from './services';
-import * as fs from 'fs';
-import minimist = require('minimist');
+
+//import minimist = require('minimist');
 import { ConnectionInfo, Listener } from './Listener';
+import { ControllerMgr } from './ControllerMgr';
 
 require('console-stamp')(console, {
 	format: ':date(HH:MM:ss) :label',
 });
 
+/*
 function makeDownloadPath(p_path: string) {
 	const path = `./localdb/${p_path}`;
 	let paths = path.split(/[/\\]/).filter((e) => e.length > 0);
@@ -24,35 +25,37 @@ function makeDownloadPath(p_path: string) {
 	fs.mkdirSync(newPath, { recursive: true });
 	return newPath + ('/' + filename);
 }
+*/
 
-async function listenerTest() {
+async function main() {
+	//const args = minimist(process.argv.slice(2));
+
+	const mgr = new ControllerMgr();
+
 	const detected = function (p_id: number, p_info: ConnectionInfo) {
 		console.info(
 			`Found '${p_info.source}' Controller with ID '${p_id}' at '${p_info.address}:${p_info.port}' with following software:`,
 			p_info.software
 		);
-	};
 
+		mgr.createController(p_id, p_info);
+	};
 	const lost = function (p_id: number) {
 		console.info(`Controller with ID '${p_id}' is lost`);
+		mgr.destroyController(p_id);
 	};
 
 	const listener = new Listener(detected, lost);
 
+	// Main, infinite loop
 	while (true) {
-		const dt = 250;
+		const dt = 250; // fixed timestep
 		await sleep(dt);
 		listener.update(dt);
-	}
-}
-
-async function main() {
-	const args = minimist(process.argv.slice(2));
-	if (args.listen) {
-		await listenerTest();
-		return;
+		mgr.update(dt);
 	}
 
+	/*
 	const controller = new Controller();
 	await controller.connect();
 
@@ -80,7 +83,8 @@ async function main() {
 		}
 	}
 
-	await controller.connectToService(StateMap);
+
+	*/
 
 	// Endless loop
 	while (true) {

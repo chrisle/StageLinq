@@ -1,5 +1,12 @@
 import { strict as assert } from 'assert';
-import { Action, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT, LOST_TIMEOUT } from './common';
+import {
+	Action,
+	DISCOVERY_MESSAGE_MARKER,
+	DISCOVERY_TIMEOUT,
+	LOST_TIMEOUT,
+	EXCLUDE_DEVICES,
+	LISTEN_PORT,
+} from './common';
 import { createSocket, Socket, RemoteInfo } from 'dgram';
 import { ReadContext } from './utils/ReadContext';
 
@@ -33,10 +40,6 @@ function readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionIn
 
 type TimeStamp = number;
 
-function getTimeStamp(): TimeStamp {
-	return Date.now();
-}
-
 type DeviceList = {
 	[key: string]: {
 		time: TimeStamp;
@@ -50,8 +53,8 @@ export class Listener {
 	private socket: Socket = null;
 	private foundDevices: DeviceList = {};
 	private currentDeviceId = 0;
-	private elapsedTime = 0;
-	private cleanupInterval = 1000; // Too specific to add to common
+	private elapsedTime: TimeStamp = 0;
+	private cleanupInterval = 1000; // In milliseconds. It's too specific to add to common
 
 	constructor(p_detected: DeviceDetectedCallback, p_lost: DeviceLostCallback) {
 		this.detected = p_detected;
@@ -62,7 +65,11 @@ export class Listener {
 			const ctx = new ReadContext(p_announcement.buffer, false);
 			const result = readConnectionInfo(ctx, p_remote.address);
 			assert(ctx.tell() === p_remote.size);
-			if (result === null || result.software.name === 'OfflineAnalyzer' || result.source === 'testing') {
+			if (
+				result === null ||
+				result.software.name === 'OfflineAnalyzer' ||
+				EXCLUDE_DEVICES.includes(result.source)
+			) {
 				return;
 			}
 
@@ -71,18 +78,18 @@ export class Listener {
 			// FIXME: find other way to generate unique key for this device
 			const key = `${JSON.stringify(result.token)}`;
 
-			const timeStamp = getTimeStamp();
 			if (this.foundDevices.hasOwnProperty(key)) {
-				this.foundDevices[key].time = timeStamp;
+				this.foundDevices[key].time = this.elapsedTime;
 			} else {
 				this.foundDevices[key] = {
-					time: timeStamp,
+					time: this.elapsedTime,
 					id: this.currentDeviceId++,
 				};
 				this.detected(this.foundDevices[key].id, result);
 			}
 		});
 
+		console.info('Listening for StageLinq devices ...');
 		this.socket.bind(LISTEN_PORT);
 	}
 
@@ -96,7 +103,7 @@ export class Listener {
 		const prevTime = this.elapsedTime;
 		this.elapsedTime += p_elapsed;
 
-		if (this.elapsedTime > LISTEN_TIMEOUT && this.currentDeviceId === 0) {
+		if (this.elapsedTime > DISCOVERY_TIMEOUT && this.currentDeviceId === 0) {
 			throw new Error('Failed to detect any controller');
 		}
 
