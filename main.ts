@@ -37,10 +37,12 @@ async function listenerTest() {
 		console.info(`Controller with ID '${p_id}' is lost`);
 	};
 
-	new Listener(detected, lost, 1000);
+	const listener = new Listener(detected, lost);
 
 	while (true) {
-		await sleep(1000);
+		const dt = 250;
+		await sleep(dt);
+		listener.update(dt);
 	}
 }
 

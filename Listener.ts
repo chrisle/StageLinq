@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { Action, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT } from './common';
+import { Action, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT, LOST_TIMEOUT } from './common';
 import { createSocket, Socket, RemoteInfo } from 'dgram';
 import { ReadContext } from './utils/ReadContext';
 
@@ -47,40 +47,17 @@ type DeviceList = {
 export class Listener {
 	private detected: DeviceDetectedCallback = null;
 	private lost: DeviceLostCallback = null;
-	private listenTimeout: number = null;
-	private listenTimer: NodeJS.Timeout = null;
-	private cleanupTimer: NodeJS.Timeout = null;
 	private socket: Socket = null;
 	private foundDevices: DeviceList = {};
+	private currentDeviceId = 0;
+	private elapsedTime = 0;
+	private cleanupInterval = 1000; // Too specific to add to common
 
-	constructor(
-		p_detected: DeviceDetectedCallback,
-		p_lost: DeviceLostCallback,
-		p_cleanupInterval: number,
-		p_listenTimeout: number = LISTEN_TIMEOUT
-	) {
+	constructor(p_detected: DeviceDetectedCallback, p_lost: DeviceLostCallback) {
 		this.detected = p_detected;
 		this.lost = p_lost;
-		this.listenTimeout = p_listenTimeout;
-
-		if (this.socket) {
-			console.error('Already listening');
-			return;
-		}
-
-		// This timer times out when there is not a single controller detected within a certain timeframe
-		this.cleanupTimer = setInterval(() => {
-			this.cleanup();
-		}, p_cleanupInterval);
-
-		// This timer times out when there is not a single controller detected within a certain timeframe
-		this.listenTimer = setTimeout(() => {
-			this.release();
-			throw new Error('Failed to detect any controller');
-		}, this.listenTimeout);
 
 		this.socket = createSocket('udp4');
-		let id = 0;
 		this.socket.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
 			const ctx = new ReadContext(p_announcement.buffer, false);
 			const result = readConnectionInfo(ctx, p_remote.address);
@@ -89,11 +66,8 @@ export class Listener {
 				return;
 			}
 
-			// We actually found a device, no need to timeout anymore
-			clearTimeout(this.listenTimer);
-			this.listenTimer = null;
+			assert(result.action === Action.Login || result.action === Action.Logout);
 
-			assert(result.action === Action.Login);
 			// FIXME: find other way to generate unique key for this device
 			const key = `${JSON.stringify(result.token)}`;
 
@@ -103,7 +77,7 @@ export class Listener {
 			} else {
 				this.foundDevices[key] = {
 					time: timeStamp,
-					id: id++,
+					id: this.currentDeviceId++,
 				};
 				this.detected(this.foundDevices[key].id, result);
 			}
@@ -116,17 +90,30 @@ export class Listener {
 		assert(this.socket);
 		this.socket.close;
 		this.socket = null;
-		clearTimeout(this.listenTimer);
-		this.listenTimer = null;
-		clearTimeout(this.cleanupTimer);
-		this.cleanupTimer = null;
+	}
+
+	public update(p_elapsed: number) {
+		const prevTime = this.elapsedTime;
+		this.elapsedTime += p_elapsed;
+
+		if (this.elapsedTime > LISTEN_TIMEOUT && this.currentDeviceId === 0) {
+			throw new Error('Failed to detect any controller');
+		}
+
+		// Check if a cleanup interval has passed
+		{
+			const cleanupsBefore = Math.floor(prevTime / this.cleanupInterval);
+			const cleanupsAfter = Math.floor(this.elapsedTime / this.cleanupInterval);
+			if (cleanupsAfter != cleanupsBefore) {
+				this.cleanup();
+			}
+		}
 	}
 
 	private cleanup() {
 		const cleaned: DeviceList = {};
-		const now = getTimeStamp();
 		for (const [key, elem] of Object.entries(this.foundDevices)) {
-			if (now - elem.time < this.listenTimeout) {
+			if (this.elapsedTime - elem.time < LOST_TIMEOUT) {
 				cleaned[key] = elem;
 			} else {
 				this.lost(elem.id);

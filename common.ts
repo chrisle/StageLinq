@@ -1,6 +1,7 @@
 export const ANNOUNCEMENT_INTERVAL = 1000; // in ms
 export const LISTEN_PORT = 51337;
-export const LISTEN_TIMEOUT = 5000; // in ms
+export const LISTEN_TIMEOUT = 10000; // timeout in milliseconds of initial listen. If no device is detected within this time, app shuts down
+export const LOST_TIMEOUT = 5000; // once a detected device hasn't sent announcements for this amount of milliseconds, it's marked as lost
 export const MESSAGE_TIMEOUT = 3000; // in ms
 export const CONNECT_TIMEOUT = 5000; // in ms
 export const DOWNLOAD_TIMEOUT = 10000; // in ms
