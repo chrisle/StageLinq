@@ -192,7 +192,7 @@ export class FileTransfer extends Service<FileTransferData> {
 			for (const source of message.sources) {
 				//try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
 				const databases = [`/${source}/Engine Library/Database2/m.db`,`/${source}/Engine Library/m.db`];
-				for (let database of databases) {
+				for (const database of databases) {
 					await this.requestStat(database);
 					const fstatMessage = await this.waitForMessage(MessageId.FileStat);
 					if (fstatMessage.size > 0) {
