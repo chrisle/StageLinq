@@ -104,7 +104,7 @@ export class Listener {
 		{
 			const cleanupsBefore = Math.floor(prevTime / this.cleanupInterval);
 			const cleanupsAfter = Math.floor(this.elapsedTime / this.cleanupInterval);
-			if (cleanupsAfter != cleanupsBefore) {
+			if (cleanupsAfter !== cleanupsBefore) {
 				this.cleanup();
 			}
 		}
