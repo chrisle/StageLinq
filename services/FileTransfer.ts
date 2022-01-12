@@ -190,21 +190,25 @@ export class FileTransfer extends Service<FileTransferData> {
 		const message = await this.waitForMessage(MessageId.SourceLocations);
 		if (message) {
 			for (const source of message.sources) {
-				const database = `/${source}/Engine Library/m.db`;
-
-				await this.requestStat(database);
-				const fstatMessage = await this.waitForMessage(MessageId.FileStat);
-				//console.log(fstatMessage);
-				result.push({
-					name: source,
-					database: {
-						location: database,
-						size: fstatMessage.size,
-					},
-				});
+				//try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
+				const databases = [`/${source}/Engine Library/Database2/m.db`,`/${source}/Engine Library/m.db`];
+				for (const database of databases) {
+					await this.requestStat(database);
+					const fstatMessage = await this.waitForMessage(MessageId.FileStat);
+					if (fstatMessage.size > 0) {
+						result.push({
+							name: source,
+							database: {
+								location: database,
+								size: fstatMessage.size,
+							},
+						});
+						break;
+					}
+				}
 			}
 		}
-
+		
 		return result;
 	}
 
