@@ -3,6 +3,7 @@ import { StageLinqValue } from '../common';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
+import type { ServiceMessage } from '../types';
 
 export const States = [
 	// Mixer

@@ -11,6 +11,7 @@ import { createSocket, Socket as UDPSocket } from 'dgram';
 import { subnet } from 'ip';
 import { networkInterfaces } from 'os';
 import { WriteContext } from './utils/WriteContext';
+import type { DiscoveryMessage } from './types';
 
 function findBroadcastIPs(): string[] {
 	const interfaces = Object.values(networkInterfaces());

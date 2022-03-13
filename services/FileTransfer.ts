@@ -4,6 +4,7 @@ import { ReadContext } from '../utils/ReadContext';
 import { sleep } from '../utils/sleep';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
+import type { ServiceMessage, Source } from '../types';
 
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
@@ -191,7 +192,7 @@ export class FileTransfer extends Service<FileTransferData> {
 		if (message) {
 			for (const source of message.sources) {
 				//try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
-				const databases = [`/${source}/Engine Library/Database2/m.db`,`/${source}/Engine Library/m.db`];
+				const databases = [`/${source}/Engine Library/Database2/m.db`, `/${source}/Engine Library/m.db`];
 				for (const database of databases) {
 					await this.requestStat(database);
 					const fstatMessage = await this.waitForMessage(MessageId.FileStat);
@@ -208,7 +209,7 @@ export class FileTransfer extends Service<FileTransferData> {
 				}
 			}
 		}
-		
+
 		return result;
 	}
 
