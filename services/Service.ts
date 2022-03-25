@@ -3,14 +3,15 @@ import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from '../common';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import * as tcp from '../utils/tcp';
-import * as EventEmitter from 'events';
+import { EventEmitter } from 'events';
 import { Controller } from '../Controller';
 //import { hex } from '../utils/hex';
+import type { ServiceMessage } from '../types';
 
 export abstract class Service<T> extends EventEmitter {
 	private address: string;
 	private port: number;
-	private name: string;
+	public readonly name: string;
 	protected controller: Controller;
 	protected connection: tcp.Connection = null;
 
@@ -86,8 +87,13 @@ export abstract class Service<T> extends EventEmitter {
 
 	disconnect() {
 		assert(this.connection);
-		this.connection.destroy();
-		this.connection = null;
+		try {
+			this.connection.destroy();
+		} catch (e) {
+			console.error('Error disconnecting', e);
+		} finally {
+			this.connection = null;
+		}
 	}
 
 	async waitForMessage(p_messageId: number): Promise<T> {

@@ -1,4 +1,4 @@
-interface DiscoveryMessage {
+export interface DiscoveryMessage {
 	token: Uint8Array;
 	source: string;
 	action: string;
@@ -9,16 +9,16 @@ interface DiscoveryMessage {
 	port: number;
 }
 
-interface ServicePorts {
+export interface ServicePorts {
 	[key: string]: number;
 }
 
-interface ServiceMessage<T> {
+export interface ServiceMessage<T> {
 	id: number;
 	message: T;
 }
 
-interface Source {
+export interface Source {
 	name: string;
 	database: {
 		location: string;
@@ -26,7 +26,7 @@ interface Source {
 	};
 }
 
-interface FileTransferInfo {
+export interface FileTransferInfo {
 	txid: number;
 	size: number;
 }

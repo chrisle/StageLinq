@@ -9,6 +9,7 @@ import * as tcp from './utils/tcp';
 import * as services from './services';
 import * as fs from 'fs';
 import Database = require('better-sqlite3');
+import { DiscoveryMessage, ServicePorts } from './types';
 
 interface ConnectionInfo extends DiscoveryMessage {
 	address: string;
@@ -62,13 +63,6 @@ async function discover(): Promise<ConnectionInfo> {
 	});
 }
 
-// FIXME: Pretty sure this can be improved upon
-interface Services {
-	StateMap: services.StateMap;
-	FileTransfer: services.FileTransfer;
-}
-type SupportedTypes = services.StateMap | services.FileTransfer;
-
 interface SourceAndTrackPath {
 	source: string;
 	trackPath: string;
@@ -81,10 +75,7 @@ export class Controller {
 	private port: number = 0;
 	private serviceRequestAllowed = false;
 	private servicePorts: ServicePorts = {};
-	private services: Services = {
-		StateMap: null,
-		FileTransfer: null,
-	};
+	private services: Record<string, InstanceType<typeof services.Service>> = {};
 	private timeAlive: number = 0;
 	private connectedSources: {
 		[key: string]: {
@@ -167,24 +158,24 @@ export class Controller {
 	}
 
 	// Factory function
-	async connectToService<T extends SupportedTypes>(c: {
+	async connectToService<T extends InstanceType<typeof services.Service>>(ctor: {
 		new (p_address: string, p_port: number, p_controller: Controller): T;
 	}): Promise<T> {
 		assert(this.connection);
 		// FIXME: find out why we need these waits before connecting to a service
 		await sleep(500);
 
-		const serviceName = c.name;
+		const serviceName = ctor.name;
 
 		if (this.services[serviceName]) {
-			return this.services[serviceName];
+			return this.services[serviceName] as T;
 		}
 
 		assert(this.servicePorts.hasOwnProperty(serviceName));
 		assert(this.servicePorts[serviceName] > 0);
 		const port = this.servicePorts[serviceName];
 
-		const service = new c(this.address, port, this);
+		const service = new ctor(this.address, port, this);
 
 		await service.connect();
 		this.services[serviceName] = service;
@@ -200,7 +191,7 @@ export class Controller {
 		// Get all album art extensions
 		const stmt = db.prepare('SELECT * FROM AlbumArt WHERE albumArt NOT NULL');
 		const result = stmt.all();
-		const albumArtExtensions = {};
+		const albumArtExtensions: Record<string, string | null> = {};
 		for (const entry of result) {
 			const filetype = await FileType.fromBuffer(entry.albumArt);
 			albumArtExtensions[entry.id] = filetype ? filetype.ext : null;

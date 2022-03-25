@@ -1,2 +1,3 @@
-export { StateMap } from './StateMap';
-export { FileTransfer } from './FileTransfer';
+export * from './FileTransfer';
+export * from './Service';
+export * from './StateMap';
