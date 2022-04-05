@@ -30,3 +30,10 @@ export interface FileTransferInfo {
 	txid: number;
 	size: number;
 }
+
+// TODO: Maybe some kind of validation?
+export type IpAddress = string;
+
+export interface ConnectionInfo extends DiscoveryMessage {
+	address: IpAddress;
+}

@@ -1,6 +1,5 @@
 import { strict as assert } from 'assert';
-import { Action, MessageId, CLIENT_TOKEN, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT, LISTEN_TIMEOUT } from './common';
-import { createSocket, RemoteInfo } from 'dgram';
+import { MessageId, CLIENT_TOKEN, LISTEN_TIMEOUT } from './common';
 import { ReadContext } from './utils/ReadContext';
 import { WriteContext } from './utils/WriteContext';
 import { sleep } from './utils/sleep';
@@ -9,59 +8,8 @@ import * as tcp from './utils/tcp';
 import * as services from './services';
 import * as fs from 'fs';
 import Database = require('better-sqlite3');
-import { DiscoveryMessage, ServicePorts } from './types';
+import { ServicePorts, ConnectionInfo } from './types';
 
-interface ConnectionInfo extends DiscoveryMessage {
-	address: string;
-}
-
-function readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {
-	const magic = p_ctx.getString(4);
-	if (magic !== DISCOVERY_MESSAGE_MARKER) {
-		return null;
-	}
-
-	const result: ConnectionInfo = {
-		token: p_ctx.read(16),
-		source: p_ctx.readNetworkStringUTF16(),
-		action: p_ctx.readNetworkStringUTF16(),
-		software: {
-			name: p_ctx.readNetworkStringUTF16(),
-			version: p_ctx.readNetworkStringUTF16(),
-		},
-		port: p_ctx.readUInt16(),
-		address: p_address,
-	};
-	assert(p_ctx.isEOF());
-	return result;
-}
-
-async function discover(): Promise<ConnectionInfo> {
-	return await new Promise((resolve, reject) => {
-		const client = createSocket('udp4');
-		client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
-			const ctx = new ReadContext(p_announcement.buffer, false);
-			const result = readConnectionInfo(ctx, p_remote.address);
-			if (result === null || result.source === 'testing' || result.software.name === 'OfflineAnalyzer') {
-				return;
-			}
-			client.close();
-			assert(ctx.tell() === p_remote.size);
-			assert(result.action === Action.Login);
-			console.info(
-				`Found '${result.source}' Controller at '${result.address}:${result.port}' with following software:`,
-				result.software
-			);
-
-			resolve(result);
-		});
-		client.bind(LISTEN_PORT);
-
-		setTimeout(() => {
-			reject(new Error('Failed to find controller'));
-		}, LISTEN_TIMEOUT);
-	});
-}
 
 interface SourceAndTrackPath {
 	source: string;
@@ -71,8 +19,6 @@ interface SourceAndTrackPath {
 export class Controller {
 	private connection: tcp.Connection = null;
 	//private source: string = null;
-	private address: string = null;
-	private port: number = 0;
 	private serviceRequestAllowed = false;
 	private servicePorts: ServicePorts = {};
 	private services: Record<string, InstanceType<typeof services.Service>> = {};
@@ -89,18 +35,29 @@ export class Controller {
 		};
 	} = {};
 
+	private connectionInfo: ConnectionInfo;
+
+	constructor(info: ConnectionInfo) {
+		this.connectionInfo = info;
+	}
+
+	private get address() {
+		return this.connectionInfo.address;
+	}
+
+	private get port() {
+		return this.connectionInfo.port;
+	}
+
 	///////////////////////////////////////////////////////////////////////////
 	// Connect / Disconnect
 
 	async connect(): Promise<void> {
-		const info = await discover();
+		const info = this.connectionInfo;
 		this.connection = await tcp.connect(info.address, info.port);
 		this.connection.socket.on('data', (p_message: Buffer) => {
 			this.messageHandler(p_message);
 		});
-		//this.source = info.source;
-		this.address = info.address;
-		this.port = info.port;
 
 		await this.requestAllServicePorts();
 	}

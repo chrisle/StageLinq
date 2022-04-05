@@ -1,8 +1,9 @@
-import { strict as assert } from 'assert';
-import { sleep } from './utils/sleep';
-import { Controller } from './Controller';
 import { announce, unannounce } from './announce';
+import { Controller } from './Controller';
+import { DenonDeviceListener } from './DenonDeviceListener';
 import { FileTransfer, StateMap } from './services';
+import { sleep } from './utils/sleep';
+import { strict as assert } from 'assert';
 import * as fs from 'fs';
 import minimist = require('minimist');
 
@@ -25,10 +26,29 @@ function makeDownloadPath(p_path: string) {
 }
 
 async function main() {
-	const args = minimist(process.argv.slice(2));
-	const controller = new Controller();
-	await controller.connect();
+	// Start announcing ourselves.
+	await announce();
 
+	// Listen for new devices on the network.
+	const listener = new DenonDeviceListener();
+
+	// When a new device is found connect to it, ask it what services it offers,
+	// and connect to a service.
+	listener.onDeviceDiscovered(async (device) => {
+		console.log(`New device discovered: "${device.source}" => ${device.address}:${device.port} ${JSON.stringify(device.software)}`);
+		const controller = new Controller(device);
+		await controller.connect();
+		await maybeDownloadFiles(controller);
+		await controller.connectToService(StateMap);
+	});
+
+	while (true) {
+		await sleep(250);
+	}
+}
+
+async function maybeDownloadFiles(controller: Controller) {
+	const args = minimist(process.argv.slice(2));
 	if (!args.disableFileTransfer) {
 		const ftx = await controller.connectToService(FileTransfer);
 		assert(ftx);
@@ -52,13 +72,6 @@ async function main() {
 			ftx.disconnect();
 		}
 	}
-
-	await controller.connectToService(StateMap);
-
-	// Endless loop
-	while (true) {
-		await sleep(250);
-	}
 }
 
 (async () => {
@@ -76,11 +89,9 @@ async function main() {
 			process.exit(returnCode);
 		});
 
-		await announce();
-
-		// FIXME: main should be called when we found a device; not after waiting some random amount of time
-		await sleep(500);
+		// Start up!
 		await main();
+
 	} catch (err) {
 		const message = err.stack.toString();
 		console.error(message);
