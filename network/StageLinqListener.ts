@@ -64,8 +64,14 @@ export class StageLinqListener {
       return true;
     }
 
+    // Ignore myself.
     if (device.source === 'nowplaying') {
       console.error('Ignoring NowPlaying');
+      return true;
+    }
+
+    if (/^SoundSwitch/gi.test(device.software.name)) {
+      console.error('Ignoring SoundSwitch');
       return true;
     }
 
@@ -73,6 +79,12 @@ export class StageLinqListener {
       console.error('Ignoring Resolume');
       return true;
     }
+
+    // If we try to connect to an X1850 mixer it dies.
+    // The mixer might be totally different than the media players.
+    // But I've have a v1.6 X1850 so I don't know if maybe it worked
+    // with older firmware. Setting it to ignore for now.
+    // Plz send PRs if you know something!
 
     if (device.software.name === 'JM08') {
       console.error('DN-X1800/DN-X1850 not yet supported');
