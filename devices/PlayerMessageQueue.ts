@@ -10,7 +10,7 @@ export type DataQueueCallback = (data: PlayerLayerState) => void;
  *
  * The Denon hardware will fire several messages in quick succession. This will
  * take them all in, then after UPDATE_RATE_MS will merge all the data
- * as a single update to the `onEmpty` callback.
+ * as a single update to the `onDataReady` callback.
  *
  * For example, when you move the fader up you get several ExternalMixerVolume
  * messages where the value goes up from 0 to 1. Instead firing off loads
