@@ -114,12 +114,12 @@ class Player extends events_1.EventEmitter {
             ...result
         };
         if (newSongLoaded) {
-            return this.emit('trackLoaded', output);
+            this.emit('trackLoaded', output);
         }
         if (result.playState) {
-            return this.emit('nowPlaying', output);
+            this.emit('nowPlaying', output);
         }
-        return this.emit('stateChanged', output);
+        this.emit('stateChanged', output);
     }
     deckNumberToLayer(deck) {
         const index = parseInt(deck.replace('Deck', '')) - 1;

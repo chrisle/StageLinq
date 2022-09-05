@@ -23,9 +23,9 @@ require('console-stamp')(console, {
   stageLinq.logger.on('log', (...args: any) => {
     console.log(...args);
   });
-  // stageLinq.logger.on('debug', (...args: any) => {
-  //   console.debug(...args);
-  // });
+  stageLinq.logger.on('debug', (...args: any) => {
+    console.debug(...args);
+  });
   // stageLinq.logger.on('silly', (...args: any) => {
   //   console.debug(...args)
   // });
@@ -38,9 +38,9 @@ require('console-stamp')(console, {
     console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
   });
 
-  stageLinq.devices.on('stateChanged', (status) => {
-    console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
-  });
+  // stageLinq.devices.on('stateChanged', (status) => {
+  //   console.log(`State changed on [${status.deck}]`, status)
+  // });
 
   let returnCode = 0;
   try {

@@ -145,14 +145,14 @@ export class Player extends EventEmitter {
     };
 
     if (newSongLoaded) {
-      return this.emit('trackLoaded', output as PlayerStatus);
+      this.emit('trackLoaded', output as PlayerStatus);
     }
 
     if (result.playState) {
-      return this.emit('nowPlaying', output as PlayerStatus);
+      this.emit('nowPlaying', output as PlayerStatus);
     }
 
-    return this.emit('stateChanged', output as PlayerStatus);
+    this.emit('stateChanged', output as PlayerStatus);
   }
 
   private deckNumberToLayer(deck: string) {
