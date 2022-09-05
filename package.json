@@ -1,13 +1,13 @@
 {
 	"name": "stagelinq",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"description": "Package to connect to Denon StageLinq",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"start": "node dist/cli/index.js",
-		"prestart": "tsc --build tsconfig.json"
+		"build": "tsc --build tsconfig.json"
 	},
-	"author": "Martijn Reuvers",
+	"author": "Chris Le",
 	"license": "GNU GPLv3",
 	"main": "index.ts",
 	"dependencies": {
