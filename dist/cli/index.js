@@ -20,9 +20,9 @@ require('console-stamp')(console, {
     stageLinq.logger.on('log', (...args) => {
         console.log(...args);
     });
-    stageLinq.logger.on('debug', (...args) => {
-        console.debug(...args);
-    });
+    // stageLinq.logger.on('debug', (...args: any) => {
+    //   console.debug(...args);
+    // });
     // stageLinq.logger.on('silly', (...args: any) => {
     //   console.debug(...args)
     // });
@@ -32,9 +32,9 @@ require('console-stamp')(console, {
     stageLinq.devices.on('nowPlaying', (status) => {
         console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
     });
-    // stageLinq.on('player', (status) => {
-    //   console.log('Player status change', status);
-    // });
+    stageLinq.devices.on('stateChanged', (status) => {
+        console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
+    });
     let returnCode = 0;
     try {
         process.on('SIGINT', async function () {

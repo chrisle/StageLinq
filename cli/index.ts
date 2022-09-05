@@ -12,20 +12,20 @@ require('console-stamp')(console, {
   const stageLinq = new StageLinq();
 
   stageLinq.logger.on('error', (...args: any) => {
-    console.error(...args)
+    console.error(...args);
   });
   stageLinq.logger.on('warn', (...args: any) => {
-    console.warn(...args)
+    console.warn(...args);
   });
   stageLinq.logger.on('info', (...args: any) => {
-    console.info(...args)
+    console.info(...args);
   });
   stageLinq.logger.on('log', (...args: any) => {
-    console.log(...args)
+    console.log(...args);
   });
-  stageLinq.logger.on('debug', (...args: any) => {
-    console.debug(...args)
-  });
+  // stageLinq.logger.on('debug', (...args: any) => {
+  //   console.debug(...args);
+  // });
   // stageLinq.logger.on('silly', (...args: any) => {
   //   console.debug(...args)
   // });
@@ -38,10 +38,9 @@ require('console-stamp')(console, {
     console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
   });
 
-
-  // stageLinq.on('player', (status) => {
-  //   console.log('Player status change', status);
-  // });
+  stageLinq.devices.on('stateChanged', (status) => {
+    console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
+  });
 
   let returnCode = 0;
   try {
