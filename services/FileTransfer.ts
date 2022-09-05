@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { DOWNLOAD_TIMEOUT } from '../common';
+import { DOWNLOAD_TIMEOUT } from '../network';
 import { ReadContext } from '../utils/ReadContext';
 import { sleep } from '../utils/sleep';
 import { WriteContext } from '../utils/WriteContext';

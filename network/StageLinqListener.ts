@@ -1,8 +1,8 @@
-import { strict as assert } from 'assert';
-import { Action, LISTEN_PORT, DISCOVERY_MESSAGE_MARKER } from './common';
+import { Action, LISTEN_PORT, DISCOVERY_MESSAGE_MARKER } from '../types/common';
+import { ConnectionInfo, IpAddress } from '../types';
 import { createSocket, RemoteInfo } from 'dgram';
-import { ReadContext } from './utils/ReadContext';
-import { ConnectionInfo, IpAddress } from './types';
+import { ReadContext } from '../utils/ReadContext';
+import { strict as assert } from 'assert';
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
@@ -10,9 +10,9 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
  * Continuously listens for devices to announce themselves. When they do,
  * execute a callback.
  */
-export class DenonDeviceListener {
+export class StageLinqListener {
 
-  devices: Map<IpAddress, ConnectionInfo> = new Map();
+  private discoveredDevices: Map<IpAddress, ConnectionInfo> = new Map();
 
   /**
    * Listen for new devices on the network and callback when a new one is found.
@@ -25,14 +25,20 @@ export class DenonDeviceListener {
       const result = this.readConnectionInfo(ctx, p_remote.address);
 
       assert(ctx.tell() === p_remote.size);
-      assert(result.action === Action.Login);
+
+      if (result.action !== Action.Login) {
+        console.log(`${result.address}:${result.port}: ${result.action}`);
+      }
+      // assert(result.action === Action.Login);
 
       if (this.isDeviceNew(result)) {
         // Keep a record of all the devices that we find on the network.
-        this.devices.set(result.address, result);
+        this.discoveredDevices.set(result.address, result);
 
         // But only callback if it's ones we want to know about.
-        if (!this.ignoreDevice(result)) callback(result);
+        if (!this.ignoreDevice(result)) {
+          callback(result);
+        }
       }
     });
     client.bind(LISTEN_PORT);
@@ -44,7 +50,7 @@ export class DenonDeviceListener {
    * @returns True if it's a new device.
    */
   private isDeviceNew(device: ConnectionInfo) {
-    return !this.devices.has(device.address);
+    return !this.discoveredDevices.has(device.address);
   }
 
   /**
@@ -53,8 +59,25 @@ export class DenonDeviceListener {
    * @returns True if we want to filter this device out from the callback.
    */
   private ignoreDevice(device: ConnectionInfo) {
-    if (device.software.name === 'OfflineAnalyzer') return true;
-    if (device.source === 'testing') return true;
+    if (device.software.name === 'OfflineAnalyzer') {
+      console.error('Ignoring offline analyser');
+      return true;
+    }
+
+    if (device.source === 'nowplaying') {
+      console.error('Ignoring NowPlaying');
+      return true;
+    }
+
+    if (/^Resolume/.test(device.software.name)) {
+      console.error('Ignoring Resolume');
+      return true;
+    }
+
+    if (device.software.name === 'JM08') {
+      console.error('DN-X1800/DN-X1850 not yet supported');
+      return true; // ignore mixer
+    }
     return false;
   }
 

@@ -1,3 +1,5 @@
+export * from './player';
+
 export interface DiscoveryMessage {
 	token: Uint8Array;
 	source: string;

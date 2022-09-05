@@ -2,7 +2,15 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../stagelinq-pcap"
+		},
+		{
+			"path": "../go-stagelinq"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"task.allowAutomaticTasks": "on"
+	}
 }

@@ -6,12 +6,12 @@ import {
 	CLIENT_TOKEN,
 	DISCOVERY_MESSAGE_MARKER,
 	ANNOUNCEMENT_INTERVAL,
-} from './common';
+} from '../types/common';
 import { createSocket, Socket as UDPSocket } from 'dgram';
 import { subnet } from 'ip';
 import { networkInterfaces } from 'os';
-import { WriteContext } from './utils/WriteContext';
-import type { DiscoveryMessage } from './types';
+import { WriteContext } from '../utils/WriteContext';
+import type { DiscoveryMessage } from '../types';
 
 function findBroadcastIPs(): string[] {
 	const interfaces = Object.values(networkInterfaces());
@@ -31,10 +31,10 @@ const announcementMessage: DiscoveryMessage = {
 	action: Action.Login,
 	port: 0,
 	software: {
-		name: "MarByteBeep's StageLinq Handler",
-		version: '0.0.1',
+		name: 'Now Playing',
+		version: '2.1.3',
 	},
-	source: 'testing',
+	source: 'nowplaying',
 	token: CLIENT_TOKEN,
 };
 
@@ -80,7 +80,7 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
 			}, CONNECT_TIMEOUT);
 
 			announceClient.send(p_message, LISTEN_PORT, p_ip, () => {
-				//console.log('UDP message sent to ' + p_ip);
+				// console.log('UDP message sent to ' + p_ip);
 				resolve();
 			});
 		});
@@ -105,6 +105,7 @@ export async function unannounce(): Promise<void> {
 
 export async function announce(): Promise<void> {
 	if (announceTimer) {
+		console.log('Already has an announce timer.')
 		return;
 	}
 
@@ -119,5 +120,5 @@ export async function announce(): Promise<void> {
 	await broadcastMessage(msg);
 
 	announceTimer = setInterval(broadcastMessage, ANNOUNCEMENT_INTERVAL, msg);
-	//console.info("Announced myself");
+	console.info("Announced myself");
 }

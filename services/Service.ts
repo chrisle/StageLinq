@@ -1,10 +1,10 @@
 import { strict as assert } from 'assert';
-import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from '../common';
+import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from '../network';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import * as tcp from '../utils/tcp';
 import { EventEmitter } from 'events';
-import { Controller } from '../Controller';
+import { NetworkDevice } from '../network/NetworkDevice';
 //import { hex } from '../utils/hex';
 import type { ServiceMessage } from '../types';
 
@@ -12,10 +12,10 @@ export abstract class Service<T> extends EventEmitter {
 	private address: string;
 	private port: number;
 	public readonly name: string;
-	protected controller: Controller;
+	protected controller: NetworkDevice;
 	protected connection: tcp.Connection = null;
 
-	constructor(p_address: string, p_port: number, p_controller: Controller) {
+	constructor(p_address: string, p_port: number, p_controller: NetworkDevice) {
 		super();
 		this.address = p_address;
 		this.port = p_port;
