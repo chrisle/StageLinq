@@ -26,6 +26,9 @@ require('console-stamp')(console, {
     // stageLinq.logger.on('silly', (...args: any) => {
     //   console.debug(...args)
     // });
+    stageLinq.devices.on('connected', (connectionInfo) => {
+        console.log(`Successfully connected to ${connectionInfo.software.name}`);
+    });
     stageLinq.devices.on('trackLoaded', (status) => {
         console.log('New track loaded:', status);
     });
