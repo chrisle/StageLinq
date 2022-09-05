@@ -4,7 +4,7 @@ import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { sleep } from '../utils';
 import { StateMap } from '../services';
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
 
@@ -42,8 +42,7 @@ export class StageLinqDevices extends EventEmitter {
    * @returns
    */
   async handleDevice(connectionInfo: ConnectionInfo) {
-    // Logger.log(this.showDiscoveryStatus(connectionInfo));
-    this.showDiscoveryStatus(connectionInfo);
+    Logger.silly(this.showDiscoveryStatus(connectionInfo));
 
     if (this.isConnected(connectionInfo)
       || this.isConnecting(connectionInfo)
@@ -59,12 +58,12 @@ export class StageLinqDevices extends EventEmitter {
 
     while (attempt < this.maxRetries) {
       try {
-        Logger.log(`Connecting to ${this.deviceId(connectionInfo)}. Attempt ${attempt}/${this.maxRetries}`);
+        Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. Attempt ${attempt}/${this.maxRetries}`);
 
         // This will fail if it doesn't connect.
         const player = await this.connectToPlayer(connectionInfo);
 
-        Logger.log(`Successfully connected to ${this.deviceId(connectionInfo)}`);
+        Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
         this.emit('connected', connectionInfo);
 
@@ -128,7 +127,7 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   private deviceId(device: ConnectionInfo) {
-    return `${device.address}:${device.port}` +
+    return `${device.address}:${device.port}:` +
       `[${device.source}/${device.software.name}]`;
   }
 
@@ -162,7 +161,7 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   private showDiscoveryStatus(device: ConnectionInfo) {
-    let msg = `>>> ${this.deviceId(device)} `;
+    let msg = `Discovery: ${this.deviceId(device)} `;
 
     if (!this.isDeviceSeen) return msg += '(NEW)';
     if (this.isIgnored(device)) return msg += '(IGNORED)';

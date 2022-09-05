@@ -1,7 +1,7 @@
 import { Socket as TCPSocket } from 'net';
 import { PromiseSocket } from 'promise-socket';
 import { CONNECT_TIMEOUT } from '../network';
-import { Logger } from './Logger';
+import { Logger } from '../LogEmitter';
 
 export type Connection = PromiseSocket<TCPSocket>;
 

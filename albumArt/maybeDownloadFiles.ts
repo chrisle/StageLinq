@@ -4,7 +4,7 @@ import { makeDownloadPath } from "./makeDownloadPath";
 import { strict as assert } from 'assert';
 import * as fs from 'fs';
 import minimist = require('minimist');
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 export async function maybeDownloadFiles(controller: NetworkDevice) {
 	const args = minimist(process.argv.slice(2));

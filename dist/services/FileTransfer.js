@@ -6,7 +6,7 @@ const network_1 = require("../network");
 const sleep_1 = require("../utils/sleep");
 const WriteContext_1 = require("../utils/WriteContext");
 const Service_1 = require("./Service");
-const Logger_1 = require("../utils/Logger");
+const LogEmitter_1 = require("../LogEmitter");
 const MAGIC_MARKER = 'fltx';
 exports.CHUNK_SIZE = 4096;
 var MessageId;
@@ -154,7 +154,7 @@ class FileTransfer extends Service_1.Service {
                 });
             }
             catch (err) {
-                Logger_1.Logger.error(err.message);
+                LogEmitter_1.Logger.error(err.message);
                 this.receivedFile = null;
             }
             await this.signalTransferComplete();

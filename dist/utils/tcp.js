@@ -4,7 +4,7 @@ exports.connect = void 0;
 const net_1 = require("net");
 const promise_socket_1 = require("promise-socket");
 const network_1 = require("../network");
-const Logger_1 = require("./Logger");
+const LogEmitter_1 = require("../LogEmitter");
 async function connect(p_ip, p_port) {
     const socket = new net_1.Socket();
     socket.setTimeout(network_1.CONNECT_TIMEOUT);
@@ -12,7 +12,7 @@ async function connect(p_ip, p_port) {
     await promiseSocket.connect(p_port, p_ip).catch((e) => {
         throw new Error(`Failed to connect to '${p_ip}:${p_port}': ${e}`);
     });
-    Logger_1.Logger.debug(`TCP connection to '${p_ip}:${p_port}' local port: ${promiseSocket.socket.localPort}`);
+    LogEmitter_1.Logger.debug(`TCP connection to '${p_ip}:${p_port}' local port: ${promiseSocket.socket.localPort}`);
     return promiseSocket;
 }
 exports.connect = connect;

@@ -2,7 +2,7 @@ import { announce, StageLinqListener, unannounce } from '../network';
 import { PlayerStatus } from '../types';
 import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 export declare interface StageLinq {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
@@ -26,23 +26,19 @@ export declare interface StageLinq {
  */
 export class StageLinq extends EventEmitter {
 
+  devices: StageLinqDevices = new StageLinqDevices();
+  logger: Logger = Logger.instance;
+
   private listener: StageLinqListener = new StageLinqListener();
-  private devices: StageLinqDevices = new StageLinqDevices();
 
   /**
    * Connect to the StageLinq network.
    */
   async connect() {
     await announce();
-
     this.listener.listenForDevices(async (connectionInfo) => {
       await this.devices.handleDevice(connectionInfo);
     });
-
-    this.devices.on('trackLoaded', (state) => {
-      Logger.log(`New track loaded on ${state.deck}: ${JSON.stringify(state)}`);
-    });
-
   }
 
   /**

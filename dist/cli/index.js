@@ -2,18 +2,35 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const sleep_1 = require("../utils/sleep");
 const StageLinq_1 = require("../StageLinq");
+require('console-stamp')(console, {
+    format: ':date(HH:MM:ss) :label',
+});
 (async () => {
     console.log('Starting CLI');
     const stageLinq = new StageLinq_1.StageLinq();
-    stageLinq.on('trackLoaded', (status) => {
+    stageLinq.logger.on('error', (...args) => {
+        console.error(...args);
+    });
+    stageLinq.logger.on('warn', (...args) => {
+        console.warn(...args);
+    });
+    stageLinq.logger.on('info', (...args) => {
+        console.info(...args);
+    });
+    stageLinq.logger.on('log', (...args) => {
+        console.log(...args);
+    });
+    stageLinq.logger.on('debug', (...args) => {
+        console.debug(...args);
+    });
+    // stageLinq.logger.on('silly', (...args: any) => {
+    //   console.debug(...args)
+    // });
+    stageLinq.devices.on('trackLoaded', (status) => {
         console.log('New track loaded:', status);
     });
-    stageLinq.on('nowPlaying', (status) => {
+    stageLinq.devices.on('nowPlaying', (status) => {
         console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
-    });
-    stageLinq.on('connected', () => {
-        console.log(`******** CONNECTED TO MORE THAN TWO **********`);
-        ;
     });
     // stageLinq.on('player', (status) => {
     //   console.log('Player status change', status);

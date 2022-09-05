@@ -12,7 +12,7 @@ import { subnet } from 'ip';
 import { networkInterfaces } from 'os';
 import { WriteContext } from '../utils/WriteContext';
 import type { DiscoveryMessage } from '../types';
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 function findBroadcastIPs(): string[] {
 	const interfaces = Object.values(networkInterfaces());

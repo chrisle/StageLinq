@@ -7,7 +7,7 @@ const dgram_1 = require("dgram");
 const ip_1 = require("ip");
 const os_1 = require("os");
 const WriteContext_1 = require("../utils/WriteContext");
-const Logger_1 = require("../utils/Logger");
+const LogEmitter_1 = require("../LogEmitter");
 function findBroadcastIPs() {
     const interfaces = Object.values((0, os_1.networkInterfaces)());
     const ips = [];
@@ -55,7 +55,7 @@ async function initUdpSocket() {
             });
         }
         catch (err) {
-            Logger_1.Logger.error(`Failed to create UDP socket for announcing: ${err}`);
+            LogEmitter_1.Logger.error(`Failed to create UDP socket for announcing: ${err}`);
             reject(err);
         }
     });
@@ -91,7 +91,7 @@ async function unannounce() {
 exports.unannounce = unannounce;
 async function announce() {
     if (announceTimer) {
-        Logger_1.Logger.log('Already has an announce timer.');
+        LogEmitter_1.Logger.log('Already has an announce timer.');
         return;
     }
     if (!announceClient)
@@ -103,7 +103,7 @@ async function announce() {
     // Immediately announce myself
     await broadcastMessage(msg);
     announceTimer = setInterval(broadcastMessage, common_1.ANNOUNCEMENT_INTERVAL, msg);
-    Logger_1.Logger.info("Announced myself");
+    LogEmitter_1.Logger.info("Announced myself");
 }
 exports.announce = announce;
 //# sourceMappingURL=announce.js.map

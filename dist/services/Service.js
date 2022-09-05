@@ -7,7 +7,7 @@ const ReadContext_1 = require("../utils/ReadContext");
 const WriteContext_1 = require("../utils/WriteContext");
 const tcp = require("../utils/tcp");
 const events_1 = require("events");
-const Logger_1 = require("../utils/Logger");
+const LogEmitter_1 = require("../LogEmitter");
 class Service extends events_1.EventEmitter {
     constructor(p_address, p_port, p_controller) {
         super();
@@ -60,7 +60,7 @@ class Service extends events_1.EventEmitter {
             }
             catch (err) {
                 // FIXME: Rethrow based on the severity?
-                Logger_1.Logger.error(err);
+                LogEmitter_1.Logger.error(err);
             }
         });
         // FIXME: Is this required for all Services?
@@ -71,7 +71,7 @@ class Service extends events_1.EventEmitter {
         ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
         await this.write(ctx);
         await this.init();
-        Logger_1.Logger.info(`Connected to service '${this.name}' at port ${this.port}`);
+        LogEmitter_1.Logger.debug(`Connected to service '${this.name}' at port ${this.port}`);
     }
     disconnect() {
         (0, assert_1.strict)(this.connection);
@@ -79,7 +79,7 @@ class Service extends events_1.EventEmitter {
             this.connection.destroy();
         }
         catch (e) {
-            Logger_1.Logger.error('Error disconnecting', e);
+            LogEmitter_1.Logger.error('Error disconnecting', e);
         }
         finally {
             this.connection = null;

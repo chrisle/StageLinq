@@ -4,7 +4,7 @@ exports.StageLinq = void 0;
 const network_1 = require("../network");
 const events_1 = require("events");
 const StageLinqDevices_1 = require("../network/StageLinqDevices");
-const Logger_1 = require("../utils/Logger");
+const LogEmitter_1 = require("../LogEmitter");
 /**
  * Main StageLinq class.
  *
@@ -21,8 +21,9 @@ const Logger_1 = require("../utils/Logger");
 class StageLinq extends events_1.EventEmitter {
     constructor() {
         super(...arguments);
-        this.listener = new network_1.StageLinqListener();
         this.devices = new StageLinqDevices_1.StageLinqDevices();
+        this.logger = LogEmitter_1.Logger.instance;
+        this.listener = new network_1.StageLinqListener();
     }
     /**
      * Connect to the StageLinq network.
@@ -31,9 +32,6 @@ class StageLinq extends events_1.EventEmitter {
         await (0, network_1.announce)();
         this.listener.listenForDevices(async (connectionInfo) => {
             await this.devices.handleDevice(connectionInfo);
-        });
-        this.devices.on('trackLoaded', (state) => {
-            Logger_1.Logger.log(`New track loaded on ${state.deck}: ${JSON.stringify(state)}`);
         });
     }
     /**

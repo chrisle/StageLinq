@@ -6,7 +6,7 @@ const _1 = require(".");
 const Player_1 = require("../devices/Player");
 const utils_1 = require("../utils");
 const services_1 = require("../services");
-const Logger_1 = require("../utils/Logger");
+const LogEmitter_1 = require("../LogEmitter");
 var ConnectionStatus;
 (function (ConnectionStatus) {
     ConnectionStatus[ConnectionStatus["CONNECTING"] = 0] = "CONNECTING";
@@ -33,8 +33,7 @@ class StageLinqDevices extends events_1.EventEmitter {
      * @returns
      */
     async handleDevice(connectionInfo) {
-        // Logger.log(this.showDiscoveryStatus(connectionInfo));
-        this.showDiscoveryStatus(connectionInfo);
+        LogEmitter_1.Logger.silly(this.showDiscoveryStatus(connectionInfo));
         if (this.isConnected(connectionInfo)
             || this.isConnecting(connectionInfo)
             || this.isIgnored(connectionInfo))
@@ -46,10 +45,10 @@ class StageLinqDevices extends events_1.EventEmitter {
         let attempt = 1;
         while (attempt < this.maxRetries) {
             try {
-                Logger_1.Logger.log(`Connecting to ${this.deviceId(connectionInfo)}. Attempt ${attempt}/${this.maxRetries}`);
+                LogEmitter_1.Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. Attempt ${attempt}/${this.maxRetries}`);
                 // This will fail if it doesn't connect.
                 const player = await this.connectToPlayer(connectionInfo);
-                Logger_1.Logger.log(`Successfully connected to ${this.deviceId(connectionInfo)}`);
+                LogEmitter_1.Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
                 this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
                 this.emit('connected', connectionInfo);
                 player.on('trackLoaded', (status) => {
@@ -64,7 +63,7 @@ class StageLinqDevices extends events_1.EventEmitter {
                 return;
             }
             catch (e) {
-                Logger_1.Logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
+                LogEmitter_1.Logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
                     `(${attempt}/${this.maxRetries}): ${e}`);
                 attempt += 1;
                 (0, utils_1.sleep)(500);
@@ -107,7 +106,7 @@ class StageLinqDevices extends events_1.EventEmitter {
         throw new Error(`Could not connect to ${device.address}:${device.port}`);
     }
     deviceId(device) {
-        return `${device.address}:${device.port}` +
+        return `${device.address}:${device.port}:` +
             `[${device.source}/${device.software.name}]`;
     }
     isConnecting(device) {
@@ -134,7 +133,7 @@ class StageLinqDevices extends events_1.EventEmitter {
         return this.discoveryStatus.has(device.address);
     }
     showDiscoveryStatus(device) {
-        let msg = `>>> ${this.deviceId(device)} `;
+        let msg = `Discovery: ${this.deviceId(device)} `;
         if (!this.isDeviceSeen)
             return msg += '(NEW)';
         if (this.isIgnored(device))

@@ -4,7 +4,7 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import type { ServiceMessage } from '../types';
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 export const States = [
   // Mixer

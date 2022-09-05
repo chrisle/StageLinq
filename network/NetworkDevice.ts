@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
 import Database = require('better-sqlite3');
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 
 interface SourceAndTrackPath {
@@ -272,9 +272,9 @@ export class NetworkDevice {
       while (true) {
         // FIXME: How to determine when all services have been announced?
         if (Object.keys(this.servicePorts).length > 3) {
-          Logger.info(`Discovered the following services on ${this.address}:${this.port}`);
+          Logger.debug(`Discovered the following services on ${this.address}:${this.port}`);
           for (const [name, port] of Object.entries(this.servicePorts)) {
-            Logger.info(`\tport: ${port} => ${name}`);
+            Logger.debug(`\tport: ${port} => ${name}`);
           }
           resolve();
           break;

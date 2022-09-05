@@ -5,7 +5,7 @@ import { sleep } from '../utils/sleep';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import type { ServiceMessage, Source } from '../types';
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;

@@ -7,7 +7,7 @@ import { EventEmitter } from 'events';
 import { NetworkDevice } from '../network/NetworkDevice';
 //import { hex } from '../utils/hex';
 import type { ServiceMessage } from '../types';
-import { Logger } from '../utils/Logger';
+import { Logger } from '../LogEmitter';
 
 export abstract class Service<T> extends EventEmitter {
 	private address: string;
@@ -83,7 +83,7 @@ export abstract class Service<T> extends EventEmitter {
 
 		await this.init();
 
-		Logger.info(`Connected to service '${this.name}' at port ${this.port}`);
+		Logger.debug(`Connected to service '${this.name}' at port ${this.port}`);
 	}
 
 	disconnect() {
