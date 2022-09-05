@@ -26,7 +26,7 @@ async function main() {
   });
 
   // Fires when a track has started to play.
-  stageLinq.on('nowPlaying', (status) => {
+  stageLinq.on('stateChanged', (status) => {
     console.log(`Now Playing: "${status.title}" by ${status.artist}`);
   });
 

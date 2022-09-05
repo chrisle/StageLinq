@@ -1,9 +1,9 @@
 import { announce, StageLinqListener, NetworkDevice, unannounce } from '../network';
 import { ConnectionInfo, IpAddress, PlayerStatus } from '../types';
-import { Player } from '../devices/Player';
-import { StateMap } from '../services';
 import { EventEmitter } from 'events';
+import { Player } from '../devices/Player';
 import { sleep } from '../utils';
+import { StateMap } from '../services';
 
 interface StageLinqConnectionOptions {
   maxRetries?: number;
@@ -19,6 +19,19 @@ export declare interface StageLinq {
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
 }
 
+/**
+ * Main StageLinq class.
+ *
+ * Example:
+ *
+ * import { StageLinq } from 'StageLinq';
+ * const stageLinq = new StageLinq();
+ * stageLinq.on('trackLoaded', (status) => { console.log(status); });
+ * stageLinq.on('stateChanged', (status) => { console.log(status); });
+ * stageLinq.on('stateChanged', (status) => {
+ *   console.log(`Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
+ * });
+ */
 export class StageLinq extends EventEmitter {
 
   devices: Map<IpAddress, StageLinqDevice> = new Map();
