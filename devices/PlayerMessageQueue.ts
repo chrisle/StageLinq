@@ -1,13 +1,14 @@
 import { PlayerLayerState } from '../types';
 
+// How long to wait for all the messages to come in before firing the callback.
 export const UPDATE_RATE_MS = 2000;
 
 export type DataQueueCallback = (data: PlayerLayerState) => void;
 
 /**
- * Data Queue
+ * Collect all the messages from a player together and return it as one object.
  *
- * The Denon hardware will several messages in quick succession. This will
+ * The Denon hardware will fire several messages in quick succession. This will
  * take them all in, then after UPDATE_RATE_MS will merge all the data
  * as a single update to the `onEmpty` callback.
  *
