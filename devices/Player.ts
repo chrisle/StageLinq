@@ -17,20 +17,36 @@ interface PlayerOptions {
   port: number;
 }
 
-
+/**
+ * A player represents a device on the StageLinq network.
+ *
+ * A player on the network may have up to 4 decks (or "layers" as they're
+ * called on the harware). A player may also be given a player number.
+ *
+ * If you're using a Denon Prime Go/2/4 then you should only get one number.
+ * If you're using a Denon SC5000/SC6000 then you assign the numbers in the
+ * Denon's settings screen.
+ *
+ * Master tempo and master status only apply if you are using SC5000/SC6000
+ * and if they're both on the network.
+ *
+ * A queue is used to group all the incoming messages from StageLinq to give us
+ * a single updated PlayerStatus object.
+ */
 export class Player extends EventEmitter {
 
-  player: number;
-  address: string;
-  port: number;
-  masterTempo: number;
-  masterStatus: boolean;
+  player: number;           // Player number as reported by the device.
+  address: string;          // IP address
+  port: number;             // Port
+  masterTempo: number;      // Current master tempo BPM
+  masterStatus: boolean;    // If this device has the matser tempo
 
   private decks: Map<string, PlayerLayerState> = new Map();
   private queue: {[layer: string]: PlayerMessageQueue} = {};
 
   /**
    * Initialize a player device.
+   *
    * @param networkDevice Network device
    * @param stateMap Statemap service
    */
