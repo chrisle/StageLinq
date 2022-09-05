@@ -137,7 +137,7 @@ export class StateMap extends Service<StateData> {
   }
 
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
-    Logger.log(
+    Logger.debug(
       `${p_data.message.name} => ${
         p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
       }`

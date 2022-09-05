@@ -12,7 +12,7 @@ async function connect(p_ip, p_port) {
     await promiseSocket.connect(p_port, p_ip).catch((e) => {
         throw new Error(`Failed to connect to '${p_ip}:${p_port}': ${e}`);
     });
-    Logger_1.Logger.log(`TCP connection to '${p_ip}:${p_port}' local port: ${promiseSocket.socket.localPort}`);
+    Logger_1.Logger.debug(`TCP connection to '${p_ip}:${p_port}' local port: ${promiseSocket.socket.localPort}`);
     return promiseSocket;
 }
 exports.connect = connect;

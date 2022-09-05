@@ -40,7 +40,7 @@ export class StageLinq extends EventEmitter {
     });
 
     this.devices.on('trackLoaded', (state) => {
-      Logger.log(state);
+      Logger.log(`New track loaded on ${state.deck}: ${JSON.stringify(state)}`);
     });
 
   }

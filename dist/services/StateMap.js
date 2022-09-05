@@ -114,7 +114,7 @@ class StateMap extends Service_1.Service {
         return null;
     }
     messageHandler(p_data) {
-        Logger_1.Logger.log(`${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval}`);
+        Logger_1.Logger.debug(`${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval}`);
     }
     async subscribeState(p_state, p_interval) {
         // Logger.log(`Subscribe to state '${p_state}'`);
