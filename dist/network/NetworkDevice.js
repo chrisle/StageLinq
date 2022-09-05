@@ -10,6 +10,7 @@ const FileType = require("file-type");
 const fs = require("fs");
 const tcp = require("../utils/tcp");
 const Database = require("better-sqlite3");
+const Logger_1 = require("../utils/Logger");
 class NetworkDevice {
     constructor(info) {
         this.connection = null;
@@ -31,7 +32,7 @@ class NetworkDevice {
     // Connect / Disconnect
     async connect() {
         const info = this.connectionInfo;
-        console.debug(`Attempting to connect to ${info.address}:${info.port}`);
+        Logger_1.Logger.debug(`Attempting to connect to ${info.address}:${info.port}`);
         this.connection = await tcp.connect(info.address, info.port);
         this.connection.socket.on('data', (p_message) => {
             this.messageHandler(p_message);
@@ -138,7 +139,7 @@ class NetworkDevice {
             const filepath = `${path}/${entry.id}${ext}`;
             fs.writeFileSync(filepath, entry.albumArt);
         }
-        console.info(`dumped ${result.length} albums arts in '${path}'`);
+        Logger_1.Logger.info(`dumped ${result.length} albums arts in '${path}'`);
     }
     // Database helpers
     querySource(p_sourceName, p_query, ...p_params) {
@@ -214,9 +215,9 @@ class NetworkDevice {
             while (true) {
                 // FIXME: How to determine when all services have been announced?
                 if (Object.keys(this.servicePorts).length > 3) {
-                    console.info(`Discovered the following services on ${this.address}:${this.port}`);
+                    Logger_1.Logger.info(`Discovered the following services on ${this.address}:${this.port}`);
                     for (const [name, port] of Object.entries(this.servicePorts)) {
-                        console.info(`\tport: ${port} => ${name}`);
+                        Logger_1.Logger.info(`\tport: ${port} => ${name}`);
                     }
                     resolve();
                     break;

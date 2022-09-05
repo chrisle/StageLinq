@@ -7,6 +7,7 @@ const ReadContext_1 = require("../utils/ReadContext");
 const WriteContext_1 = require("../utils/WriteContext");
 const tcp = require("../utils/tcp");
 const events_1 = require("events");
+const Logger_1 = require("../utils/Logger");
 class Service extends events_1.EventEmitter {
     constructor(p_address, p_port, p_controller) {
         super();
@@ -43,7 +44,7 @@ class Service extends events_1.EventEmitter {
                         const message = ctx.read(length);
                         // Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
                         const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-                        //console.info("RECV", length);
+                        // Logger.info("RECV", length);
                         //hex(message);
                         const parsedData = this.parseData(new ReadContext_1.ReadContext(data, false));
                         // Forward parsed data to message handler
@@ -59,7 +60,7 @@ class Service extends events_1.EventEmitter {
             }
             catch (err) {
                 // FIXME: Rethrow based on the severity?
-                console.error(err);
+                Logger_1.Logger.error(err);
             }
         });
         // FIXME: Is this required for all Services?
@@ -70,7 +71,7 @@ class Service extends events_1.EventEmitter {
         ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
         await this.write(ctx);
         await this.init();
-        console.info(`Connected to service '${this.name}' at port ${this.port}`);
+        Logger_1.Logger.info(`Connected to service '${this.name}' at port ${this.port}`);
     }
     disconnect() {
         (0, assert_1.strict)(this.connection);
@@ -78,7 +79,7 @@ class Service extends events_1.EventEmitter {
             this.connection.destroy();
         }
         catch (e) {
-            console.error('Error disconnecting', e);
+            Logger_1.Logger.error('Error disconnecting', e);
         }
         finally {
             this.connection = null;
@@ -102,7 +103,7 @@ class Service extends events_1.EventEmitter {
         (0, assert_1.strict)(p_ctx.isLittleEndian() === false);
         (0, assert_1.strict)(this.connection);
         const buf = p_ctx.getBuffer();
-        //console.info("SEND");
+        // Logger.info("SEND");
         //hex(buf);
         const written = await this.connection.write(buf);
         (0, assert_1.strict)(written === buf.byteLength);

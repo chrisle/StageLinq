@@ -6,6 +6,7 @@ const makeDownloadPath_1 = require("./makeDownloadPath");
 const assert_1 = require("assert");
 const fs = require("fs");
 const minimist = require("minimist");
+const Logger_1 = require("../utils/Logger");
 async function maybeDownloadFiles(controller) {
     const args = minimist(process.argv.slice(2));
     if (!args.disableFileTransfer) {
@@ -20,7 +21,7 @@ async function maybeDownloadFiles(controller) {
                 if (sync) {
                     const file = await ftx.getFile(source.database.location);
                     fs.writeFileSync(dbPath, file);
-                    console.info(`downloaded: '${source.database.location}' and stored in '${dbPath}'`);
+                    Logger_1.Logger.info(`downloaded: '${source.database.location}' and stored in '${dbPath}'`);
                 }
                 await controller.addSource(source.name, dbPath, (0, makeDownloadPath_1.makeDownloadPath)(`${source.name}/Album Art/`));
                 if (sync) {

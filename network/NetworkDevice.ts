@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
 import Database = require('better-sqlite3');
+import { Logger } from '../utils/Logger';
 
 
 interface SourceAndTrackPath {
@@ -54,7 +55,7 @@ export class NetworkDevice {
 
   async connect(): Promise<void> {
     const info = this.connectionInfo;
-    console.debug(`Attempting to connect to ${info.address}:${info.port}`)
+    Logger.debug(`Attempting to connect to ${info.address}:${info.port}`)
     this.connection = await tcp.connect(info.address, info.port);
     this.connection.socket.on('data', (p_message: Buffer) => {
       this.messageHandler(p_message);
@@ -180,7 +181,7 @@ export class NetworkDevice {
       const filepath = `${path}/${entry.id}${ext}`;
       fs.writeFileSync(filepath, entry.albumArt);
     }
-    console.info(`dumped ${result.length} albums arts in '${path}'`);
+    Logger.info(`dumped ${result.length} albums arts in '${path}'`);
   }
 
   // Database helpers
@@ -271,9 +272,9 @@ export class NetworkDevice {
       while (true) {
         // FIXME: How to determine when all services have been announced?
         if (Object.keys(this.servicePorts).length > 3) {
-          console.info(`Discovered the following services on ${this.address}:${this.port}`);
+          Logger.info(`Discovered the following services on ${this.address}:${this.port}`);
           for (const [name, port] of Object.entries(this.servicePorts)) {
-            console.info(`\tport: ${port} => ${name}`);
+            Logger.info(`\tport: ${port} => ${name}`);
           }
           resolve();
           break;

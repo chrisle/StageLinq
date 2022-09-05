@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StageLinqValue = exports.MessageId = exports.Action = exports.CLIENT_TOKEN = exports.DISCOVERY_MESSAGE_MARKER = exports.DOWNLOAD_TIMEOUT = exports.CONNECT_TIMEOUT = exports.MESSAGE_TIMEOUT = exports.LISTEN_TIMEOUT = exports.LISTEN_PORT = exports.ANNOUNCEMENT_INTERVAL = void 0;
-exports.ANNOUNCEMENT_INTERVAL = 3000; // in ms
+exports.ANNOUNCEMENT_INTERVAL = 1000; // in ms
 exports.LISTEN_PORT = 51337;
-exports.LISTEN_TIMEOUT = 10000; // in ms
+exports.LISTEN_TIMEOUT = 5000; // in ms
 exports.MESSAGE_TIMEOUT = 3000; // in ms
 exports.CONNECT_TIMEOUT = 5000; // in ms
 exports.DOWNLOAD_TIMEOUT = 10000; // in ms

@@ -12,6 +12,7 @@ import { subnet } from 'ip';
 import { networkInterfaces } from 'os';
 import { WriteContext } from '../utils/WriteContext';
 import type { DiscoveryMessage } from '../types';
+import { Logger } from '../utils/Logger';
 
 function findBroadcastIPs(): string[] {
 	const interfaces = Object.values(networkInterfaces());
@@ -63,7 +64,7 @@ async function initUdpSocket(): Promise<UDPSocket> {
 				resolve(client);
 			});
 		} catch (err) {
-			console.error(`Failed to create UDP socket for announcing: ${err}`);
+			Logger.error(`Failed to create UDP socket for announcing: ${err}`);
 			reject(err);
 		}
 	});
@@ -80,7 +81,7 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
 			}, CONNECT_TIMEOUT);
 
 			announceClient.send(p_message, LISTEN_PORT, p_ip, () => {
-				// console.log('UDP message sent to ' + p_ip);
+				// Logger.log('UDP message sent to ' + p_ip);
 				resolve();
 			});
 		});
@@ -100,12 +101,12 @@ export async function unannounce(): Promise<void> {
 	writeDiscoveryMessage(ctx, announcementMessage);
 	const msg = new Uint8Array(ctx.getBuffer());
 	await broadcastMessage(msg);
-	//console.info("Unannounced myself");
+	// Logger.info("Unannounced myself");
 }
 
 export async function announce(): Promise<void> {
 	if (announceTimer) {
-		console.log('Already has an announce timer.')
+		Logger.log('Already has an announce timer.')
 		return;
 	}
 
@@ -120,5 +121,5 @@ export async function announce(): Promise<void> {
 	await broadcastMessage(msg);
 
 	announceTimer = setInterval(broadcastMessage, ANNOUNCEMENT_INTERVAL, msg);
-	console.info("Announced myself");
+	Logger.info("Announced myself");
 }

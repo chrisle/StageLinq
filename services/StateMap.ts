@@ -4,6 +4,7 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import type { ServiceMessage } from '../types';
+import { Logger } from '../utils/Logger';
 
 export const States = [
   // Mixer
@@ -136,7 +137,7 @@ export class StateMap extends Service<StateData> {
   }
 
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
-    console.log(
+    Logger.log(
       `${p_data.message.name} => ${
         p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
       }`
@@ -144,7 +145,7 @@ export class StateMap extends Service<StateData> {
   }
 
   private async subscribeState(p_state: string, p_interval: number) {
-    //console.log(`Subscribe to state '${p_state}'`);
+    // Logger.log(`Subscribe to state '${p_state}'`);
     const getMessage = function (): Buffer {
       const ctx = new WriteContext();
       ctx.writeFixedSizedString(MAGIC_MARKER);

@@ -6,6 +6,7 @@ const network_1 = require("../network");
 const sleep_1 = require("../utils/sleep");
 const WriteContext_1 = require("../utils/WriteContext");
 const Service_1 = require("./Service");
+const Logger_1 = require("../utils/Logger");
 const MAGIC_MARKER = 'fltx';
 exports.CHUNK_SIZE = 4096;
 var MessageId;
@@ -130,7 +131,7 @@ class FileTransfer extends Service_1.Service {
             this.receivedFile.write(p_data.message.data);
         }
         else {
-            //console.log(p_data);
+            // Logger.log(p_data);
         }
     }
     async getFile(p_location) {
@@ -153,7 +154,7 @@ class FileTransfer extends Service_1.Service {
                 });
             }
             catch (err) {
-                console.error(err.message);
+                Logger_1.Logger.error(err.message);
                 this.receivedFile = null;
             }
             await this.signalTransferComplete();

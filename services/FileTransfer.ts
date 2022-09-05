@@ -5,6 +5,7 @@ import { sleep } from '../utils/sleep';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import type { ServiceMessage, Source } from '../types';
+import { Logger } from '../utils/Logger';
 
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
@@ -143,7 +144,7 @@ export class FileTransfer extends Service<FileTransferData> {
 			assert(this.receivedFile.sizeLeft() >= p_data.message.size);
 			this.receivedFile.write(p_data.message.data);
 		} else {
-			//console.log(p_data);
+			// Logger.log(p_data);
 		}
 	}
 
@@ -172,7 +173,7 @@ export class FileTransfer extends Service<FileTransferData> {
 					resolve(true);
 				});
 			} catch (err) {
-				console.error(err.message);
+				Logger.error(err.message);
 				this.receivedFile = null;
 			}
 

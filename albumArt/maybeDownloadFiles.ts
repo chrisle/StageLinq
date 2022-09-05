@@ -4,6 +4,7 @@ import { makeDownloadPath } from "./makeDownloadPath";
 import { strict as assert } from 'assert';
 import * as fs from 'fs';
 import minimist = require('minimist');
+import { Logger } from '../utils/Logger';
 
 export async function maybeDownloadFiles(controller: NetworkDevice) {
 	const args = minimist(process.argv.slice(2));
@@ -19,7 +20,7 @@ export async function maybeDownloadFiles(controller: NetworkDevice) {
 				if (sync) {
 					const file = await ftx.getFile(source.database.location);
 					fs.writeFileSync(dbPath, file);
-					console.info(`downloaded: '${source.database.location}' and stored in '${dbPath}'`);
+					Logger.info(`downloaded: '${source.database.location}' and stored in '${dbPath}'`);
 				}
 				await controller.addSource(source.name, dbPath, makeDownloadPath(`${source.name}/Album Art/`));
 

@@ -7,6 +7,7 @@ import { EventEmitter } from 'events';
 import { NetworkDevice } from '../network/NetworkDevice';
 //import { hex } from '../utils/hex';
 import type { ServiceMessage } from '../types';
+import { Logger } from '../utils/Logger';
 
 export abstract class Service<T> extends EventEmitter {
 	private address: string;
@@ -53,7 +54,7 @@ export abstract class Service<T> extends EventEmitter {
 						const message = ctx.read(length);
 						// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 						const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-						//console.info("RECV", length);
+						// Logger.info("RECV", length);
 						//hex(message);
 						const parsedData = this.parseData(new ReadContext(data, false));
 
@@ -68,7 +69,7 @@ export abstract class Service<T> extends EventEmitter {
 				}
 			} catch (err) {
 				// FIXME: Rethrow based on the severity?
-				console.error(err);
+				Logger.error(err);
 			}
 		});
 
@@ -82,7 +83,7 @@ export abstract class Service<T> extends EventEmitter {
 
 		await this.init();
 
-		console.info(`Connected to service '${this.name}' at port ${this.port}`);
+		Logger.info(`Connected to service '${this.name}' at port ${this.port}`);
 	}
 
 	disconnect() {
@@ -90,7 +91,7 @@ export abstract class Service<T> extends EventEmitter {
 		try {
 			this.connection.destroy();
 		} catch (e) {
-			console.error('Error disconnecting', e);
+			Logger.error('Error disconnecting', e);
 		} finally {
 			this.connection = null;
 		}
@@ -115,7 +116,7 @@ export abstract class Service<T> extends EventEmitter {
 		assert(p_ctx.isLittleEndian() === false);
 		assert(this.connection);
 		const buf = p_ctx.getBuffer();
-		//console.info("SEND");
+		// Logger.info("SEND");
 		//hex(buf);
 		const written = await this.connection.write(buf);
 		assert(written === buf.byteLength);

@@ -33,7 +33,6 @@ export class PlayerMessageQueue {
    */
   push(data: PlayerLayerState) {
     this.data.push(data);
-    // console.log('PUSH', data);
     if (!this.timeout) {
       this.timeout = setTimeout(this.emptyCue.bind(this), UPDATE_RATE_MS);
     }

@@ -2,32 +2,34 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const sleep_1 = require("../utils/sleep");
 const StageLinq_1 = require("../StageLinq");
-require('console-stamp')(console, {
-    format: ':date(HH:MM:ss) :label',
-});
+const Logger_1 = require("../utils/Logger");
 (async () => {
-    console.log('Starting CLI');
+    Logger_1.Logger.log('Starting CLI');
     const stageLinq = new StageLinq_1.StageLinq();
     stageLinq.on('trackLoaded', (status) => {
-        console.log('New track loaded:', status);
+        Logger_1.Logger.log('New track loaded:', status);
     });
     stageLinq.on('nowPlaying', (status) => {
-        console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
+        Logger_1.Logger.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
+    });
+    stageLinq.on('connected', () => {
+        Logger_1.Logger.log(`******** CONNECTED TO MORE THAN TWO **********`);
+        ;
     });
     // stageLinq.on('player', (status) => {
-    //   console.log('Player status change', status);
+    //   Logger.log('Player status change', status);
     // });
     let returnCode = 0;
     try {
         process.on('SIGINT', async function () {
-            console.info('... exiting');
+            Logger_1.Logger.info('... exiting');
             // Ensure SIGINT won't be impeded by some error
             try {
                 await stageLinq.disconnect();
             }
             catch (err) {
                 const message = err.stack.toString();
-                console.error(message);
+                Logger_1.Logger.error(message);
             }
             process.exit(returnCode);
         });
@@ -38,7 +40,7 @@ require('console-stamp')(console, {
     }
     catch (err) {
         const message = err.stack.toString();
-        console.error(message);
+        Logger_1.Logger.error(message);
         returnCode = 1;
     }
     await stageLinq.disconnect();
