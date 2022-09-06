@@ -39,7 +39,17 @@ async function main() {
   // Fires when a new track is playing.
   stageLinq.devices.on('nowPlaying', (status) => {
     console.log(`Now playing on ${status.deck}`, status);
-  })
+  });
+
+  // Print out messages from the players like:
+  // "192.168.86.202:45153 /Engine/Deck1/PlayState => {"state":false,"type":1}"
+  stageLinq.devices.on('message', (connectionInfo, data) => {
+    const msg = data.message.json
+      ? JSON.stringify(data.message.json)
+      : data.message.interval;
+    console.debug(`${connectionInfo.address}:${connectionInfo.port} ` +
+      `${data.message.name} => ${msg}`);
+  });
 
   await stageLinq.connect();
 
