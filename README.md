@@ -53,7 +53,34 @@ async function main() {
 
 ---
 
+## Overview
 
+The idea behind this library is to have a structure something like this:
+
+**StageLinq > Devices > Player > Deck**
+
+A StageLinq sets up a device listener and a class that handles all the
+devices (`StageLinqDevices`).
+
+`StageLinqDevices` figures out if it wants to connect or not and handles
+connections. There may be one or more device on the network. For each device it will try to connect to it and subscribe to it's `StateMap`.
+
+Currently there is only one type of device: `Player`. A `Player` may have up to
+4 decks A, B, C, D (aka "layers"). The `Player` handles incoming messages,
+parses them, groups them, and emits events. These events bubble up to the
+`Device`.
+
+## Logging
+
+I needed the logging to be used outside of the library so I made them events
+that you can listen to.
+
+* `error`: When something bad happens.
+* `warn`: When something happens but doesn't affect anything.
+* `info`/`log`: When we have something to say
+* `debug`: Spits out the parsed version of the packets.
+* `silly`: Dumps all kinds of internal stuff
+*
 ## About
 
 Forked from @MarByteBeep's code.

@@ -88,7 +88,7 @@ class Player extends events_1.EventEmitter {
         }
     }
     /**
-     * Emit PlayerStatus up to the main StageLinq class.
+     * Emit PlayerStatus up to the device level.
      * @param data
      */
     handleUpdate(data) {

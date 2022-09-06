@@ -117,7 +117,7 @@ export class Player extends EventEmitter {
   }
 
   /**
-   * Emit PlayerStatus up to the main StageLinq class.
+   * Emit PlayerStatus up to the device level.
    * @param data
    */
   private handleUpdate(data: PlayerLayerState) {

@@ -13,16 +13,6 @@ export declare interface StageLinq {
 
 /**
  * Main StageLinq class.
- *
- * Example:
- *
- * import { StageLinq } from 'StageLinq';
- * const stageLinq = new StageLinq();
- * stageLinq.on('trackLoaded', (status) => { console.log(status); });
- * stageLinq.on('stateChanged', (status) => { console.log(status); });
- * stageLinq.on('stateChanged', (status) => {
- *   console.log(`Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
- * });
  */
 export class StageLinq extends EventEmitter {
 
