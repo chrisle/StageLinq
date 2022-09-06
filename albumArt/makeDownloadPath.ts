@@ -1,8 +1,13 @@
 import * as fs from 'fs';
+// import * as os from 'os';
 
+export function makeTempDownloadPath(p_path: string) {
+	// const tmpPath = os.tmpdir();
 
-export function makeDownloadPath(p_path: string) {
+	// TODO: This wont work for windows!
+	// const path = `/${tmpPath}/localdb/${p_path}`;
 	const path = `./localdb/${p_path}`;
+
 	let paths = path.split(/[/\\]/).filter((e) => e.length > 0);
 	const isFolder = p_path.endsWith('/') || p_path.endsWith('\\');
 	let filename = '';

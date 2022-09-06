@@ -17,6 +17,11 @@ interface PlayerOptions {
   port: number;
 }
 
+interface SourceAndTrackPath {
+  source: string;
+  trackPath: string;
+}
+
 /**
  * A player represents a device on the StageLinq network.
  *
@@ -35,12 +40,11 @@ interface PlayerOptions {
  */
 export class Player extends EventEmitter {
 
-  player: number;           // Player number as reported by the device.
-  address: string;          // IP address
-  port: number;             // Port
-  masterTempo: number;      // Current master tempo BPM
-  masterStatus: boolean;    // If this device has the matser tempo
-
+  private player: number;           // Player number as reported by the device.
+  private address: string;          // IP address
+  private port: number;             // Port
+  private masterTempo: number;      // Current master tempo BPM
+  private masterStatus: boolean;    // If this device has the matser tempo
   private decks: Map<string, PlayerLayerState> = new Map();
   private queue: {[layer: string]: PlayerMessageQueue} = {};
 
@@ -97,7 +101,11 @@ export class Player extends EventEmitter {
 
     const cueData =
         (/PlayState$/.test(name)) ? { playState: json.state }
-      : (/Track\/TrackNetworkPath$/.test(name)) ? { trackNetworkPath: json.string }
+      : (/Track\/TrackNetworkPath$/.test(name)) ? {
+          trackNetworkPath: json.string,
+          source: this.getSourceAndTrackPath(json.string).source,
+          trackPath: this.getSourceAndTrackPath(json.string).trackPath
+        }
       : (/Track\/SongLoaded$/.test(name)) ? { songLoaded: json.state }
       : (/Track\/SongName$/.test(name)) ? { title: json.string }
       : (/Track\/ArtistName$/.test(name)) ? { artist: json.string }
@@ -111,13 +119,11 @@ export class Player extends EventEmitter {
 
     if (cueData) {
       this.queue[deck].push({ layer: deck, ...cueData });
-    } else {
-      throw new Error(`I don't know what this message is: ${name}`)
     }
   }
 
   /**
-   * Emit PlayerStatus up to the device level.
+   * Update current state and emit.
    * @param data
    */
   private handleUpdate(data: PlayerLayerState) {
@@ -133,6 +139,7 @@ export class Player extends EventEmitter {
 
     const result = this.decks.get(layer);
     const deck = `${this.player}${result.layer}`;
+
     const output = {
       deck: deck,
       player: this.player,
@@ -144,20 +151,31 @@ export class Player extends EventEmitter {
       ...result
     };
 
-    if (newSongLoaded) {
-      this.emit('trackLoaded', output as PlayerStatus);
-    }
-
-    if (result.playState) {
-      this.emit('nowPlaying', output as PlayerStatus);
-    }
-
-    this.emit('stateChanged', output as PlayerStatus);
+    // We're casting it because we originally built it up piecemeal.
+    const currentState = output as PlayerStatus;
+    if (newSongLoaded) this.emit('trackLoaded', currentState);
+    if (result.playState) this.emit('nowPlaying', currentState);
+    this.emit('stateChanged', currentState);
   }
 
   private deckNumberToLayer(deck: string) {
     const index = parseInt(deck.replace('Deck', '')) - 1;
     return 'ABCD'[index];
+  }
+
+  private getSourceAndTrackPath(p_path: string): SourceAndTrackPath {
+    if (!p_path || p_path.length === 0) return { source: '', trackPath: '' };
+    const parts = p_path.split('/');
+    const source = parts[3];
+    let trackPath = parts.slice(5).join('/');
+    if (parts[4] !== 'Engine Library') {
+      // This probably occurs with RekordBox conversions; tracks are outside Engine Library folder
+      trackPath = `../${parts[4]}/${trackPath}`;
+    }
+    return {
+      source: source,
+      trackPath: trackPath,
+    };
   }
 
 }

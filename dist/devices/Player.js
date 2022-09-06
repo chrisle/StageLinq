@@ -69,7 +69,11 @@ class Player extends events_1.EventEmitter {
             : (/Engine\/Deck\d\//.test(name)) ? this.deckNumberToLayer(split[2])
                 : null;
         const cueData = (/PlayState$/.test(name)) ? { playState: json.state }
-            : (/Track\/TrackNetworkPath$/.test(name)) ? { trackNetworkPath: json.string }
+            : (/Track\/TrackNetworkPath$/.test(name)) ? {
+                trackNetworkPath: json.string,
+                source: this.getSourceAndTrackPath(json.string).source,
+                trackPath: this.getSourceAndTrackPath(json.string).trackPath
+            }
                 : (/Track\/SongLoaded$/.test(name)) ? { songLoaded: json.state }
                     : (/Track\/SongName$/.test(name)) ? { title: json.string }
                         : (/Track\/ArtistName$/.test(name)) ? { artist: json.string }
@@ -83,12 +87,9 @@ class Player extends events_1.EventEmitter {
         if (cueData) {
             this.queue[deck].push({ layer: deck, ...cueData });
         }
-        else {
-            throw new Error(`I don't know what this message is: ${name}`);
-        }
     }
     /**
-     * Emit PlayerStatus up to the device level.
+     * Update current state and emit.
      * @param data
      */
     handleUpdate(data) {
@@ -113,17 +114,32 @@ class Player extends events_1.EventEmitter {
             masterStatus: this.masterStatus,
             ...result
         };
-        if (newSongLoaded) {
-            this.emit('trackLoaded', output);
-        }
-        if (result.playState) {
-            this.emit('nowPlaying', output);
-        }
-        this.emit('stateChanged', output);
+        // We're casting it because we originally built it up piecemeal.
+        const currentState = output;
+        if (newSongLoaded)
+            this.emit('trackLoaded', currentState);
+        if (result.playState)
+            this.emit('nowPlaying', currentState);
+        this.emit('stateChanged', currentState);
     }
     deckNumberToLayer(deck) {
         const index = parseInt(deck.replace('Deck', '')) - 1;
         return 'ABCD'[index];
+    }
+    getSourceAndTrackPath(p_path) {
+        if (!p_path || p_path.length === 0)
+            return { source: '', trackPath: '' };
+        const parts = p_path.split('/');
+        const source = parts[3];
+        let trackPath = parts.slice(5).join('/');
+        if (parts[4] !== 'Engine Library') {
+            // This probably occurs with RekordBox conversions; tracks are outside Engine Library folder
+            trackPath = `../${parts[4]}/${trackPath}`;
+        }
+        return {
+            source: source,
+            trackPath: trackPath,
+        };
     }
 }
 exports.Player = Player;

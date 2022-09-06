@@ -140,6 +140,7 @@ export class NetworkDevice {
     return service;
   }
 
+  // TODO: Refactor this out of here.
   async addSource(p_sourceName: string, p_localDbPath: string, p_localAlbumArtPath: string) {
     if (this.connectedSources[p_sourceName]) {
       return;
@@ -164,6 +165,7 @@ export class NetworkDevice {
     };
   }
 
+  // TODO: Refactor this out of here.
   async dumpAlbumArt(p_sourceName: string) {
     if (!this.connectedSources[p_sourceName]) {
       assert.fail(`Source '${p_sourceName}' not connected`);

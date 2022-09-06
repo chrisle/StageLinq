@@ -1,8 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.makeDownloadPath = void 0;
+exports.makeTempDownloadPath = void 0;
 const fs = require("fs");
-function makeDownloadPath(p_path) {
+// import * as os from 'os';
+function makeTempDownloadPath(p_path) {
+    // const tmpPath = os.tmpdir();
+    // TODO: This wont work for windows!
+    // const path = `/${tmpPath}/localdb/${p_path}`;
     const path = `./localdb/${p_path}`;
     let paths = path.split(/[/\\]/).filter((e) => e.length > 0);
     const isFolder = p_path.endsWith('/') || p_path.endsWith('\\');
@@ -15,5 +19,5 @@ function makeDownloadPath(p_path) {
     fs.mkdirSync(newPath, { recursive: true });
     return newPath + ('/' + filename);
 }
-exports.makeDownloadPath = makeDownloadPath;
+exports.makeTempDownloadPath = makeTempDownloadPath;
 //# sourceMappingURL=makeDownloadPath.js.map

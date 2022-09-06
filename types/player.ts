@@ -1,23 +1,26 @@
 
 export interface PlayerStatus {
-  deck: string;
-  player: number;
-  layer: string;
-  masterTempo: number;
-  masterStatus: boolean;
-  play: boolean;
-  playState: boolean;
+  address: string;
   artist: string;
-  trackNetworkPath: string;
+  currentBpm: number
+  deck: string;
+  externalMixerVolume: number;
+  fileLocation: string;
+  hasTrackData: boolean;
+  jogColor: string;
+  layer: string;
+  masterStatus: boolean;
+  masterTempo: number;
+  play: boolean;
+  player: number;
+  playState: boolean;
+  port: number;
   songLoaded: boolean;
   title: string;
-  hasTrackData: boolean;
-  fileLocation: string;
-  currentBpm: number
-  externalMixerVolume: number;
-  jogColor: string;
-  address: string;
-  port: number;
+  trackNetworkPath: string;
+
+  source: string;
+  trackPath: string;
 }
 
 export interface PlayerLayerState {

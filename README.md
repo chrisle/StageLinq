@@ -10,13 +10,22 @@ NodeJS library implementation to access information through the Denon StageLinq 
 
 ---
 
-## Example
+## Usage
 
 ```ts
 import { StageLinq } from 'StageLinq';
 
 async function main() {
-  const stageLinq = new StageLinq();
+
+  const stageLinq = new StageLinq({
+    // (Optional) Retry to connect to a new device 3 times before giving up.
+    // Default: 3
+    maxRetries: 3,
+
+    // (Optional) Get track metadata by downloading it from device.
+    // Default: false
+    getMetdataFromFile: true
+  });
 
   // Print the logging output to the console.
   stageLinq.logger.on('error', (...args: any) => { console.error(...args); });
@@ -59,6 +68,8 @@ async function main() {
   };
   while(true) { sleep(250); }
 }
+
+(async () => { await main(); })();
 ```
 
 ---
@@ -90,7 +101,7 @@ that you can listen to.
 * `info`/`log`: When we have something to say
 * `debug`: Spits out the parsed version of the packets.
 * `silly`: Dumps all kinds of internal stuff
-*
+
 ## About
 
 Forked from @MarByteBeep's code.

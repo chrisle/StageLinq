@@ -16,14 +16,14 @@ async function maybeDownloadFiles(controller) {
         {
             const sync = !args.skipsync;
             for (const source of sources) {
-                const dbPath = (0, makeDownloadPath_1.makeDownloadPath)(source.database.location);
+                const dbPath = (0, makeDownloadPath_1.makeTempDownloadPath)(source.database.location);
                 // FIXME: Move all this away from main
                 if (sync) {
                     const file = await ftx.getFile(source.database.location);
                     fs.writeFileSync(dbPath, file);
                     LogEmitter_1.Logger.info(`downloaded: '${source.database.location}' and stored in '${dbPath}'`);
                 }
-                await controller.addSource(source.name, dbPath, (0, makeDownloadPath_1.makeDownloadPath)(`${source.name}/Album Art/`));
+                await controller.addSource(source.name, dbPath, (0, makeDownloadPath_1.makeTempDownloadPath)(`${source.name}/Album Art/`));
                 if (sync) {
                     await controller.dumpAlbumArt(source.name);
                 }

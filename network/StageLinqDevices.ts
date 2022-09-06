@@ -5,12 +5,18 @@ import { Player } from '../devices/Player';
 import { sleep } from '../utils';
 import { StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
+import { Db } from '../db';
 
 enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
 
 interface StageLinqDevice {
   networkDevice: NetworkDevice;
 };
+
+interface StageLinqDeviceOptions {
+  maxRetries?: number;
+  getMetdataFromFile?: boolean;
+}
 
 export declare interface StageLinqDevices {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
@@ -20,7 +26,11 @@ export declare interface StageLinqDevices {
   on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
 }
 
+const DEFAULT_MAX_RETRIES = 3;
+
 //////////////////////////////////////////////////////////////////////////////
+
+// TODO: Refactor device, listener, and player into something more nicer.
 
 /**
  * Handle connecting and disconnecting from discovered devices on the
@@ -28,25 +38,33 @@ export declare interface StageLinqDevices {
  */
 export class StageLinqDevices extends EventEmitter {
 
-  private discoveryStatus: Map<string, ConnectionStatus> = new Map();
-  private maxRetries: number;
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
+  private discoveryStatus: Map<string, ConnectionStatus> = new Map();
+  private options: StageLinqDeviceOptions;
 
-  constructor(retries = 3) {
+  constructor(options?: StageLinqDeviceOptions) {
     super();
-    this.maxRetries = retries;
+    this.options = {
+      maxRetries: DEFAULT_MAX_RETRIES,
+      getMetdataFromFile: false,
+      ...options
+    };
   }
 
   /**
-   * Attempt to connect to the player (retry if necessary).
+   * Attempt to connect to the player.
+   *
    * @param connectionInfo Device discovered
-   * @returns
+   * @returns Retries to connect 3 times. If successful return void if not throw exception.
    */
   async handleDevice(connectionInfo: ConnectionInfo) {
     Logger.silly(this.showDiscoveryStatus(connectionInfo));
 
+    // Ignore this discovery message if connected, connecting, failed, or
+    // if it's blacklisted.
     if (this.isConnected(connectionInfo)
       || this.isConnecting(connectionInfo)
+      || this.isFailed(connectionInfo)
       || this.isIgnored(connectionInfo)) return;
 
     this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTING);
@@ -57,37 +75,32 @@ export class StageLinqDevices extends EventEmitter {
 
     let attempt = 1;
 
-    while (attempt < this.maxRetries) {
+    while (attempt < this.options.maxRetries) {
       try {
-        Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. Attempt ${attempt}/${this.maxRetries}`);
+        Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
+          `Attempt ${attempt}/${this.options.maxRetries}`);
 
-        // This will fail if it doesn't connect.
-        const player = await this.connectToPlayer(connectionInfo);
+        // If this fails, catch it, and maybe retry if necessary.
+        await this.connectToPlayer(connectionInfo);
 
         Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
         this.emit('connected', connectionInfo);
 
-        player.on('trackLoaded', (status) => {
-          this.emit('trackLoaded', status);
-        });
+        return; // Don't forget to return!
 
-        player.on('stateChanged', (status) => {
-          this.emit('stateChanged', status);
-        });
-
-        player.on('nowPlaying', (status) => {
-          this.emit('nowPlaying', status);
-        });
-
-        return;
       } catch(e) {
+
+        // Failed connection. Sleep then retry.
         Logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
-          `(${attempt}/${this.maxRetries}): ${e}`);
+          `(${attempt}/${this.options.maxRetries}): ${e}`);
         attempt += 1;
         sleep(500);
+
       }
     }
+
+    // We failed 3 times. Throw exception.
     this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.FAILED);
     throw new Error(`Could not connect to ${this.deviceId(connectionInfo)}`);
   }
@@ -101,32 +114,47 @@ export class StageLinqDevices extends EventEmitter {
     }
   }
 
+  ////////////////////////////////////////////////////////////////////////////
+
   /**
-   * Connect to the player. Throw exception it can't.
-   * @param device Device to connect to.
+   * Connect to the player.
+   * @param connectionInfo Device to connect to.
    * @returns
    */
-  private async connectToPlayer(device: ConnectionInfo) {
-    const networkDevice = new NetworkDevice(device);
+  private async connectToPlayer(connectionInfo: ConnectionInfo) {
+    const networkDevice = new NetworkDevice(connectionInfo);
     await networkDevice.connect();
+
+    // Track devices so we can disconnect from them later.
+    this.devices.set(connectionInfo.address, { networkDevice: networkDevice });
+
+    // Download the database before connecting to StateMap.
+    const database = new Db(networkDevice);
+    await database.downloadDb();
+
+    // Setup StateMap
     const stateMap = await networkDevice.connectToService(StateMap);
-    if (stateMap) {
-      const player = new Player({
-        stateMap: stateMap,
-        address: device.address,
-        port: device.port
-      });
+    stateMap.on('message', (data) => {
+      this.emit('message', connectionInfo, data)
+    });
 
-      // Keep track of the devices we've connected so so we can disconnect from
-      // them later.
-      this.devices.set(device.address, {
-        networkDevice: networkDevice,
-      });
+    // Setup Player
+    const player = new Player({
+      stateMap: stateMap,
+      address: connectionInfo.address,
+      port: connectionInfo.port
+    });
+    player.on('trackLoaded', (status) => {
+      this.emit('trackLoaded', status);
+      // TODO: SELECT * FROM Tracks WHERE path = status.trackPath
+    });
+    player.on('stateChanged', (status) => {
+      this.emit('stateChanged', status);
+    });
+    player.on('nowPlaying', (status) => {
+      this.emit('nowPlaying', status);
+    });
 
-      stateMap.on('message', (data) => { this.emit('message', device, data) });
-      return player;
-    };
-    throw new Error(`Could not connect to ${device.address}:${device.port}`);
   }
 
   private deviceId(device: ConnectionInfo) {
@@ -152,7 +180,7 @@ export class StageLinqDevices extends EventEmitter {
   private isIgnored(device: ConnectionInfo) {
     return (
       device.software.name === 'OfflineAnalyzer'
-      || device.source === 'nowplaying'
+      || device.source === 'nowplaying' // Ignore myself
       || /^SoundSwitch/i.test(device.software.name)
       || /^Resolume/i.test(device.software.name)
       || device.software.name === 'JM08' // Ignore X1800/X1850 mixers
