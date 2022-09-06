@@ -1,9 +1,9 @@
-import { ConnectionInfo, IpAddress, PlayerStatus } from '../types';
+import { ConnectionInfo, IpAddress, PlayerStatus, ServiceMessage } from '../types';
 import { EventEmitter } from 'events';
 import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { sleep } from '../utils';
-import { StateMap } from '../services';
+import { StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
 
 enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
@@ -17,6 +17,7 @@ export declare interface StageLinqDevices {
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
+  on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -121,6 +122,8 @@ export class StageLinqDevices extends EventEmitter {
       this.devices.set(device.address, {
         networkDevice: networkDevice,
       });
+
+      stateMap.on('message', (data) => { this.emit('message', device, data) });
       return player;
     };
     throw new Error(`Could not connect to ${device.address}:${device.port}`);

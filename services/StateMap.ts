@@ -4,7 +4,7 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import type { ServiceMessage } from '../types';
-import { Logger } from '../LogEmitter';
+// import { Logger } from '../LogEmitter';
 
 export const States = [
   // Mixer
@@ -136,12 +136,12 @@ export class StateMap extends Service<StateData> {
     return null;
   }
 
-  protected messageHandler(p_data: ServiceMessage<StateData>): void {
-    Logger.debug(
-      `${p_data.message.name} => ${
-        p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
-      }`
-    );
+  protected messageHandler(_: ServiceMessage<StateData>): void {
+    // Logger.debug(
+    //   `${p_data.message.name} => ${
+    //     p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
+    //   }`
+    // );
   }
 
   private async subscribeState(p_state: string, p_interval: number) {

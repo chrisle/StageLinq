@@ -5,7 +5,7 @@ const assert_1 = require("assert");
 const network_1 = require("../network");
 const WriteContext_1 = require("../utils/WriteContext");
 const Service_1 = require("./Service");
-const LogEmitter_1 = require("../LogEmitter");
+// import { Logger } from '../LogEmitter';
 exports.States = [
     // Mixer
     network_1.StageLinqValue.MixerCH1faderPosition,
@@ -113,8 +113,12 @@ class StateMap extends Service_1.Service {
         assert_1.strict.fail(`Unhandled type ${type}`);
         return null;
     }
-    messageHandler(p_data) {
-        LogEmitter_1.Logger.debug(`${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval}`);
+    messageHandler(_) {
+        // Logger.debug(
+        //   `${p_data.message.name} => ${
+        //     p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
+        //   }`
+        // );
     }
     async subscribeState(p_state, p_interval) {
         // Logger.log(`Subscribe to state '${p_state}'`);

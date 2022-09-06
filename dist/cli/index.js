@@ -35,6 +35,13 @@ require('console-stamp')(console, {
     stageLinq.devices.on('nowPlaying', (status) => {
         console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`);
     });
+    stageLinq.devices.on('message', (connectionInfo, data) => {
+        const msg = data.message.json
+            ? JSON.stringify(data.message.json)
+            : data.message.interval;
+        console.debug(`${connectionInfo.address}:${connectionInfo.port} ` +
+            `${data.message.name} => ${msg}`);
+    });
     // stageLinq.devices.on('stateChanged', (status) => {
     //   console.log(`State changed on [${status.deck}]`, status)
     // });

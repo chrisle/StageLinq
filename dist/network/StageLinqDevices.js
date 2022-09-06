@@ -100,6 +100,7 @@ class StageLinqDevices extends events_1.EventEmitter {
             this.devices.set(device.address, {
                 networkDevice: networkDevice,
             });
+            stateMap.on('message', (data) => { this.emit('message', device, data); });
             return player;
         }
         ;
