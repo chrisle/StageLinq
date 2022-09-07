@@ -1,11 +1,11 @@
-import { strict as assert } from 'assert';
-import { DOWNLOAD_TIMEOUT } from '../network';
-import { ReadContext } from '../utils/ReadContext';
-import { sleep } from '../utils/sleep';
-import { WriteContext } from '../utils/WriteContext';
-import { Service } from './Service';
-import type { ServiceMessage, Source } from '../types';
+import { DOWNLOAD_TIMEOUT } from '../types';
 import { Logger } from '../LogEmitter';
+import { ReadContext } from '../utils/ReadContext';
+import { Service } from './Service';
+import { sleep } from '../utils/sleep';
+import { strict as assert } from 'assert';
+import { WriteContext } from '../utils/WriteContext';
+import type { ServiceMessage, Source } from '../types';
 
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
