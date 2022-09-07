@@ -72,7 +72,7 @@ export class StageLinqDevices extends EventEmitter {
     // Retrying appears to be necessary because it seems the Denon hardware
     // sometimes doesn't connect. Retrying after a little wait seems to
     // solve the issue.
-
+  
     let attempt = 1;
 
     while (attempt < this.options.maxRetries) {
@@ -184,6 +184,7 @@ export class StageLinqDevices extends EventEmitter {
       || /^SoundSwitch/i.test(device.software.name)
       || /^Resolume/i.test(device.software.name)
       || device.software.name === 'JM08' // Ignore X1800/X1850 mixers
+      || device.software.name === 'SSS0' // Ignore SoundSwitchEmbedded on players
     )
   }
 
