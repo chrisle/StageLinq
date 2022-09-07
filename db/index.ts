@@ -18,9 +18,10 @@ export class Db {
 
     for (const source of sources) {
       const dbPath = makeTempDownloadPath(source.database.location);
+      Logger.debug(`Downloading ${source.database.location} to ${dbPath} ...`)
       const file = await service.getFile(source.database.location);
       fs.writeFileSync(dbPath, file);
-      Logger.info(`Downloaded ${source.database.location} to ${dbPath}`);
+      Logger.info(`Downloaded ${source.database.location} to ${dbPath} complete.`);
     }
     service.disconnect();
   }
