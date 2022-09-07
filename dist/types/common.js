@@ -6,7 +6,7 @@ exports.LISTEN_PORT = 51337;
 exports.LISTEN_TIMEOUT = 5000; // in ms
 exports.MESSAGE_TIMEOUT = 3000; // in ms
 exports.CONNECT_TIMEOUT = 5000; // in ms
-exports.DOWNLOAD_TIMEOUT = 10000; // in ms
+exports.DOWNLOAD_TIMEOUT = 60000; // in ms
 exports.DISCOVERY_MESSAGE_MARKER = 'airD';
 var Action;
 (function (Action) {

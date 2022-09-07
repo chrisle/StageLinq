@@ -7,7 +7,7 @@ const Player_1 = require("../devices/Player");
 const utils_1 = require("../utils");
 const services_1 = require("../services");
 const LogEmitter_1 = require("../LogEmitter");
-// import { Db } from '../db';
+const db_1 = require("../db");
 var ConnectionStatus;
 (function (ConnectionStatus) {
     ConnectionStatus[ConnectionStatus["CONNECTING"] = 0] = "CONNECTING";
@@ -97,8 +97,8 @@ class StageLinqDevices extends events_1.EventEmitter {
         // Track devices so we can disconnect from them later.
         this.devices.set(connectionInfo.address, { networkDevice: networkDevice });
         // Download the database before connecting to StateMap.
-        // const database = new Db(networkDevice);
-        // await database.downloadDb();
+        const database = new db_1.Db(networkDevice);
+        await database.downloadDb();
         // Setup StateMap
         const stateMap = await networkDevice.connectToService(services_1.StateMap);
         stateMap.on('message', (data) => {

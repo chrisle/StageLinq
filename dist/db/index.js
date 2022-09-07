@@ -14,9 +14,10 @@ class Db {
         const sources = await service.getSources();
         for (const source of sources) {
             const dbPath = (0, albumArt_1.makeTempDownloadPath)(source.database.location);
+            LogEmitter_1.Logger.debug(`Downloading ${source.database.location} to ${dbPath} ...`);
             const file = await service.getFile(source.database.location);
             fs.writeFileSync(dbPath, file);
-            LogEmitter_1.Logger.info(`Downloaded ${source.database.location} to ${dbPath}`);
+            LogEmitter_1.Logger.info(`Downloaded ${source.database.location} to ${dbPath} complete.`);
         }
         service.disconnect();
     }
