@@ -1,4 +1,5 @@
 /localdb
+/dist
 
 # Logs
 logs
@@ -101,5 +102,3 @@ typings/
 
 # TernJS port file
 .tern-port
-
-dist/
