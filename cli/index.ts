@@ -9,7 +9,9 @@ require('console-stamp')(console, {
 
   console.log('Starting CLI');
 
-  const stageLinq = new StageLinq();
+  const stageLinq = new StageLinq({
+    useDatabases: true
+  });
 
   stageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
@@ -30,11 +32,33 @@ require('console-stamp')(console, {
   //   console.debug(...args)
   // });
 
+  // Fires when we connect to any device
   stageLinq.devices.on('connected', (connectionInfo) => {
     console.log(`Successfully connected to ${connectionInfo.software.name}`);
+
+    if (stageLinq.options.useDatabases) {
+      stageLinq.databases.on('downloading', (sourceName, dbPath) => {
+        console.log(`Downloading ${sourceName} to ${dbPath}`);
+      });
+      stageLinq.databases.on('dbDownloaded', (sourceName, dbPath) => {
+        console.log(`Database (${sourceName}) has been downloaded to ${dbPath}`);
+      });
+    }
+
+  });
+
+  stageLinq.devices.on('ready', (connectionInfo) => {
+    console.log(`Device ${connectionInfo.software.name} is ready!`);
   });
 
   stageLinq.devices.on('trackLoaded', (status) => {
+    if (stageLinq.options.useDatabases) {
+      if (status.source) {
+        const result = stageLinq.databases.querySource(status.source,
+          `SELECT * FROM Track WHERE path = '${status.trackPath}'`);
+          console.log('Database entry:', result);
+      }
+    }
     console.log('New track loaded:', status);
   });
 

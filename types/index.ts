@@ -41,3 +41,9 @@ export type IpAddress = string;
 export interface ConnectionInfo extends DiscoveryMessage {
 	address: IpAddress;
 }
+
+
+export interface StageLinqOptions {
+  useDatabases?: boolean;
+	maxRetries?: number;
+}

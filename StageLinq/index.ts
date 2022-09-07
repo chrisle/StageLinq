@@ -1,25 +1,30 @@
 import { announce, StageLinqListener, unannounce } from '../network';
-import { PlayerStatus } from '../types';
 import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
+import { StageLinqOptions } from '../types';
 
-export declare interface StageLinq {
-  on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
-  on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
-  on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
-  on(event: 'connected', listener: () => void): this;
-}
+const DEFAULT_OPTIONS: StageLinqOptions = {
+  useDatabases: true,
+  maxRetries: 3
+};
 
 /**
  * Main StageLinq class.
  */
 export class StageLinq extends EventEmitter {
 
-  devices: StageLinqDevices = new StageLinqDevices();
+  devices: StageLinqDevices;
   logger: Logger = Logger.instance;
+  options: StageLinqOptions;
 
   private listener: StageLinqListener = new StageLinqListener();
+
+  constructor(options?: StageLinqOptions) {
+    super();
+    if (options) this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.devices = new StageLinqDevices(this.options);
+  }
 
   /**
    * Connect to the StageLinq network.
@@ -41,6 +46,10 @@ export class StageLinq extends EventEmitter {
     } catch(e) {
       throw new Error(e);
     }
+  }
+
+  get databases() {
+    return this.devices.databases;
   }
 
 }

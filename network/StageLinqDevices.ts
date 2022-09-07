@@ -1,11 +1,11 @@
-import { ConnectionInfo, IpAddress, PlayerStatus, ServiceMessage } from '../types';
+import { ConnectionInfo, IpAddress, PlayerStatus, ServiceMessage, StageLinqOptions } from '../types';
 import { EventEmitter } from 'events';
 import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { sleep } from '../utils';
 import { StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
-import { Db } from '../db';
+import { Databases } from '../Databases';
 
 enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
 
@@ -13,20 +13,14 @@ interface StageLinqDevice {
   networkDevice: NetworkDevice;
 };
 
-interface StageLinqDeviceOptions {
-  maxRetries?: number;
-  getMetdataFromFile?: boolean;
-}
-
 export declare interface StageLinqDevices {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
+  on(event: 'ready', listener: (connectionInfo: ConnectionInfo) => void): this;
 }
-
-const DEFAULT_MAX_RETRIES = 3;
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -38,17 +32,14 @@ const DEFAULT_MAX_RETRIES = 3;
  */
 export class StageLinqDevices extends EventEmitter {
 
+  private _databases: Databases;
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
   private discoveryStatus: Map<string, ConnectionStatus> = new Map();
-  private options: StageLinqDeviceOptions;
+  private options: StageLinqOptions;
 
-  constructor(options?: StageLinqDeviceOptions) {
+  constructor(options: StageLinqOptions) {
     super();
-    this.options = {
-      maxRetries: DEFAULT_MAX_RETRIES,
-      getMetdataFromFile: false,
-      ...options
-    };
+    this.options = options;
   }
 
   /**
@@ -79,16 +70,11 @@ export class StageLinqDevices extends EventEmitter {
       try {
         Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
           `Attempt ${attempt}/${this.options.maxRetries}`);
-
         // If this fails, catch it, and maybe retry if necessary.
         await this.connectToPlayer(connectionInfo);
-
-        Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
-        this.emit('connected', connectionInfo);
-
+        this.emit('ready', connectionInfo);
         return; // Don't forget to return!
-
       } catch(e) {
 
         // Failed connection. Sleep then retry.
@@ -114,6 +100,14 @@ export class StageLinqDevices extends EventEmitter {
     }
   }
 
+  get databases() {
+    if (!this.options.useDatabases)
+      throw new Error(`You can't get database sources if you set useDatabases to false.`);
+    if (!this._databases)
+      throw new Error(`Unexpected: Database sources hasn't been initialized.`)
+    return this._databases;
+  }
+
   ////////////////////////////////////////////////////////////////////////////
 
   /**
@@ -125,12 +119,14 @@ export class StageLinqDevices extends EventEmitter {
     const networkDevice = new NetworkDevice(connectionInfo);
     await networkDevice.connect();
 
-    // Track devices so we can disconnect from them later.
+    Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
+    this._databases = new Databases(networkDevice);
     this.devices.set(connectionInfo.address, { networkDevice: networkDevice });
 
+    this.emit('connected', connectionInfo);
+
     // Download the database before connecting to StateMap.
-    const database = new Db(networkDevice);
-    await database.downloadDb();
+    if (this.options.useDatabases) await this._databases.downloadDb();
 
     // Setup StateMap
     const stateMap = await networkDevice.connectToService(StateMap);
@@ -144,13 +140,15 @@ export class StageLinqDevices extends EventEmitter {
       address: connectionInfo.address,
       port: connectionInfo.port
     });
+
     player.on('trackLoaded', (status) => {
       this.emit('trackLoaded', status);
-      // TODO: SELECT * FROM Tracks WHERE path = status.trackPath
     });
+
     player.on('stateChanged', (status) => {
       this.emit('stateChanged', status);
     });
+
     player.on('nowPlaying', (status) => {
       this.emit('nowPlaying', status);
     });
