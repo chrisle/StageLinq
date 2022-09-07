@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileTransfer = exports.CHUNK_SIZE = void 0;
-const assert_1 = require("assert");
-const network_1 = require("../network");
-const sleep_1 = require("../utils/sleep");
-const WriteContext_1 = require("../utils/WriteContext");
-const Service_1 = require("./Service");
+const types_1 = require("../types");
 const LogEmitter_1 = require("../LogEmitter");
+const Service_1 = require("./Service");
+const sleep_1 = require("../utils/sleep");
+const assert_1 = require("assert");
+const WriteContext_1 = require("../utils/WriteContext");
 const MAGIC_MARKER = 'fltx';
 exports.CHUNK_SIZE = 4096;
 var MessageId;
@@ -146,7 +146,7 @@ class FileTransfer extends Service_1.Service {
                 await new Promise(async (resolve, reject) => {
                     setTimeout(() => {
                         reject(new Error(`Failed to download '${p_location}'`));
-                    }, network_1.DOWNLOAD_TIMEOUT);
+                    }, types_1.DOWNLOAD_TIMEOUT);
                     while (this.receivedFile.isEOF() === false) {
                         await (0, sleep_1.sleep)(200);
                     }

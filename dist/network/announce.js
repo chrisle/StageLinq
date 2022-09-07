@@ -1,17 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.announce = exports.unannounce = void 0;
-const assert_1 = require("assert");
-const common_1 = require("../types/common");
+const types_1 = require("../types");
 const dgram_1 = require("dgram");
-const ip_1 = require("ip");
-const os_1 = require("os");
-const WriteContext_1 = require("../utils/WriteContext");
 const LogEmitter_1 = require("../LogEmitter");
+const os_1 = require("os");
+const assert_1 = require("assert");
+const ip_1 = require("ip");
+const WriteContext_1 = require("../utils/WriteContext");
 function findBroadcastIPs() {
     const interfaces = Object.values((0, os_1.networkInterfaces)());
+    (0, assert_1.strict)(interfaces.length);
     const ips = [];
     for (const i of interfaces) {
+        (0, assert_1.strict)(i && i.length);
         for (const entry of i) {
             if (entry.family === 'IPv4' && entry.internal === false) {
                 const info = (0, ip_1.subnet)(entry.address, entry.netmask);
@@ -22,20 +24,20 @@ function findBroadcastIPs() {
     return ips;
 }
 const announcementMessage = {
-    action: common_1.Action.Login,
+    action: types_1.Action.Login,
     port: 0,
     software: {
         name: 'Now Playing',
         version: '2.1.3',
     },
     source: 'nowplaying',
-    token: common_1.CLIENT_TOKEN,
+    token: types_1.Tokens.SoundSwitch,
 };
 let announceClient = null;
 let announceTimer = null;
 function writeDiscoveryMessage(p_ctx, p_message) {
     let written = 0;
-    written += p_ctx.writeFixedSizedString(common_1.DISCOVERY_MESSAGE_MARKER);
+    written += p_ctx.writeFixedSizedString(types_1.DISCOVERY_MESSAGE_MARKER);
     written += p_ctx.write(p_message.token);
     written += p_ctx.writeNetworkStringUTF16(p_message.source);
     written += p_ctx.writeNetworkStringUTF16(p_message.action);
@@ -67,8 +69,8 @@ async function broadcastMessage(p_message) {
         return new Promise((resolve, reject) => {
             setTimeout(() => {
                 reject(new Error('Failed to send announcement'));
-            }, common_1.CONNECT_TIMEOUT);
-            announceClient.send(p_message, common_1.LISTEN_PORT, p_ip, () => {
+            }, types_1.CONNECT_TIMEOUT);
+            announceClient.send(p_message, types_1.LISTEN_PORT, p_ip, () => {
                 // Logger.log('UDP message sent to ' + p_ip);
                 resolve();
             });
@@ -81,7 +83,7 @@ async function unannounce() {
     (0, assert_1.strict)(announceTimer);
     clearInterval(announceTimer);
     announceTimer = null;
-    announcementMessage.action = common_1.Action.Logout;
+    announcementMessage.action = types_1.Action.Logout;
     const ctx = new WriteContext_1.WriteContext();
     writeDiscoveryMessage(ctx, announcementMessage);
     const msg = new Uint8Array(ctx.getBuffer());
@@ -96,13 +98,13 @@ async function announce() {
     }
     if (!announceClient)
         announceClient = await initUdpSocket();
-    announcementMessage.action = common_1.Action.Login;
+    announcementMessage.action = types_1.Action.Login;
     const ctx = new WriteContext_1.WriteContext();
     writeDiscoveryMessage(ctx, announcementMessage);
     const msg = new Uint8Array(ctx.getBuffer());
     // Immediately announce myself
     await broadcastMessage(msg);
-    announceTimer = setInterval(broadcastMessage, common_1.ANNOUNCEMENT_INTERVAL, msg);
+    announceTimer = setInterval(broadcastMessage, types_1.ANNOUNCEMENT_INTERVAL, msg);
     LogEmitter_1.Logger.info("Announced myself");
 }
 exports.announce = announce;

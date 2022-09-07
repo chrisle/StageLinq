@@ -7,7 +7,7 @@ const Player_1 = require("../devices/Player");
 const utils_1 = require("../utils");
 const services_1 = require("../services");
 const LogEmitter_1 = require("../LogEmitter");
-const db_1 = require("../db");
+// import { Db } from '../db';
 var ConnectionStatus;
 (function (ConnectionStatus) {
     ConnectionStatus[ConnectionStatus["CONNECTING"] = 0] = "CONNECTING";
@@ -97,8 +97,8 @@ class StageLinqDevices extends events_1.EventEmitter {
         // Track devices so we can disconnect from them later.
         this.devices.set(connectionInfo.address, { networkDevice: networkDevice });
         // Download the database before connecting to StateMap.
-        const database = new db_1.Db(networkDevice);
-        await database.downloadDb();
+        // const database = new Db(networkDevice);
+        // await database.downloadDb();
         // Setup StateMap
         const stateMap = await networkDevice.connectToService(services_1.StateMap);
         stateMap.on('message', (data) => {
@@ -143,6 +143,7 @@ class StageLinqDevices extends events_1.EventEmitter {
             || /^SoundSwitch/i.test(device.software.name)
             || /^Resolume/i.test(device.software.name)
             || device.software.name === 'JM08' // Ignore X1800/X1850 mixers
+            || device.software.name === 'SSS0' // Ignore SoundSwitchEmbedded on players
         );
     }
     isDeviceSeen(device) {

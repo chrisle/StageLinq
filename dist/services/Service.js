@@ -1,13 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Service = void 0;
-const assert_1 = require("assert");
-const network_1 = require("../network");
-const ReadContext_1 = require("../utils/ReadContext");
-const WriteContext_1 = require("../utils/WriteContext");
-const tcp = require("../utils/tcp");
+//import { hex } from '../utils/hex';
 const events_1 = require("events");
 const LogEmitter_1 = require("../LogEmitter");
+const types_1 = require("../types");
+const ReadContext_1 = require("../utils/ReadContext");
+const assert_1 = require("assert");
+const WriteContext_1 = require("../utils/WriteContext");
+const tcp = require("../utils/tcp");
 class Service extends events_1.EventEmitter {
     constructor(p_address, p_port, p_controller) {
         super();
@@ -65,8 +66,8 @@ class Service extends events_1.EventEmitter {
         });
         // FIXME: Is this required for all Services?
         const ctx = new WriteContext_1.WriteContext();
-        ctx.writeUInt32(network_1.MessageId.ServicesAnnouncement);
-        ctx.write(network_1.CLIENT_TOKEN);
+        ctx.writeUInt32(types_1.MessageId.ServicesAnnouncement);
+        ctx.write(types_1.Tokens.SoundSwitch);
         ctx.writeNetworkStringUTF16(this.name);
         ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
         await this.write(ctx);
@@ -96,7 +97,7 @@ class Service extends events_1.EventEmitter {
             this.addListener('message', listener);
             setTimeout(() => {
                 reject(new Error(`Failed to receive message '${p_messageId}' on time`));
-            }, network_1.MESSAGE_TIMEOUT);
+            }, types_1.MESSAGE_TIMEOUT);
         });
     }
     async write(p_ctx) {

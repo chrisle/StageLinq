@@ -1,8 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.NetworkDevice = void 0;
-const _1 = require(".");
+const LogEmitter_1 = require("../LogEmitter");
 const ReadContext_1 = require("../utils/ReadContext");
+const types_1 = require("../types");
 const sleep_1 = require("../utils/sleep");
 const assert_1 = require("assert");
 const WriteContext_1 = require("../utils/WriteContext");
@@ -10,7 +11,6 @@ const FileType = require("file-type");
 const fs = require("fs");
 const tcp = require("../utils/tcp");
 const Database = require("better-sqlite3");
-const LogEmitter_1 = require("../LogEmitter");
 class NetworkDevice {
     constructor(info) {
         this.connection = null;
@@ -58,17 +58,17 @@ class NetworkDevice {
             // FIXME: Verify token
             ctx.seek(16); // Skip token; present in all messages
             switch (id) {
-                case _1.MessageId.TimeStamp:
+                case types_1.MessageId.TimeStamp:
                     ctx.seek(16); // Skip token; present in all messages
                     // Time Alive is in nanoseconds; convert back to seconds
                     this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
                     break;
-                case _1.MessageId.ServicesAnnouncement:
+                case types_1.MessageId.ServicesAnnouncement:
                     const service = ctx.readNetworkStringUTF16();
                     const port = ctx.readUInt16();
                     this.servicePorts[service] = port;
                     break;
-                case _1.MessageId.ServicesRequest:
+                case types_1.MessageId.ServicesRequest:
                     this.serviceRequestAllowed = true;
                     break;
                 default:
@@ -200,7 +200,7 @@ class NetworkDevice {
                 reject(new Error(`Failed to requestServices for ` +
                     `${this.connectionInfo.source} ` +
                     `${this.connectionInfo.address}:${this.connectionInfo.port}`));
-            }, _1.LISTEN_TIMEOUT);
+            }, types_1.LISTEN_TIMEOUT);
             // Wait for serviceRequestAllowed
             while (true) {
                 if (this.serviceRequestAllowed) {
@@ -210,8 +210,8 @@ class NetworkDevice {
             }
             // FIXME: Refactor into message writer helper class
             const ctx = new WriteContext_1.WriteContext();
-            ctx.writeUInt32(_1.MessageId.ServicesRequest);
-            ctx.write(_1.CLIENT_TOKEN);
+            ctx.writeUInt32(types_1.MessageId.ServicesRequest);
+            ctx.write(types_1.Tokens.SoundSwitch);
             const written = await this.connection.write(ctx.getBuffer());
             (0, assert_1.strict)(written === ctx.tell());
             while (true) {
