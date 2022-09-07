@@ -61,7 +61,7 @@ require('console-stamp')(console, {
       // Ensure SIGINT won't be impeded by some error
       try {
         await stageLinq.disconnect();
-      } catch (err) {
+      } catch (err: any) {
         const message = err.stack.toString();
         console.error(message);
       }
@@ -74,7 +74,7 @@ require('console-stamp')(console, {
       await sleep(250);
     }
 
-  } catch (err) {
+  } catch (err: any) {
     const message = err.stack.toString();
     console.error(message);
     returnCode = 1;
