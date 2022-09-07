@@ -1,18 +1,11 @@
-import { strict as assert } from 'assert';
-import {
-	Action,
-	LISTEN_PORT,
-	CONNECT_TIMEOUT,
-	CLIENT_TOKEN,
-	DISCOVERY_MESSAGE_MARKER,
-	ANNOUNCEMENT_INTERVAL,
-} from '../types/common';
+import { Action, LISTEN_PORT, CONNECT_TIMEOUT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL, Tokens, } from '../types';
 import { createSocket, Socket as UDPSocket } from 'dgram';
-import { subnet } from 'ip';
+import { Logger } from '../LogEmitter';
 import { networkInterfaces } from 'os';
+import { strict as assert } from 'assert';
+import { subnet } from 'ip';
 import { WriteContext } from '../utils/WriteContext';
 import type { DiscoveryMessage } from '../types';
-import { Logger } from '../LogEmitter';
 
 function findBroadcastIPs(): string[] {
 	const interfaces = Object.values(networkInterfaces());
@@ -36,7 +29,7 @@ const announcementMessage: DiscoveryMessage = {
 		version: '2.1.3',
 	},
 	source: 'nowplaying',
-	token: CLIENT_TOKEN,
+	token: Tokens.SoundSwitch,
 };
 
 let announceClient: UDPSocket = null;

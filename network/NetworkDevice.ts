@@ -1,6 +1,6 @@
-import { MessageId, CLIENT_TOKEN, LISTEN_TIMEOUT } from '.';
+import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
-import { ServicePorts, ConnectionInfo } from '../types';
+import { ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens } from '../types';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -9,7 +9,6 @@ import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
 import Database = require('better-sqlite3');
-import { Logger } from '../LogEmitter';
 
 
 interface SourceAndTrackPath {
@@ -267,7 +266,7 @@ export class NetworkDevice {
       // FIXME: Refactor into message writer helper class
       const ctx = new WriteContext();
       ctx.writeUInt32(MessageId.ServicesRequest);
-      ctx.write(CLIENT_TOKEN);
+      ctx.write(Tokens.SoundSwitch);
       const written = await this.connection.write(ctx.getBuffer());
       assert(written === ctx.tell());
 

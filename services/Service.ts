@@ -1,13 +1,13 @@
-import { strict as assert } from 'assert';
-import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from '../network';
+//import { hex } from '../utils/hex';
+import { EventEmitter } from 'events';
+import { Logger } from '../LogEmitter';
+import { MessageId, MESSAGE_TIMEOUT, Tokens } from '../types';
+import { NetworkDevice } from '../network/NetworkDevice';
 import { ReadContext } from '../utils/ReadContext';
+import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import * as tcp from '../utils/tcp';
-import { EventEmitter } from 'events';
-import { NetworkDevice } from '../network/NetworkDevice';
-//import { hex } from '../utils/hex';
 import type { ServiceMessage } from '../types';
-import { Logger } from '../LogEmitter';
 
 export abstract class Service<T> extends EventEmitter {
 	private address: string;
@@ -76,7 +76,7 @@ export abstract class Service<T> extends EventEmitter {
 		// FIXME: Is this required for all Services?
 		const ctx = new WriteContext();
 		ctx.writeUInt32(MessageId.ServicesAnnouncement);
-		ctx.write(CLIENT_TOKEN);
+		ctx.write(Tokens.SoundSwitch);
 		ctx.writeNetworkStringUTF16(this.name);
 		ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
 		await this.write(ctx);
