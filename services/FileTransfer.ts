@@ -133,7 +133,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
 			default:
 				{
-					assert.fail(`Unhandled message id '${messageId}'`);
+					assert.fail(`File Transfer Unhandled message id '${messageId}'`);
 				}
 				break;
 		}

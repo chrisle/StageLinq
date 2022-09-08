@@ -98,7 +98,7 @@ export class NetworkDevice {
           this.serviceRequestAllowed = true;
           break;
         default:
-          assert.fail(`Unhandled message id '${id}'`);
+          assert.fail(`NetworkDevice Unhandled message id '${id}'`);
           break;
       }
     }
