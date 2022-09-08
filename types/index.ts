@@ -1,4 +1,5 @@
 export * from './common';
+export * from './database';
 export * from './player';
 export * from './tokens';
 
@@ -44,6 +45,7 @@ export interface ConnectionInfo extends DiscoveryMessage {
 
 
 export interface StageLinqOptions {
+	downloadDatabase?: boolean;
   useDatabases?: boolean;
 	maxRetries?: number;
 }

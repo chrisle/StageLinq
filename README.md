@@ -35,11 +35,6 @@ async function main() {
   stageLinq.logger.on('debug', (...args: any) => { console.debug(...args); });
   stageLinq.logger.on('silly', (...args: any) => { console.debug(...args); });
 
-  // Fires when a new track is loaded into a device.
-  stageLinq.devices.on('trackLoaded', (status) => {
-    console.log(`New track loaded on to deck ${status.deck}`, status);
-  });
-
   // Fires when the state of the device changes.
   stageLinq.devices.on('stateChanged', (status) => {
     console.log(`State of ${status.deck} changed`, status);
@@ -58,6 +53,20 @@ async function main() {
       : data.message.interval;
     console.debug(`${connectionInfo.address}:${connectionInfo.port} ` +
       `${data.message.name} => ${msg}`);
+  });
+
+  stageLinq.devices.on('ready', (connectionInfo) => {
+    console.log(`Device ${connectionInfo.software.name} is ready!`);
+  });
+
+  stageLinq.devices.on('trackLoaded', (status) => {
+    if (stageLinq.options.useDatabases &&  status.source) {
+      const result = stageLinq.databases.querySource(status.source,
+        `SELECT * FROM Track WHERE path = '${status.trackPath}'`);
+        console.log('Database entry:', result);
+      }
+    }
+    console.log('New track loaded:', status);
   });
 
   await stageLinq.connect();

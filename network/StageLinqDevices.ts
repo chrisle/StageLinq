@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { sleep } from '../utils';
-import { StateData, StateMap } from '../services';
+import { FileTransfer, StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
 
@@ -11,6 +11,7 @@ enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
 
 interface StageLinqDevice {
   networkDevice: NetworkDevice;
+  fileTransferService: FileTransfer;
 };
 
 export declare interface StageLinqDevices {
@@ -101,11 +102,13 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   get databases() {
-    if (!this.options.useDatabases)
-      throw new Error(`You can't get database sources if you set useDatabases to false.`);
-    if (!this._databases)
-      throw new Error(`Unexpected: Database sources hasn't been initialized.`)
     return this._databases;
+  }
+
+  async downloadFile(ipAddress: string, path: string) {
+    const device = this.devices.get(ipAddress);
+    const file = await device.fileTransferService.getFile(path);
+    return file;
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -120,13 +123,21 @@ export class StageLinqDevices extends EventEmitter {
     await networkDevice.connect();
 
     Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
-    this._databases = new Databases(networkDevice);
-    this.devices.set(connectionInfo.address, { networkDevice: networkDevice });
+    const fileTransfer = await networkDevice.connectToService(FileTransfer);
+
+    this.devices.set(connectionInfo.address, {
+      networkDevice: networkDevice,
+      fileTransferService: fileTransfer
+    });
+
+    // Download the database before connecting to StateMap.
+    if (this.options.downloadDatabase) {
+      this._databases = new Databases(networkDevice);
+      await this._databases.downloadDb({ addSource: this.options.useDatabases });
+    }
 
     this.emit('connected', connectionInfo);
 
-    // Download the database before connecting to StateMap.
-    if (this.options.useDatabases) await this._databases.downloadDb();
 
     // Setup StateMap
     const stateMap = await networkDevice.connectToService(StateMap);

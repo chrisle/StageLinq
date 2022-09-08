@@ -1,6 +1,6 @@
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
-
+// import * as fs from 'fs';
 require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
 });
@@ -51,12 +51,16 @@ require('console-stamp')(console, {
     console.log(`Device ${connectionInfo.software.name} is ready!`);
   });
 
-  stageLinq.devices.on('trackLoaded', (status) => {
+  stageLinq.devices.on('trackLoaded', async (status) => {
     if (stageLinq.options.useDatabases) {
       if (status.source) {
-        const result = stageLinq.databases.querySource(status.source,
-          `SELECT * FROM Track WHERE path = '${status.trackPath}'`);
+        try {
+          const result = stageLinq.databases.querySource(status.source,
+            `SELECT * FROM Track WHERE path = '${status.trackPath}'`);
           console.log('Database entry:', result);
+        } catch(e) {
+          console.error(e);
+        }
       }
     }
     console.log('New track loaded:', status);

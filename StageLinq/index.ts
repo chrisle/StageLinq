@@ -5,6 +5,7 @@ import { Logger } from '../LogEmitter';
 import { StageLinqOptions } from '../types';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
+  downloadDatabase: true,
   useDatabases: true,
   maxRetries: 3
 };
