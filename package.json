@@ -1,6 +1,6 @@
 {
 	"name": "stagelinq",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "Typescript library to connect to Denon StageLinq devices",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
@@ -8,7 +8,7 @@
 		"build": "tsc --build tsconfig.json",
 		"watch": "tsc --build tsconfig.json -w"
 	},
-	"author": "Chris Le",
+	"author": "Chris Le (TRIODE)",
 	"license": "GNU GPLv3",
 	"main": "index.ts",
 	"dependencies": {
