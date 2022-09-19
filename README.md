@@ -7,6 +7,8 @@ NodeJS library implementation to access information through the Denon StageLinq 
 * Tested with Denon two SC6000s, X1850, Prime 4, Prime 2, and Prime Go.
 * Event emitters for state changes, tracks getting loaded, and current playing track.
 * Event emitter for debug logging.
+* Downloads source databases for you.
+* You can implement handling the database yourself or use this library's BetterSqlite3 dependency.
 
 ---
 
