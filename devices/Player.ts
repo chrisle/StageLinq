@@ -20,6 +20,7 @@ interface PlayerOptions {
 interface SourceAndTrackPath {
   source: string;
   trackPath: string;
+  trackPathAbsolute: string;
 }
 
 /**
@@ -105,7 +106,7 @@ export class Player extends EventEmitter {
           trackNetworkPath: json.string,
           source: this.getSourceAndTrackPath(json.string).source,
           trackPath: this.getSourceAndTrackPath(json.string).trackPath,
-          trackPathAbsolute: `/${this.getSourceAndTrackPath(json.string).source}/Engine Library/${this.getSourceAndTrackPath(json.string).trackPath}`
+          trackPathAbsolute: this.getSourceAndTrackPath(json.string).trackPathAbsolute
         }
       : (/Track\/SongLoaded$/.test(name)) ? { songLoaded: json.state }
       : (/Track\/SongName$/.test(name)) ? { title: json.string }
@@ -152,11 +153,25 @@ export class Player extends EventEmitter {
       ...result
     };
 
-    // We're casting it because we originally built it up piecemeal.
+    // We're casting here because we originally built it up piecemeal.
     const currentState = output as PlayerStatus;
-    currentState.dbSourceName = currentState.source ? `${this.address}_${this.port}_${currentState.source}` : '';
-    if (songLoadedSignalPresent && currentState.trackNetworkPath) this.emit('trackLoaded', currentState);
+
+    if (/Unknown/.test(currentState.source)) {
+      // Tracks from streaming sources won't be in the database.
+      currentState.dbSourceName = '';
+    } else {
+      currentState.dbSourceName = currentState.source
+        ? `${this.address}_${this.port}_${currentState.source}` : '';
+    }
+
+    // If a song is loaded and we have a location emit the trackLoaded event.
+    if (songLoadedSignalPresent && currentState.trackNetworkPath)
+      this.emit('trackLoaded', currentState);
+
+    // If the song is actually playing emit the nowPlaying event.
     if (result.playState) this.emit('nowPlaying', currentState);
+
+    // Emit that the state has changed.
     this.emit('stateChanged', currentState);
   }
 
@@ -166,17 +181,29 @@ export class Player extends EventEmitter {
   }
 
   private getSourceAndTrackPath(p_path: string): SourceAndTrackPath {
-    if (!p_path || p_path.length === 0) return { source: '', trackPath: '' };
+    if (!p_path || p_path.length === 0) return { source: '', trackPath: '', trackPathAbsolute: '' };
     const parts = p_path.split('/');
     const source = parts[3];
     let trackPath = parts.slice(5).join('/');
+
+    // Handle streaming tracks.
+    if (/\(Unknown\)/.test(source)) {
+      return {
+        source: source.replace(':', ''),
+        trackPath: `streaming://${trackPath}`,
+        trackPathAbsolute: `streaming://${trackPath}`
+      }
+    }
+
     if (parts[4] !== 'Engine Library') {
       // This probably occurs with RekordBox conversions; tracks are outside Engine Library folder
       trackPath = `../${parts[4]}/${trackPath}`;
     }
+
     return {
       source: source,
       trackPath: trackPath,
+      trackPathAbsolute: `/${source}/Engine Library/${trackPath}`
     };
   }
 

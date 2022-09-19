@@ -169,6 +169,12 @@ export class FileTransfer extends Service<FileTransferData> {
       this.receivedFile = new WriteContext({ size: txinfo.size });
 
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
+      const total = parseInt(txinfo.size);
+
+      if (total === 0) {
+        Logger.warn(`${p_location} doesn't exist or is a streaming file`);
+        return;
+      }
 
       await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1);
 
@@ -179,7 +185,6 @@ export class FileTransfer extends Service<FileTransferData> {
           }, DOWNLOAD_TIMEOUT);
 
           while (this.receivedFile.isEOF() === false) {
-            const total = parseInt(txinfo.size);
             const bytesDownloaded = total - this.receivedFile.sizeLeft();
             const percentComplete = (bytesDownloaded / total) * 100;
             this.emit('fileTransferProgress', {

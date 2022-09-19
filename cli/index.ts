@@ -97,8 +97,10 @@ require('console-stamp')(console, {
     try {
       const tempfile = path.resolve(os.tmpdir(), 'media');
       const data = await stageLinq.devices.downloadFile(status.address, status.trackPathAbsolute);
-      if (data) fs.writeFileSync(tempfile, Buffer.from(data));
-      console.log(`Downloaded ${status.trackPathAbsolute} to ${tempfile}`);
+      if (data) {
+        fs.writeFileSync(tempfile, Buffer.from(data));
+        console.log(`Downloaded ${status.trackPathAbsolute} to ${tempfile}`);
+      }
     } catch(e) {
       console.error(`Could not download ${status.trackPathAbsolute}`);
     }
