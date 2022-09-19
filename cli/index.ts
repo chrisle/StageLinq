@@ -77,7 +77,8 @@ require('console-stamp')(console, {
   // Fires when a new track is loaded on to a player.
   stageLinq.devices.on('trackLoaded', async (status) => {
 
-    // Example of how to connect to the database and get additional information.
+    // Example of how to connect to the database using this library's
+    // implementation of BetterSqlite3 to get additional information.
     if (stageLinq.options.downloadDbSources && status.dbSourceName) {
       try {
         const connection = new DbConnection(stageLinq.databases.getDbPath(status.dbSourceName));

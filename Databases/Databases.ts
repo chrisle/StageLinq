@@ -60,10 +60,10 @@ export class Databases extends EventEmitter {
     this.emit('dbDownloaded', sourceId, dbPath);
   }
 
-  getDbPath(dbConnectionName: string) {
-    if (!this.sources.has(dbConnectionName))
-      throw new Error(`Database name ${dbConnectionName} does not exist`);
-    return this.sources.get(dbConnectionName);
+  getDbPath(dbSourceName: string) {
+    if (!this.sources.has(dbSourceName))
+      throw new Error(`Database name ${dbSourceName} does not exist`);
+    return this.sources.get(dbSourceName);
   }
 
 }
