@@ -1,7 +1,7 @@
 import { PlayerLayerState } from '../types';
 
 // How long to wait for all the messages to come in before firing the callback.
-export const UPDATE_RATE_MS = 2000;
+export const UPDATE_RATE_MS = 500;
 
 export type DataQueueCallback = (data: PlayerLayerState) => void;
 
