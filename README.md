@@ -12,7 +12,28 @@ NodeJS library implementation to access information through the Denon StageLinq 
 
 ## Usage
 
-See a complete example in /cli/index.ts
+```ts
+import { StageLinq } from '../StageLinq';
+
+const options = { downloadDbSources: true };
+const stageLinq = new StageLinq(options);
+
+stageLinq.devices.on('ready', (connectionInfo) => {
+  console.log(`Device ${connectionInfo.software.name} on ` +
+    `${connectionInfo.address}:${connectionInfo.port} is ready.`);
+});
+
+stageLinq.devices.on('trackLoaded', (status) => {
+  console.log(`"${status.title}" - ${status.artist} loaded on player ` +
+    `${status.deck})`);
+});
+
+stageLinq.devices.on('nowPlaying', (status) => {
+  console.log(`Now Playing: "${status.title}" - ${status.artist})`);
+});
+```
+
+A [complete example](https://github.com/chrisle/StageLinq/blob/main/cli/index.ts) with all events and options can be found in the CLI.
 
 ---
 
