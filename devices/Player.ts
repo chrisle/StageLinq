@@ -104,7 +104,8 @@ export class Player extends EventEmitter {
       : (/Track\/TrackNetworkPath$/.test(name)) ? {
           trackNetworkPath: json.string,
           source: this.getSourceAndTrackPath(json.string).source,
-          trackPath: this.getSourceAndTrackPath(json.string).trackPath
+          trackPath: this.getSourceAndTrackPath(json.string).trackPath,
+          trackPathAbsolute: `/${this.getSourceAndTrackPath(json.string).source}/Engine Library/${this.getSourceAndTrackPath(json.string).trackPath}`
         }
       : (/Track\/SongLoaded$/.test(name)) ? { songLoaded: json.state }
       : (/Track\/SongName$/.test(name)) ? { title: json.string }

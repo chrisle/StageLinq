@@ -1,7 +1,8 @@
 {
 	"name": "stagelinq",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Typescript library to connect to Denon StageLinq devices",
+	"homepage": "https://github.com/chrisle/StageLinq",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"start": "node dist/cli/index.js",

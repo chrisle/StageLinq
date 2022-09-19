@@ -22,6 +22,7 @@ export interface PlayerStatus {
   source: string;
   dbSourceName: string;
   trackPath: string;
+  trackPathAbsolute: string;
 }
 
 export interface PlayerLayerState {
