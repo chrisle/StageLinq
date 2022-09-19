@@ -1,2 +1,2 @@
-export * from './makeDownloadPath';
+export * from '../utils/getTempFilePath';
 export * from './maybeDownloadFiles';

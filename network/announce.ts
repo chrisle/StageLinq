@@ -1,10 +1,8 @@
 import {
-  Action,
   ANNOUNCEMENT_INTERVAL,
   CONNECT_TIMEOUT,
   DISCOVERY_MESSAGE_MARKER,
   LISTEN_PORT,
-  Tokens,
 } from '../types';
 import { createSocket, Socket as UDPSocket } from 'dgram';
 import { Logger } from '../LogEmitter';
@@ -30,16 +28,6 @@ function findBroadcastIPs(): string[] {
   return ips;
 }
 
-const announcementMessage: DiscoveryMessage = {
-  action: Action.Login,
-  port: 0,
-  software: {
-    name: 'Now Playing',
-    version: '2.1.3',
-  },
-  source: 'nowplaying',
-  token: Tokens.SoundSwitch,
-};
 
 let announceClient: UDPSocket | null = null;
 let announceTimer: NodeJS.Timer | null = null;
@@ -93,20 +81,18 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
   await Promise.all(promises);
 }
 
-export async function unannounce(): Promise<void> {
+export async function unannounce(message: DiscoveryMessage): Promise<void> {
   assert(announceTimer);
   clearInterval(announceTimer);
   announceTimer = null;
-
-  announcementMessage.action = Action.Logout;
   const ctx = new WriteContext();
-  writeDiscoveryMessage(ctx, announcementMessage);
+  writeDiscoveryMessage(ctx, message);
   const msg = new Uint8Array(ctx.getBuffer());
   await broadcastMessage(msg);
   // Logger.info("Unannounced myself");
 }
 
-export async function announce(): Promise<void> {
+export async function announce(message: DiscoveryMessage): Promise<void> {
   if (announceTimer) {
     Logger.log('Already has an announce timer.')
     return;
@@ -114,9 +100,8 @@ export async function announce(): Promise<void> {
 
   if (!announceClient) announceClient = await initUdpSocket();
 
-  announcementMessage.action = Action.Login;
   const ctx = new WriteContext();
-  writeDiscoveryMessage(ctx, announcementMessage);
+  writeDiscoveryMessage(ctx, message);
   const msg = new Uint8Array(ctx.getBuffer());
 
   // Immediately announce myself
@@ -124,4 +109,25 @@ export async function announce(): Promise<void> {
 
   announceTimer = setInterval(broadcastMessage, ANNOUNCEMENT_INTERVAL, msg);
   Logger.info("Announced myself");
+}
+
+export interface DiscoveryMessageOptions {
+  name: string;
+  version: string;
+  source: string;
+  token: Uint8Array;
+};
+
+export function createDiscoveryMessage(action: string, discoveryMessageOptions: DiscoveryMessageOptions) {
+  const msg: DiscoveryMessage = {
+    action: action,
+    port: 0,
+    software: {
+      name: discoveryMessageOptions.name,
+      version: discoveryMessageOptions.version
+    },
+    source: discoveryMessageOptions.source,
+    token: discoveryMessageOptions.token
+  };
+  return msg;
 }

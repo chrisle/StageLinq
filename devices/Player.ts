@@ -128,10 +128,10 @@ export class Player extends EventEmitter {
    */
   private handleUpdate(data: PlayerLayerState) {
     const layer = data.layer;
-    const newSongLoaded = data.hasOwnProperty('songLoaded');
+    const songLoadedSignalPresent = data.hasOwnProperty('songLoaded');
 
     // If a new song is loaded drop all the previous track data.
-    if (newSongLoaded) {
+    if (songLoadedSignalPresent) {
       this.decks.set(layer, data);
     } else {
       this.decks.set(layer, { ...this.decks.get(layer), ...data });
@@ -153,7 +153,8 @@ export class Player extends EventEmitter {
 
     // We're casting it because we originally built it up piecemeal.
     const currentState = output as PlayerStatus;
-    if (newSongLoaded) this.emit('trackLoaded', currentState);
+    currentState.dbSourceName = currentState.source ? `${this.address}_${this.port}_${currentState.source}` : '';
+    if (songLoadedSignalPresent && currentState.trackNetworkPath) this.emit('trackLoaded', currentState);
     if (result.playState) this.emit('nowPlaying', currentState);
     this.emit('stateChanged', currentState);
   }

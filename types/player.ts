@@ -20,6 +20,7 @@ export interface PlayerStatus {
   trackNetworkPath: string;
 
   source: string;
+  dbSourceName: string;
   trackPath: string;
 }
 

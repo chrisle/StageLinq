@@ -1,3 +1,5 @@
+import { DiscoveryMessageOptions } from '../network';
+
 export * from './common';
 export * from './database';
 export * from './player';
@@ -45,7 +47,7 @@ export interface ConnectionInfo extends DiscoveryMessage {
 
 
 export interface StageLinqOptions {
-	downloadDatabase?: boolean;
-  useDatabases?: boolean;
 	maxRetries?: number;
+	actingAs?: DiscoveryMessageOptions;
+	downloadDbSources?: boolean;
 }

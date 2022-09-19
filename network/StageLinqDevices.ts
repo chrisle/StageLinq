@@ -41,6 +41,7 @@ export class StageLinqDevices extends EventEmitter {
   constructor(options: StageLinqOptions) {
     super();
     this.options = options;
+    this._databases = new Databases();
   }
 
   /**
@@ -130,14 +131,10 @@ export class StageLinqDevices extends EventEmitter {
       fileTransferService: fileTransfer
     });
 
-    // Download the database before connecting to StateMap.
-    if (this.options.downloadDatabase) {
-      this._databases = new Databases(networkDevice);
-      await this._databases.downloadDb({ addSource: this.options.useDatabases });
+    if (this.options.downloadDbSources) {
+      const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
+      Logger.debug(`Database sources: ${sources.join(', ')}`);
     }
-
-    this.emit('connected', connectionInfo);
-
 
     // Setup StateMap
     const stateMap = await networkDevice.connectToService(StateMap);
@@ -164,6 +161,8 @@ export class StageLinqDevices extends EventEmitter {
       this.emit('nowPlaying', status);
     });
 
+    this.emit('connected', connectionInfo);
+
   }
 
   private deviceId(device: ConnectionInfo) {
@@ -188,8 +187,8 @@ export class StageLinqDevices extends EventEmitter {
 
   private isIgnored(device: ConnectionInfo) {
     return (
-      device.software.name === 'OfflineAnalyzer'
-      || device.source === 'nowplaying' // Ignore myself
+      device.source === this.options.actingAs.source
+      || device.software.name === 'OfflineAnalyzer'
       || /^SoundSwitch/i.test(device.software.name)
       || /^Resolume/i.test(device.software.name)
       || device.software.name === 'JM08' // Ignore X1800/X1850 mixers

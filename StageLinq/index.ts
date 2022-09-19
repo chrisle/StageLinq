@@ -1,13 +1,13 @@
-import { announce, StageLinqListener, unannounce } from '../network';
+import { announce, createDiscoveryMessage, StageLinqListener, unannounce } from '../network';
 import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
-import { StageLinqOptions } from '../types';
+import { Action, ActingAsDevice, StageLinqOptions } from '../types';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
-  downloadDatabase: true,
-  useDatabases: true,
-  maxRetries: 3
+  maxRetries: 3,
+  actingAs: ActingAsDevice.NowPlaying,
+  downloadDbSources: true
 };
 
 /**
@@ -23,7 +23,7 @@ export class StageLinq extends EventEmitter {
 
   constructor(options?: StageLinqOptions) {
     super();
-    if (options) this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.options = { ...DEFAULT_OPTIONS, ...options };
     this.devices = new StageLinqDevices(this.options);
   }
 
@@ -31,7 +31,8 @@ export class StageLinq extends EventEmitter {
    * Connect to the StageLinq network.
    */
   async connect() {
-    await announce();
+    const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
+    await announce(msg);
     this.listener.listenForDevices(async (connectionInfo) => {
       await this.devices.handleDevice(connectionInfo);
     });
@@ -43,7 +44,8 @@ export class StageLinq extends EventEmitter {
   async disconnect() {
     try {
       this.devices.disconnectAll();
-      await unannounce();
+      const msg = createDiscoveryMessage(Action.Logout, this.options.actingAs)
+      await unannounce(msg);
     } catch(e) {
       throw new Error(e);
     }
