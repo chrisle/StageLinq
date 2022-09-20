@@ -38,10 +38,30 @@ export class StageLinqDevices extends EventEmitter {
   private discoveryStatus: Map<string, ConnectionStatus> = new Map();
   private options: StageLinqOptions;
 
+  private deviceWatchTimeout: NodeJS.Timeout | null = null;
+  private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
+
   constructor(options: StageLinqOptions) {
     super();
     this.options = options;
     this._databases = new Databases();
+
+    // This fucking works!
+    // So basically, we check connection status every 3 seconds
+    // If everything we found is has connected (meaning it's connected to
+    // the device and we've downloaded the database) THEN we setup statemap
+    // on all of them.
+    this.deviceWatchTimeout = setInterval(() => {
+      const values = Array.from(this.discoveryStatus.values());
+      Logger.debug(`ARE WE THERE YET?!?!?! ${values}`);
+      if (!values.includes(0)) {
+        clearInterval(this.deviceWatchTimeout);
+        for (const cb of this.stateMapCallback) {
+          this.setupStateMap(cb.connectionInfo, cb.networkDevice);
+        }
+      }
+    }, 3000);
+
   }
 
   /**
@@ -72,9 +92,22 @@ export class StageLinqDevices extends EventEmitter {
       try {
         Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
           `Attempt ${attempt}/${this.options.maxRetries}`);
-        // If this fails, catch it, and maybe retry if necessary.
+
+        // Connect to the player and download the database.
+        // If this fails, retry.
         await this.connectToPlayer(connectionInfo);
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
+
+        // RACE CONDITION!
+        // Now that we've connected connect to stateMap and begin handling data.
+        // But! We need to wait until all the other players on the network have
+        // connected and have databases copied so that if they are looking
+        // at tracks from other player, they will have been loaded.
+        //
+        // Solution!!! see the shitty setInterval in the constructor()
+        // FUCK that's ugly. but works.. TODO: Clean up my fucking mess.
+
+
         this.emit('ready', connectionInfo);
         return; // Don't forget to return!
       } catch(e) {
@@ -106,8 +139,8 @@ export class StageLinqDevices extends EventEmitter {
     return this._databases;
   }
 
-  async downloadFile(ipAddress: string, path: string) {
-    const device = this.devices.get(ipAddress);
+  async downloadFile(deviceId: string, path: string) {
+    const device = this.devices.get(deviceId);
     const file = await device.fileTransferService.getFile(path);
     return file;
   }
@@ -123,19 +156,37 @@ export class StageLinqDevices extends EventEmitter {
     const networkDevice = new NetworkDevice(connectionInfo);
     await networkDevice.connect();
 
+    const deviceId = this.sourceId(connectionInfo);
     Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
     const fileTransfer = await networkDevice.connectToService(FileTransfer);
 
-    this.devices.set(connectionInfo.address, {
+    this.devices.set(`net://${deviceId}`, {
       networkDevice: networkDevice,
       fileTransferService: fileTransfer
     });
 
+    await this.downloadDatabases(connectionInfo, networkDevice);
+
+    this.stateMapCallback.push({ connectionInfo, networkDevice });
+    // await this.setupStateMap(connectionInfo, networkDevice);
+
+    this.emit('connected', connectionInfo);
+  }
+
+  private sourceId(connectionInfo: ConnectionInfo) {
+    return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
+      .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
+  }
+
+  private async downloadDatabases(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
     if (this.options.downloadDbSources) {
       const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
       Logger.debug(`Database sources: ${sources.join(', ')}`);
     }
+  }
 
+  private async setupStateMap(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
+    Logger.debug('********** SETUP STATEEEEEMAPPPPPPP **********')
     // Setup StateMap
     const stateMap = await networkDevice.connectToService(StateMap);
     stateMap.on('message', (data) => {
@@ -146,7 +197,8 @@ export class StageLinqDevices extends EventEmitter {
     const player = new Player({
       stateMap: stateMap,
       address: connectionInfo.address,
-      port: connectionInfo.port
+      port: connectionInfo.port,
+      deviceId: this.sourceId(connectionInfo)
     });
 
     player.on('trackLoaded', (status) => {
@@ -160,9 +212,6 @@ export class StageLinqDevices extends EventEmitter {
     player.on('nowPlaying', (status) => {
       this.emit('nowPlaying', status);
     });
-
-    this.emit('connected', connectionInfo);
-
   }
 
   private deviceId(device: ConnectionInfo) {

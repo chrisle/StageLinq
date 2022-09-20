@@ -25,7 +25,10 @@ export class Databases extends EventEmitter {
     const sources = await service.getSources();
     const output: string[] = [];
     for (const source of sources) {
-      const dbConnectionName = `${connectionInfo.address}_${connectionInfo.port}_${source.name}`;
+      const deviceId = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
+        .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
+      const dbConnectionName = `net://${deviceId}/${source.name}`;
+      Logger.debug(`DB network path: ${dbConnectionName}`);
       if (this.sources.has(dbConnectionName)) {
         Logger.debug(`Already seen ${source} on ${connectionInfo.address}:${connectionInfo.port}`);
       } else {

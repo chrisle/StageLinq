@@ -15,6 +15,7 @@ interface PlayerOptions {
   stateMap: StateMap;
   address: string,
   port: number;
+  deviceId: string;
 }
 
 interface SourceAndTrackPath {
@@ -48,6 +49,7 @@ export class Player extends EventEmitter {
   private masterStatus: boolean;    // If this device has the matser tempo
   private decks: Map<string, PlayerLayerState> = new Map();
   private queue: {[layer: string]: PlayerMessageQueue} = {};
+  private deviceId: string;
 
   /**
    * Initialize a player device.
@@ -60,6 +62,7 @@ export class Player extends EventEmitter {
     options.stateMap.on('message', this.messageHandler.bind(this));
     this.address = options.address;
     this.port = options.port;
+    this.deviceId = options.deviceId;
     this.queue = {
       A: new PlayerMessageQueue('A').onDataReady(this.handleUpdate.bind(this)),
       B: new PlayerMessageQueue('B').onDataReady(this.handleUpdate.bind(this)),
@@ -150,22 +153,26 @@ export class Player extends EventEmitter {
       port: this.port,
       masterTempo: this.masterTempo,
       masterStatus: this.masterStatus,
+      deviceId: `net://${this.deviceId}`,
       ...result
     };
 
     // We're casting here because we originally built it up piecemeal.
     const currentState = output as PlayerStatus;
 
-    if (/Unknown/.test(currentState.source)) {
+    if (currentState.trackNetworkPath && currentState.trackNetworkPath.startsWith('net:')) {
+      const pathParts = currentState.trackNetworkPath.split('net://')[1].split('/', 2);
+      currentState.dbSourceName = `net://${pathParts[0]}/${pathParts[1]}`;
+      currentState.deviceId = `net://${pathParts[0]}`;
+    } else if (!currentState.source || /Unknown/.test(currentState.source)) {
       // Tracks from streaming sources won't be in the database.
       currentState.dbSourceName = '';
     } else {
-      currentState.dbSourceName = currentState.source
-        ? `${this.address}_${this.port}_${currentState.source}` : '';
+      currentState.dbSourceName = `net://${this.deviceId}/${currentState.source}`;
     }
 
     // If a song is loaded and we have a location emit the trackLoaded event.
-    if (songLoadedSignalPresent && currentState.trackNetworkPath)
+    if (currentState.trackNetworkPath)
       this.emit('trackLoaded', currentState);
 
     // If the song is actually playing emit the nowPlaying event.

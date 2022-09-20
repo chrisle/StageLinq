@@ -9,7 +9,7 @@ import * as path from 'path';
  * @returns Absolute path
  */
 export function getTempFilePath(p_path: string) {
-	const tmpPath = `/${os.tmpdir()}/localdb/${p_path}`;
+	const tmpPath = `/${os.tmpdir()}/localdb/${p_path}`.replace('net://', '');
 	let paths = tmpPath.split(/[/\\]/).filter((e) => e.length > 0);
 	const isFolder = p_path.endsWith('/') || p_path.endsWith('\\');
 	let filename = '';

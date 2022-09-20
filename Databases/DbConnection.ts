@@ -20,7 +20,7 @@ export class DbConnection {
    * @returns
    */
   querySource<T>(query: string, ...params: any[]): T[] {
-    console.debug(`Querying ${this.dbPath}: `);
+    console.debug(`Querying ${this.dbPath}: ${query} (${params.join(', ')})`);
     const result = this.db.prepare(query);
     return result.all(params);
   }
@@ -32,10 +32,11 @@ export class DbConnection {
    * @returns
    */
   getTrackInfo(trackPath: string) {
-    const SQL = (/streaming:\/\//.test(trackPath))
-      ? `SELECT * FROM Track WHERE uri = '${trackPath}'`
-      : `SELECT * FROM Track WHERE path = '${trackPath}'`;
-    return this.querySource(SQL);
+    if (/streaming:\/\//.test(trackPath)) {
+      return this.querySource('SELECT * FROM Track WHERE uri = (?)', trackPath);
+    } else {
+      return this.querySource('SELECT * FROM Track WHERE path = (?)', trackPath);
+    }
   }
 
   close() {

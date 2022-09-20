@@ -4,6 +4,7 @@ export interface PlayerStatus {
   artist: string;
   currentBpm: number
   deck: string;
+  deviceId: string;
   externalMixerVolume: number;
   fileLocation: string;
   hasTrackData: boolean;

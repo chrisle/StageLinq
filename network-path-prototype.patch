@@ -1,0 +1,181 @@
+diff --git a/Databases/Databases.ts b/Databases/Databases.ts
+index 10e0cba..4248e1e 100644
+--- a/Databases/Databases.ts
++++ b/Databases/Databases.ts
+@@ -25,7 +25,11 @@ export class Databases extends EventEmitter {
+     const sources = await service.getSources();
+     const output: string[] = [];
+     for (const source of sources) {
+-      const dbConnectionName = `${connectionInfo.address}_${connectionInfo.port}_${source.name}`;
++      const deviceId = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
++        .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
++
++      const dbConnectionName = `net://${deviceId}/${source.name}`;
++      Logger.debug(`DB network path: net://${deviceId}/${source.name}`)
+       if (this.sources.has(dbConnectionName)) {
+         Logger.debug(`Already seen ${source} on ${connectionInfo.address}:${connectionInfo.port}`);
+       } else {
+diff --git a/Databases/DbConnection.ts b/Databases/DbConnection.ts
+index 24ebd3a..6294024 100644
+--- a/Databases/DbConnection.ts
++++ b/Databases/DbConnection.ts
+@@ -20,7 +20,7 @@ export class DbConnection {
+    * @returns
+    */
+   querySource<T>(query: string, ...params: any[]): T[] {
+-    console.debug(`Querying ${this.dbPath}: `);
++    console.debug(`Querying ${this.dbPath}: ${query}`);
+     const result = this.db.prepare(query);
+     return result.all(params);
+   }
+@@ -32,7 +32,7 @@ export class DbConnection {
+    * @returns
+    */
+   getTrackInfo(trackPath: string) {
+-    return this.querySource(`SELECT * FROM Track WHERE path = '${trackPath}'`);
++    return this.querySource(`SELECT * FROM Track WHERE path = ?`, trackPath);
+   }
+ 
+   close() {
+diff --git a/cli/index.ts b/cli/index.ts
+index 8f532ca..5649037 100644
+--- a/cli/index.ts
++++ b/cli/index.ts
+@@ -96,7 +96,7 @@ require('console-stamp')(console, {
+     // Example of how to download the actual track from the media.
+     try {
+       const tempfile = path.resolve(os.tmpdir(), 'media');
+-      const data = await stageLinq.devices.downloadFile(status.address, status.trackPathAbsolute);
++      const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
+       if (data) {
+         fs.writeFileSync(tempfile, Buffer.from(data));
+         console.log(`Downloaded ${status.trackPathAbsolute} to ${tempfile}`);
+diff --git a/devices/Player.ts b/devices/Player.ts
+index 64f0db0..c6193ca 100644
+--- a/devices/Player.ts
++++ b/devices/Player.ts
+@@ -13,8 +13,9 @@ export declare interface Player {
+ 
+ interface PlayerOptions {
+   stateMap: StateMap;
+-  address: string,
++  address: string;
+   port: number;
++  deviceId: string;
+ }
+ 
+ interface SourceAndTrackPath {
+@@ -48,6 +49,7 @@ export class Player extends EventEmitter {
+   private masterStatus: boolean;    // If this device has the matser tempo
+   private decks: Map<string, PlayerLayerState> = new Map();
+   private queue: {[layer: string]: PlayerMessageQueue} = {};
++  private deviceId: string;
+ 
+   /**
+    * Initialize a player device.
+@@ -60,6 +62,8 @@ export class Player extends EventEmitter {
+     options.stateMap.on('message', this.messageHandler.bind(this));
+     this.address = options.address;
+     this.port = options.port;
++    this.deviceId = options.deviceId;
++
+     this.queue = {
+       A: new PlayerMessageQueue('A').onDataReady(this.handleUpdate.bind(this)),
+       B: new PlayerMessageQueue('B').onDataReady(this.handleUpdate.bind(this)),
+@@ -150,22 +154,27 @@ export class Player extends EventEmitter {
+       port: this.port,
+       masterTempo: this.masterTempo,
+       masterStatus: this.masterStatus,
++      deviceId: `net://${this.deviceId}`,
+       ...result
+     };
+ 
+     // We're casting here because we originally built it up piecemeal.
+     const currentState = output as PlayerStatus;
+ 
+-    if (/Unknown/.test(currentState.source)) {
++    if (currentState.trackNetworkPath && currentState.trackNetworkPath.startsWith('net:')) {
++      const pathParts = currentState.trackNetworkPath.split('net://')[1].split('/', 2)
++      currentState.dbSourceName = `net://${pathParts[0]}/${pathParts[1]}`;
++      currentState.deviceId = `net://${pathParts[0]}`;
++    } else if (!currentState.source || /Unknown/.test(currentState.source)) {
+       // Tracks from streaming sources won't be in the database.
+       currentState.dbSourceName = '';
+     } else {
+-      currentState.dbSourceName = currentState.source
+-        ? `${this.address}_${this.port}_${currentState.source}` : '';
++      currentState.dbSourceName = `net://${this.deviceId}/${currentState.source}`;
+     }
+ 
+     // If a song is loaded and we have a location emit the trackLoaded event.
+-    if (songLoadedSignalPresent && currentState.trackNetworkPath)
++    // 
++    if (/* songLoadedSignalPresent && */ currentState.trackNetworkPath)
+       this.emit('trackLoaded', currentState);
+ 
+     // If the song is actually playing emit the nowPlaying event.
+diff --git a/network/StageLinqDevices.ts b/network/StageLinqDevices.ts
+index 949619a..6bdce8b 100644
+--- a/network/StageLinqDevices.ts
++++ b/network/StageLinqDevices.ts
+@@ -106,8 +106,8 @@ export class StageLinqDevices extends EventEmitter {
+     return this._databases;
+   }
+ 
+-  async downloadFile(ipAddress: string, path: string) {
+-    const device = this.devices.get(ipAddress);
++  async downloadFile(deviceId: string, path: string) {
++    const device = this.devices.get(deviceId);
+     const file = await device.fileTransferService.getFile(path);
+     return file;
+   }
+@@ -123,10 +123,12 @@ export class StageLinqDevices extends EventEmitter {
+     const networkDevice = new NetworkDevice(connectionInfo);
+     await networkDevice.connect();
+ 
++    const deviceId = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
++      .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
+     Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
+     const fileTransfer = await networkDevice.connectToService(FileTransfer);
+ 
+-    this.devices.set(connectionInfo.address, {
++    this.devices.set(`net://${deviceId}`, {
+       networkDevice: networkDevice,
+       fileTransferService: fileTransfer
+     });
+@@ -146,7 +148,8 @@ export class StageLinqDevices extends EventEmitter {
+     const player = new Player({
+       stateMap: stateMap,
+       address: connectionInfo.address,
+-      port: connectionInfo.port
++      port: connectionInfo.port,
++      deviceId
+     });
+ 
+     player.on('trackLoaded', (status) => {
+diff --git a/types/player.ts b/types/player.ts
+index f672c6d..188d36e 100644
+--- a/types/player.ts
++++ b/types/player.ts
+@@ -1,6 +1,7 @@
+ 
+ export interface PlayerStatus {
+   address: string;
++  deviceId: string;
+   artist: string;
+   currentBpm: number
+   deck: string;
+diff --git a/utils/getTempFilePath.ts b/utils/getTempFilePath.ts
+index c0d8bca..d737fe5 100644
+--- a/utils/getTempFilePath.ts
++++ b/utils/getTempFilePath.ts
+@@ -9,7 +9,8 @@ import * as path from 'path';
+  * @returns Absolute path
+  */
+ export function getTempFilePath(p_path: string) {
+-	const tmpPath = `/${os.tmpdir()}/localdb/${p_path}`;
++	const tmpPath = `/${os.tmpdir()}/localdb/${p_path}`
++		.replace('net://', '');
+ 	let paths = tmpPath.split(/[/\\]/).filter((e) => e.length > 0);
+ 	const isFolder = p_path.endsWith('/') || p_path.endsWith('\\');
+ 	let filename = '';
