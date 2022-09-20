@@ -69,7 +69,7 @@ export class Databases extends EventEmitter {
       for (const entry of Array.from(this.sources.entries())) {
         if (/\(Internal\)/.test(entry[0])) {
           Logger.debug(`Returning copy of internal database`);
-          return this.sources.get(entry[0])
+          return this.sources.get(entry[0]);
         }
       }
 
