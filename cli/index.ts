@@ -2,9 +2,9 @@ import { ActingAsDevice } from '../types';
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
+import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import * as fs from 'fs';
 
 require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
@@ -82,9 +82,10 @@ require('console-stamp')(console, {
 
     // Example of how to connect to the database using this library's
     // implementation of BetterSqlite3 to get additional information.
-    if (stageLinq.options.downloadDbSources && status.dbSourceName) {
+    if (stageLinq.options.downloadDbSources) {
       try {
-        const connection = new DbConnection(stageLinq.databases.getDbPath(status.dbSourceName));
+        const dbPatah = stageLinq.databases.getDbPath(status.dbSourceName)
+        const connection = new DbConnection(dbPatah);
         const result = connection.getTrackInfo(status.trackPath);
         connection.close();
         console.log('Database entry:', result);

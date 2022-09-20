@@ -1,10 +1,10 @@
+import { ConnectionInfo, Source } from '../types';
 import { EventEmitter } from 'stream';
 import { FileTransfer } from '../services';
 import { getTempFilePath } from '../albumArt';
+import { Logger } from '../LogEmitter';
 import { NetworkDevice } from '../network';
 import * as fs from 'fs';
-import { Logger } from '../LogEmitter';
-import { ConnectionInfo, Source } from '../types';
 
 export declare interface Databases {
   on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
@@ -60,9 +60,23 @@ export class Databases extends EventEmitter {
     this.emit('dbDownloaded', sourceId, dbPath);
   }
 
-  getDbPath(dbSourceName: string) {
-    if (!this.sources.has(dbSourceName))
-      throw new Error(`Database name ${dbSourceName} does not exist`);
+  getDbPath(dbSourceName?: string) {
+    if (!dbSourceName || !this.sources.has(dbSourceName)) {
+
+      // Hack: Denon will save metadata on streaming files but only on an
+      // internal database. So if the source is "(Unknown)streaming://"
+      // return the first internal database we find.
+      for (const entry of Array.from(this.sources.entries())) {
+        if (/\(Internal\)/.test(entry[0])) {
+          Logger.debug(`Returning copy of internal database`);
+          return this.sources.get(entry[0])
+        }
+      }
+
+      // Else, throw an exception.
+      throw new Error(`Data source "${dbSourceName}" doesn't exist.`);
+    }
+
     return this.sources.get(dbSourceName);
   }
 

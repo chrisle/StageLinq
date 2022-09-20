@@ -32,11 +32,15 @@ export class DbConnection {
    * @returns
    */
   getTrackInfo(trackPath: string) {
-    return this.querySource(`SELECT * FROM Track WHERE path = '${trackPath}'`);
+    const SQL = (/streaming:\/\//.test(trackPath))
+      ? `SELECT * FROM Track WHERE uri = '${trackPath}'`
+      : `SELECT * FROM Track WHERE path = '${trackPath}'`;
+    return this.querySource(SQL);
   }
 
   close() {
     console.debug(`Closing ${this.dbPath}`);
     this.db.close();
   }
+
 }
