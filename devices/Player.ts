@@ -172,7 +172,7 @@ export class Player extends EventEmitter {
     }
 
     // If a song is loaded and we have a location emit the trackLoaded event.
-    if (currentState.trackNetworkPath)
+    if (songLoadedSignalPresent && currentState.trackNetworkPath)
       this.emit('trackLoaded', currentState);
 
     // If the song is actually playing emit the nowPlaying event.
