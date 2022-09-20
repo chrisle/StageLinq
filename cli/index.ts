@@ -2,9 +2,9 @@ import { ActingAsDevice } from '../types';
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
-// import * as fs from 'fs';
-// import * as os from 'os';
-// import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
@@ -95,16 +95,16 @@ require('console-stamp')(console, {
     }
 
     // Example of how to download the actual track from the media.
-    // try {
-    //   const tempfile = path.resolve(os.tmpdir(), 'media');
-    //   const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
-    //   if (data) {
-    //     fs.writeFileSync(tempfile, Buffer.from(data));
-    //     console.log(`Downloaded ${status.trackPathAbsolute} to ${tempfile}`);
-    //   }
-    // } catch(e) {
-    //   console.error(`Could not download ${status.trackPathAbsolute}`);
-    // }
+    try {
+      const tempfile = path.resolve(os.tmpdir(), 'media');
+      const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
+      if (data) {
+        fs.writeFileSync(tempfile, Buffer.from(data));
+        console.log(`Downloaded ${status.trackPathAbsolute} to ${tempfile}`);
+      }
+    } catch(e) {
+      console.error(`Could not download ${status.trackPathAbsolute}`);
+    }
 
     console.log('New track loaded:', status);
   });

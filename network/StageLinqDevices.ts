@@ -14,6 +14,10 @@ interface StageLinqDevice {
   fileTransferService: FileTransfer;
 };
 
+// This time needs to be just long enough for discovery messages from all to
+// come through.
+const WAIT_FOR_DEVICES_TIMEOUT_MS = 3000;
+
 export declare interface StageLinqDevices {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
@@ -45,6 +49,7 @@ export class StageLinqDevices extends EventEmitter {
     super();
     this.options = options;
     this._databases = new Databases();
+    this.waitForAllDevices = this.waitForAllDevices.bind(this);
     this.waitForAllDevices();
   }
 
@@ -92,19 +97,24 @@ export class StageLinqDevices extends EventEmitter {
    * then connects to the StateMap.
    */
   private waitForAllDevices() {
+    Logger.log('Start watching for devices ...');
     this.deviceWatchTimeout = setInterval(async () => {
       // Check if any devices are still connecting.
       const values = Array.from(this.discoveryStatus.values());
-      if (!values.length || !values.includes(ConnectionStatus.CONNECTING)) {
-        // All devices have finished connecting so setup the StateMap.
+      const foundDevices = values.length > 1;
+      const allConnected = !values.includes(ConnectionStatus.CONNECTING);
+
+      if (foundDevices && allConnected) {
+        Logger.log('All devices found!');
         clearInterval(this.deviceWatchTimeout);
-        await Promise.all(this.stateMapCallback.map(cb =>
-          this.setupStateMap(cb.connectionInfo, cb.networkDevice)));
+        for (const cb of this.stateMapCallback) {
+          this.setupStateMap(cb.connectionInfo, cb.networkDevice);
+        }
         this.emit('ready');
       } else {
-        Logger.debug(`Waiting for devices ...`);
+        Logger.log(`Waiting for devices ...`);
       }
-    }, 5000);
+    }, WAIT_FOR_DEVICES_TIMEOUT_MS);
   }
 
   /**
@@ -164,8 +174,6 @@ export class StageLinqDevices extends EventEmitter {
 
     // Append to the list of states we need to setup later.
     this.stateMapCallback.push({ connectionInfo, networkDevice });
-
-
   }
 
   private sourceId(connectionInfo: ConnectionInfo) {
@@ -180,6 +188,8 @@ export class StageLinqDevices extends EventEmitter {
    */
   private async setupStateMap(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
     // Setup StateMap
+    Logger.debug(`Setting up stateMap for ${connectionInfo.address}`);
+
     const stateMap = await networkDevice.connectToService(StateMap);
     stateMap.on('message', (data) => {
       this.emit('message', connectionInfo, data)

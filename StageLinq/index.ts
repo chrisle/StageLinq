@@ -19,7 +19,7 @@ export class StageLinq extends EventEmitter {
   logger: Logger = Logger.instance;
   options: StageLinqOptions;
 
-  private listener: StageLinqListener = new StageLinqListener();
+  private listener: StageLinqListener;
 
   constructor(options?: StageLinqOptions) {
     super();
@@ -31,6 +31,7 @@ export class StageLinq extends EventEmitter {
    * Connect to the StageLinq network.
    */
   async connect() {
+    this.listener = new StageLinqListener();
     const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
     await announce(msg);
     this.listener.listenForDevices(async (connectionInfo) => {
