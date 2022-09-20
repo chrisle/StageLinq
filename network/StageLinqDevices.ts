@@ -206,14 +206,6 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   private deviceId(device: ConnectionInfo) {
-    // NOTE: We're using IP/port combo here instead of something obvious
-    // like the device token because the IP/port combo is unique every time
-    // the user reboots a device.
-    //
-    // The side effect is that after it reboots and start broadcasting itself
-    // we pick it up as "new" device and attempt to connect to it again. If we
-    // used a token it would be the same as last time so the broadcast messages
-    // would be ignored.
     return `${device.address}:${device.port}:` +
       `[${device.source}/${device.software.name}]`;
   }
