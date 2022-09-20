@@ -122,6 +122,7 @@ export class StageLinqDevices extends EventEmitter {
           `Attempt ${attempt}/${this.options.maxRetries}`);
         await this.downloadDatabase(connectionInfo);
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
+        this.emit('connected', connectionInfo);
         return; // Don't forget to return!
       } catch(e) {
 
@@ -164,7 +165,7 @@ export class StageLinqDevices extends EventEmitter {
     // Append to the list of states we need to setup later.
     this.stateMapCallback.push({ connectionInfo, networkDevice });
 
-    this.emit('connected', connectionInfo);
+
   }
 
   private sourceId(connectionInfo: ConnectionInfo) {

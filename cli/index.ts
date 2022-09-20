@@ -72,7 +72,7 @@ require('console-stamp')(console, {
     });
   });
 
-  // Fires when StageLinq has successfully connect to at least one device and is ready to use.
+  // Fires when StageLinq and all devices are ready to use.
   stageLinq.devices.on('ready', () => {
     console.log(`StageLinq is ready!`);
   });
@@ -94,7 +94,7 @@ require('console-stamp')(console, {
       }
     }
 
-    // // Example of how to download the actual track from the media.
+    // Example of how to download the actual track from the media.
     // try {
     //   const tempfile = path.resolve(os.tmpdir(), 'media');
     //   const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
