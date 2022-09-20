@@ -73,8 +73,8 @@ require('console-stamp')(console, {
   });
 
   // Fires when StageLinq has successfully connect to at least one device and is ready to use.
-  stageLinq.devices.on('ready', (connectionInfo) => {
-    console.log(`Device ${connectionInfo.software.name} is ready!`);
+  stageLinq.devices.on('ready', () => {
+    console.log(`StageLinq is ready!`);
   });
 
   // Fires when a new track is loaded on to a player.

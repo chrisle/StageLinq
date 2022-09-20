@@ -20,7 +20,7 @@ export declare interface StageLinqDevices {
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
-  on(event: 'ready', listener: (connectionInfo: ConnectionInfo) => void): this;
+  on(event: 'ready', listener: () => void): this;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -45,85 +45,25 @@ export class StageLinqDevices extends EventEmitter {
     super();
     this.options = options;
     this._databases = new Databases();
-
-    // This fucking works!
-    // So basically, we check connection status every 3 seconds
-    // If everything we found is has connected (meaning it's connected to
-    // the device and we've downloaded the database) THEN we setup statemap
-    // on all of them.
-    this.deviceWatchTimeout = setInterval(() => {
-      const values = Array.from(this.discoveryStatus.values());
-      Logger.debug(`ARE WE THERE YET?!?!?! ${values}`);
-      if (!values.includes(0)) {
-        clearInterval(this.deviceWatchTimeout);
-        for (const cb of this.stateMapCallback) {
-          this.setupStateMap(cb.connectionInfo, cb.networkDevice);
-        }
-      }
-    }, 3000);
-
+    this.waitForAllDevices();
   }
 
   /**
-   * Attempt to connect to the player.
+   * Handle incoming discovery messages from the StageLinq network
    *
-   * @param connectionInfo Device discovered
-   * @returns Retries to connect 3 times. If successful return void if not throw exception.
+   * @param connectionInfo Connection info.
    */
   async handleDevice(connectionInfo: ConnectionInfo) {
     Logger.silly(this.showDiscoveryStatus(connectionInfo));
 
-    // Ignore this discovery message if connected, connecting, failed, or
-    // if it's blacklisted.
+    // Ignore this discovery message if we've already connected to it,
+    // are still connecting, if it has failed, or if it's blacklisted.
     if (this.isConnected(connectionInfo)
       || this.isConnecting(connectionInfo)
       || this.isFailed(connectionInfo)
       || this.isIgnored(connectionInfo)) return;
 
-    this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTING);
-
-    // Retrying appears to be necessary because it seems the Denon hardware
-    // sometimes doesn't connect. Retrying after a little wait seems to
-    // solve the issue.
-
-    let attempt = 1;
-
-    while (attempt < this.options.maxRetries) {
-      try {
-        Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
-          `Attempt ${attempt}/${this.options.maxRetries}`);
-
-        // Connect to the player and download the database.
-        // If this fails, retry.
-        await this.connectToPlayer(connectionInfo);
-        this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
-
-        // RACE CONDITION!
-        // Now that we've connected connect to stateMap and begin handling data.
-        // But! We need to wait until all the other players on the network have
-        // connected and have databases copied so that if they are looking
-        // at tracks from other player, they will have been loaded.
-        //
-        // Solution!!! see the shitty setInterval in the constructor()
-        // FUCK that's ugly. but works.. TODO: Clean up my fucking mess.
-
-
-        this.emit('ready', connectionInfo);
-        return; // Don't forget to return!
-      } catch(e) {
-
-        // Failed connection. Sleep then retry.
-        Logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
-          `(${attempt}/${this.options.maxRetries}): ${e}`);
-        attempt += 1;
-        sleep(500);
-
-      }
-    }
-
-    // We failed 3 times. Throw exception.
-    this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.FAILED);
-    throw new Error(`Could not connect to ${this.deviceId(connectionInfo)}`);
+    this.connectToDevice(connectionInfo);
   }
 
   /**
@@ -148,27 +88,81 @@ export class StageLinqDevices extends EventEmitter {
   ////////////////////////////////////////////////////////////////////////////
 
   /**
-   * Connect to the player.
-   * @param connectionInfo Device to connect to.
+   * Waits for all devices to be connected with databases downloaded
+   * then connects to the StateMap.
+   */
+  private waitForAllDevices() {
+    this.deviceWatchTimeout = setInterval(async () => {
+      // Check if any devices are still connecting.
+      const values = Array.from(this.discoveryStatus.values());
+      if (!values.length || !values.includes(ConnectionStatus.CONNECTING)) {
+        // All devices have finished connecting so setup the StateMap.
+        clearInterval(this.deviceWatchTimeout);
+        await Promise.all(this.stateMapCallback.map(cb =>
+          this.setupStateMap(cb.connectionInfo, cb.networkDevice)));
+        this.emit('ready');
+      } else {
+        Logger.debug(`Waiting for devices ...`);
+      }
+    }, 5000);
+  }
+
+  /**
+   * Attempt to connect to a device. Retry if necessary.
+   *
+   * @param connectionInfo Connection info
    * @returns
    */
-  private async connectToPlayer(connectionInfo: ConnectionInfo) {
+  private async connectToDevice(connectionInfo: ConnectionInfo) {
+    this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTING);
+    let attempt = 1;
+    while (attempt < this.options.maxRetries) {
+      try {
+        Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
+          `Attempt ${attempt}/${this.options.maxRetries}`);
+        await this.downloadDatabase(connectionInfo);
+        this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
+        return; // Don't forget to return!
+      } catch(e) {
+
+        // Failed connection. Sleep then retry.
+        Logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
+          `(${attempt}/${this.options.maxRetries}): ${e}`);
+        attempt += 1;
+        sleep(500);
+      }
+    }
+    // We failed 3 times. Throw exception.
+    this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.FAILED);
+    throw new Error(`Could not connect to ${this.deviceId(connectionInfo)}`);
+  }
+
+  /**
+   * Download databases from the device.
+   *
+   * @param connectionInfo Connection info
+   * @returns
+   */
+  private async downloadDatabase(connectionInfo: ConnectionInfo) {
     const networkDevice = new NetworkDevice(connectionInfo);
     await networkDevice.connect();
 
-    const deviceId = this.sourceId(connectionInfo);
+    const sourceId = this.sourceId(connectionInfo);
     Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
     const fileTransfer = await networkDevice.connectToService(FileTransfer);
 
-    this.devices.set(`net://${deviceId}`, {
+    this.devices.set(`net://${sourceId}`, {
       networkDevice: networkDevice,
       fileTransferService: fileTransfer
     });
 
-    await this.downloadDatabases(connectionInfo, networkDevice);
+    if (this.options.downloadDbSources) {
+      const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
+      Logger.debug(`Database sources: ${sources.join(', ')}`);
+    }
 
+    // Append to the list of states we need to setup later.
     this.stateMapCallback.push({ connectionInfo, networkDevice });
-    // await this.setupStateMap(connectionInfo, networkDevice);
 
     this.emit('connected', connectionInfo);
   }
@@ -178,15 +172,12 @@ export class StageLinqDevices extends EventEmitter {
       .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
   }
 
-  private async downloadDatabases(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
-    if (this.options.downloadDbSources) {
-      const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
-      Logger.debug(`Database sources: ${sources.join(', ')}`);
-    }
-  }
-
+  /**
+   * Setup stateMap.
+   * @param connectionInfo Connection info
+   * @param networkDevice Network device
+   */
   private async setupStateMap(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
-    Logger.debug('********** SETUP STATEEEEEMAPPPPPPP **********')
     // Setup StateMap
     const stateMap = await networkDevice.connectToService(StateMap);
     stateMap.on('message', (data) => {
