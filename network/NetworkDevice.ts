@@ -82,12 +82,15 @@ export class NetworkDevice {
     while (ctx.isEOF() === false) {
       const id = ctx.readUInt32();
       // FIXME: Verify token
-      ctx.seek(16); // Skip token; present in all messages
+      const deviceToken = ctx.read(16);
       switch (id) {
         case MessageId.TimeStamp:
-          ctx.seek(16); // Skip token; present in all messages
+          const secondToken = ctx.read(16); //should be 00..
+          assert(secondToken.every((x) => x === 0)); //we _shouldn't_ be receiving anything but blank tokens in the 2nd field
+          
           // Time Alive is in nanoseconds; convert back to seconds
           this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
+          this.sendTimeStampMsg(deviceToken,Tokens.SoundSwitch);
           break;
         case MessageId.ServicesAnnouncement:
           const service = ctx.readNetworkStringUTF16();
@@ -283,5 +286,16 @@ export class NetworkDevice {
         await sleep(250);
       }
     });
+  }
+
+  private async sendTimeStampMsg(deviceToken: Uint8Array, userToken: Uint8Array, timeAlive?: bigint) {
+    const ctx = new WriteContext();
+    ctx.writeUInt32(MessageId.TimeStamp);
+    ctx.write(deviceToken);
+    ctx.write(userToken);
+    const timeAliveNumber:bigint = (!!timeAlive) ? timeAlive : 0n;
+    ctx.writeUInt64(timeAliveNumber);
+    const written = await this.connection.write(ctx.getBuffer());
+    assert(written === ctx.tell());
   }
 }
