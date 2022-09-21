@@ -101,7 +101,7 @@ export class StageLinqDevices extends EventEmitter {
     this.deviceWatchTimeout = setInterval(async () => {
       // Check if any devices are still connecting.
       const values = Array.from(this.discoveryStatus.values());
-      const foundDevices = values.length > 1;
+      const foundDevices = values.length >= 1;
       const allConnected = !values.includes(ConnectionStatus.CONNECTING);
 
       if (foundDevices && allConnected) {
