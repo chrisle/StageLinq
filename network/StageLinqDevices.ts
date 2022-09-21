@@ -103,9 +103,12 @@ export class StageLinqDevices extends EventEmitter {
       const values = Array.from(this.discoveryStatus.values());
       const foundDevices = values.length >= 1;
       const allConnected = !values.includes(ConnectionStatus.CONNECTING);
+      const entries = Array.from(this.discoveryStatus.entries());
+      Logger.debug(`Waiting devices: ${JSON.stringify(entries)}`);
 
       if (foundDevices && allConnected) {
         Logger.log('All devices found!');
+        Logger.debug(`Devices found: ${values.length} ${JSON.stringify(entries)}`);
         clearInterval(this.deviceWatchTimeout);
         for (const cb of this.stateMapCallback) {
           this.setupStateMap(cb.connectionInfo, cb.networkDevice);
@@ -131,6 +134,8 @@ export class StageLinqDevices extends EventEmitter {
         Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
           `Attempt ${attempt}/${this.options.maxRetries}`);
         await this.downloadDatabase(connectionInfo);
+
+        Logger.debug(`Database download complete for ${connectionInfo.source}`);
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
         this.emit('connected', connectionInfo);
         return; // Don't forget to return!
@@ -159,7 +164,7 @@ export class StageLinqDevices extends EventEmitter {
     await networkDevice.connect();
 
     const sourceId = this.sourceId(connectionInfo);
-    Logger.info(`Successfully connected to ${this.deviceId(connectionInfo)}`);
+    Logger.info(`Starting file transfer for ${this.deviceId(connectionInfo)}`);
     const fileTransfer = await networkDevice.connectToService(FileTransfer);
 
     this.devices.set(`net://${sourceId}`, {
