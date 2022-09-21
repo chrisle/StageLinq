@@ -85,12 +85,13 @@ export class NetworkDevice {
       const deviceToken = ctx.read(16);
       switch (id) {
         case MessageId.TimeStamp:
-          const secondToken = ctx.read(16); //should be 00..
-          assert(secondToken.every((x) => x === 0)); //we _shouldn't_ be receiving anything but blank tokens in the 2nd field
-          
+          const secondToken = ctx.read(16); // should be 00..
+          // we _shouldn't_ be receiving anything but blank tokens in the 2nd field
+          assert(secondToken.every((x) => x === 0));
+
           // Time Alive is in nanoseconds; convert back to seconds
           this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
-          this.sendTimeStampMsg(deviceToken,Tokens.SoundSwitch);
+          this.sendTimeStampMsg(deviceToken, Tokens.SoundSwitch);
           break;
         case MessageId.ServicesAnnouncement:
           const service = ctx.readNetworkStringUTF16();
