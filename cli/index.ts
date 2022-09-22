@@ -56,20 +56,23 @@ require('console-stamp')(console, {
   stageLinq.devices.on('connected', async (connectionInfo) => {
     console.log(`Successfully connected to ${connectionInfo.software.name}`);
 
-    // Fires when the database source starts downloading.
-    stageLinq.databases.on('dbDownloading', (sourceName, dbPath) => {
-      console.log(`Downloading ${sourceName} to ${dbPath}`);
-    });
+    if (stageLinq.options.downloadDbSources) {
+      // Fires when the database source starts downloading.
+      stageLinq.databases.on('dbDownloading', (sourceName, dbPath) => {
+        console.log(`Downloading ${sourceName} to ${dbPath}`);
+      });
 
-    // Fires while the database source is being read
-    stageLinq.databases.on('dbProgress', (sourceName, total, bytes, percent) => {
-      console.debug(`Reading ${sourceName}: ${bytes}/${total} (${Math.ceil(percent)}%)`);
-    });
+      // Fires while the database source is being read
+      stageLinq.databases.on('dbProgress', (sourceName, total, bytes, percent) => {
+        console.debug(`Reading ${sourceName}: ${bytes}/${total} (${Math.ceil(percent)}%)`);
+      });
 
-    // Fires when the database source has been read and saved to a temporary path.
-    stageLinq.databases.on('dbDownloaded', (sourceName, dbPath) => {
-      console.log(`Database (${sourceName}) has been downloaded to ${dbPath}`);
-    });
+      // Fires when the database source has been read and saved to a temporary path.
+      stageLinq.databases.on('dbDownloaded', (sourceName, dbPath) => {
+        console.log(`Database (${sourceName}) has been downloaded to ${dbPath}`);
+      });
+    }
+
   });
 
   // Fires when StageLinq and all devices are ready to use.
@@ -127,6 +130,9 @@ require('console-stamp')(console, {
   stageLinq.devices.on('stateChanged', (status) => {
     console.log(`State changed on [${status.deck}]`, status)
   });
+
+  /////////////////////////////////////////////////////////////////////////
+  // CLI
 
   let returnCode = 0;
   try {
