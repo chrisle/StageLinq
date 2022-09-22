@@ -64,6 +64,9 @@ export class Databases extends EventEmitter {
   }
 
   getDbPath(dbSourceName?: string) {
+    if (!this.sources.size)
+      throw new Error(`No data sources have been downloaded`);
+
     if (!dbSourceName || !this.sources.has(dbSourceName)) {
 
       // Hack: Denon will save metadata on streaming files but only on an
