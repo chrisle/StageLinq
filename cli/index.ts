@@ -1,4 +1,4 @@
-import { ActingAsDevice } from '../types';
+import { ActingAsDevice, PlayerStatus } from '../types';
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
@@ -10,7 +10,46 @@ require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
 });
 
-(async () => {
+/**
+ * Get track information for latest playing song.
+ *
+ * @param stageLinq Instance of StageLinq.
+ * @param status Player to get track info from.
+ * @returns Track info
+ */
+function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
+  try {
+    const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
+    const connection = new DbConnection(dbPath);
+    const result = connection.getTrackInfo(status.trackPath);
+    connection.close();
+    console.log('Database entry:', result);
+    return result;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+/**
+ * Download the currently playing song from the media.
+ *
+ * @param stageLinq Instance of StageLinq.
+ * @param status Player to download the current song from.
+ * @param dest Path to save file to.
+ */
+async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: string) {
+  try {
+    const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
+    if (data) {
+      fs.writeFileSync(dest, Buffer.from(data));
+      console.log(`Downloaded ${status.trackPathAbsolute} to ${dest}`);
+    }
+  } catch(e) {
+    console.error(`Could not download ${status.trackPathAbsolute}`);
+  }
+}
+
+async function main() {
 
   console.log('Starting CLI');
 
@@ -18,7 +57,7 @@ require('console-stamp')(console, {
 
     // If set to true, download the source DBs in a temporary location.
     // (default: true)
-    downloadDbSources: true,
+    downloadDbSources: false,
 
     // Max number of attempts to connect to a StageLinq device.
     // (default: 3)
@@ -86,30 +125,11 @@ require('console-stamp')(console, {
     // Example of how to connect to the database using this library's
     // implementation of BetterSqlite3 to get additional information.
     if (stageLinq.options.downloadDbSources) {
-      try {
-        const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
-        const connection = new DbConnection(dbPath);
-        const result = connection.getTrackInfo(status.trackPath);
-        connection.close();
-        console.log('Database entry:', result);
-      } catch(e) {
-        console.error(e);
-      }
+      getTrackInfo(stageLinq, status);
     }
 
     // Example of how to download the actual track from the media.
-    try {
-      const tempfile = path.resolve(os.tmpdir(), 'media');
-      const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
-      if (data) {
-        fs.writeFileSync(tempfile, Buffer.from(data));
-        console.log(`Downloaded ${status.trackPathAbsolute} to ${tempfile}`);
-      }
-    } catch(e) {
-      console.error(`Could not download ${status.trackPathAbsolute}`);
-    }
-
-    console.log('New track loaded:', status);
+    await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), 'media'));
   });
 
   // Fires when a track has started playing.
@@ -128,7 +148,7 @@ require('console-stamp')(console, {
 
   // Fires when the state of a device has changed.
   stageLinq.devices.on('stateChanged', (status) => {
-    console.log(`State changed on [${status.deck}]`, status)
+    console.log(`Updating state [${status.deck}]`, status)
   });
 
   /////////////////////////////////////////////////////////////////////////
@@ -162,4 +182,6 @@ require('console-stamp')(console, {
 
   await stageLinq.disconnect();
   process.exit(returnCode);
-})();
+}
+
+main();
