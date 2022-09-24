@@ -1,9 +1,9 @@
 import { DiscoveryMessageOptions } from '../network';
 
 export * from './common';
-export * from './database';
 export * from './player';
 export * from './tokens';
+export * from './models';
 
 export interface DiscoveryMessage {
 	token: Uint8Array;
