@@ -1,7 +1,7 @@
 import { ConnectionInfo, Source } from '../types';
 import { EventEmitter } from 'stream';
 import { FileTransfer } from '../services';
-import { getTempFilePath } from '../albumArt';
+import { getTempFilePath } from '../utils';
 import { Logger } from '../LogEmitter';
 import { NetworkDevice } from '../network';
 import * as fs from 'fs';
