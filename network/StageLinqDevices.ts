@@ -29,8 +29,6 @@ export declare interface StageLinqDevices {
 
 //////////////////////////////////////////////////////////////////////////////
 
-// TODO: Refactor device, listener, and player into something more nicer.
-
 /**
  * Handle connecting and disconnecting from discovered devices on the
  * StageLinq network.
@@ -95,6 +93,25 @@ export class StageLinqDevices extends EventEmitter {
   /**
    * Waits for all devices to be connected with databases downloaded
    * then connects to the StateMap.
+   *
+   * Explained:
+   *
+   * Why wait for all devices? Because a race condition exists when using the
+   * database methods.
+   *
+   * If there are two SC6000 players on the network both will be sending
+   * broadcast packets and so their StateMap can be initialized at any time
+   * in any order.
+   *
+   * Assume you have player 1 and player 2 linked. Player 2 has a track that
+   * is loaded from a USB drive plugged into player 1. Player 2 will be
+   * ready before Player 1 because Player 1 will still be downloading a large
+   * database. The race condition is if you try to read from the database on
+   * the track that is plugged into Player 1 that isn't ready yet.
+   *
+   * This method prevents that by waiting for both players to connect and
+   * have their databases loaded before initializing the StateMap.
+   *
    */
   private waitForAllDevices() {
     Logger.log('Start watching for devices ...');
@@ -127,17 +144,30 @@ export class StageLinqDevices extends EventEmitter {
    * @returns
    */
   private async connectToDevice(connectionInfo: ConnectionInfo) {
+
+    // Mark this device as connecting.
     this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTING);
+
     let attempt = 1;
     while (attempt < this.options.maxRetries) {
       try {
         Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
           `Attempt ${attempt}/${this.options.maxRetries}`);
+
+        // Download the database
         await this.downloadDatabase(connectionInfo);
 
+        // Setup other services that should be initialized before StateMap here.
+        // StateMap will be initialized after all devices have completed
+        // this method. In other when StateMap will initialize
+        // after all entries in this.discoveryStatus return ConnectionStatus.CONNECTED
+
         Logger.debug(`Database download complete for ${connectionInfo.source}`);
+
+        // Mark this device as connected.
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
         this.emit('connected', connectionInfo);
+
         return; // Don't forget to return!
       } catch(e) {
 
@@ -188,6 +218,7 @@ export class StageLinqDevices extends EventEmitter {
 
   /**
    * Setup stateMap.
+   *
    * @param connectionInfo Connection info
    * @param networkDevice Network device
    */
