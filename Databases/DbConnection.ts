@@ -1,4 +1,5 @@
 import Database = require('better-sqlite3');
+import { Track } from '../types';
 
 
 export class DbConnection {
@@ -31,12 +32,15 @@ export class DbConnection {
    * @param trackPath Path of track on the source's filesystem.
    * @returns
    */
-  getTrackInfo(trackPath: string) {
+  getTrackInfo(trackPath: string): Track {
+    let result: Track[];
     if (/streaming:\/\//.test(trackPath)) {
-      return this.querySource('SELECT * FROM Track WHERE uri = (?)', trackPath);
+      result = this.querySource('SELECT * FROM Track WHERE uri = (?) LIMIT 1', trackPath);
     } else {
-      return this.querySource('SELECT * FROM Track WHERE path = (?)', trackPath);
+      result = this.querySource('SELECT * FROM Track WHERE path = (?) LIMIT 1', trackPath);
     }
+    if (!result) throw new Error(`Could not find track: ${trackPath} in database.`);
+    return result[0];
   }
 
   close() {
