@@ -158,9 +158,11 @@ export class StageLinqDevices extends EventEmitter {
         await this.downloadDatabase(connectionInfo);
 
         // Setup other services that should be initialized before StateMap here.
+
         // StateMap will be initialized after all devices have completed
-        // this method. In other when StateMap will initialize
-        // after all entries in this.discoveryStatus return ConnectionStatus.CONNECTED
+        // this method. In other words, StateMap will initialize
+        // after all entries in this.discoveryStatus return
+        // ConnectionStatus.CONNECTED
 
         Logger.debug(`Database download complete for ${connectionInfo.source}`);
 
