@@ -151,11 +151,17 @@ export class StageLinqDevices extends EventEmitter {
     let attempt = 1;
     while (attempt < this.options.maxRetries) {
       try {
+
+        // Connect to the device.
         Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
           `Attempt ${attempt}/${this.options.maxRetries}`);
+        const networkDevice = new NetworkDevice(connectionInfo);
+        await networkDevice.connect();
 
         // Download the database
-        await this.downloadDatabase(connectionInfo);
+        if (this.options.downloadDbSources) {
+          await this.downloadDatabase(networkDevice, connectionInfo);
+        }
 
         // Setup other services that should be initialized before StateMap here.
 
@@ -164,7 +170,8 @@ export class StageLinqDevices extends EventEmitter {
         // after all entries in this.discoveryStatus return
         // ConnectionStatus.CONNECTED
 
-        Logger.debug(`Database download complete for ${connectionInfo.source}`);
+        // Append to the list of states we need to setup later.
+        this.stateMapCallback.push({ connectionInfo, networkDevice });
 
         // Mark this device as connected.
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
@@ -191,10 +198,7 @@ export class StageLinqDevices extends EventEmitter {
    * @param connectionInfo Connection info
    * @returns
    */
-  private async downloadDatabase(connectionInfo: ConnectionInfo) {
-    const networkDevice = new NetworkDevice(connectionInfo);
-    await networkDevice.connect();
-
+  private async downloadDatabase(networkDevice: NetworkDevice, connectionInfo: ConnectionInfo) {
     const sourceId = this.sourceId(connectionInfo);
     Logger.info(`Starting file transfer for ${this.deviceId(connectionInfo)}`);
     const fileTransfer = await networkDevice.connectToService(FileTransfer);
@@ -204,13 +208,9 @@ export class StageLinqDevices extends EventEmitter {
       fileTransferService: fileTransfer
     });
 
-    if (this.options.downloadDbSources) {
-      const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
-      Logger.debug(`Database sources: ${sources.join(', ')}`);
-    }
-
-    // Append to the list of states we need to setup later.
-    this.stateMapCallback.push({ connectionInfo, networkDevice });
+    const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
+    Logger.debug(`Database sources: ${sources.join(', ')}`);
+    Logger.debug(`Database download complete for ${connectionInfo.source}`);
   }
 
   private sourceId(connectionInfo: ConnectionInfo) {
