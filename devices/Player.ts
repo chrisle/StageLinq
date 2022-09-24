@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { PlayerLayerState, PlayerStatus, ServiceMessage } from '../types';
 import { PlayerMessageQueue } from './PlayerMessageQueue';
 import { StateData, StateMap } from '../services';
+import { Logger } from '../LogEmitter';
 
 export declare interface Player {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
@@ -48,6 +49,7 @@ export class Player extends EventEmitter {
   private masterTempo: number;      // Current master tempo BPM
   private masterStatus: boolean;    // If this device has the matser tempo
   private decks: Map<string, PlayerLayerState> = new Map();
+  private lastTrackNetworkPath: Map<string, string> = new Map();
   private queue: {[layer: string]: PlayerMessageQueue} = {};
   private deviceId: string;
 
@@ -132,13 +134,30 @@ export class Player extends EventEmitter {
    * @param data
    */
   private handleUpdate(data: PlayerLayerState) {
+    Logger.debug(`data: ${JSON.stringify(data, null, 2)}`);
+
     const layer = data.layer;
-    const songLoadedSignalPresent = data.hasOwnProperty('songLoaded');
+
+    // A new song my be loading onto a layer but not yet fully downloaded.
+    // For example streaming a song from Beatport Link.
+    let isNewTrack = true;
+    const lastTrackNetworkPath = this.lastTrackNetworkPath.get(layer);
+    if (lastTrackNetworkPath && data.trackNetworkPath) {
+      if (data.trackNetworkPath === lastTrackNetworkPath) {
+        isNewTrack = false;
+      }
+    }
+    this.lastTrackNetworkPath.set(layer, data.trackNetworkPath);
+
+    // This will be true once a song has been fully downloaded / loaded.
+    const isSongLoaded = data.hasOwnProperty('songLoaded');
 
     // If a new song is loaded drop all the previous track data.
-    if (songLoadedSignalPresent) {
+    if (isNewTrack) {
+      Logger.debug(`Replacing state ${layer}`);
       this.decks.set(layer, data);
     } else {
+      Logger.debug(`Updating state ${layer}`);
       this.decks.set(layer, { ...this.decks.get(layer), ...data });
     }
 
@@ -172,7 +191,7 @@ export class Player extends EventEmitter {
     }
 
     // If a song is loaded and we have a location emit the trackLoaded event.
-    if (songLoadedSignalPresent && currentState.trackNetworkPath)
+    if (isSongLoaded && currentState.trackNetworkPath)
       this.emit('trackLoaded', currentState);
 
     // If the song is actually playing emit the nowPlaying event.
