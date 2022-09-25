@@ -81,17 +81,18 @@ export class NetworkDevice {
     const ctx = new ReadContext(p_message.buffer, false);
     while (ctx.isEOF() === false) {
       const id = ctx.readUInt32();
-      // FIXME: Verify token
-      const deviceToken = ctx.read(16);
+      // const deviceToken = ctx.read(16);
+      ctx.seek(16);
       switch (id) {
         case MessageId.TimeStamp:
-          const secondToken = ctx.read(16); // should be 00..
+          ctx.seek(16);
+          // const secondToken = ctx.read(16); // should be 00..
           // we _shouldn't_ be receiving anything but blank tokens in the 2nd field
-          assert(secondToken.every((x) => x === 0));
+          // assert(secondToken.every((x) => x === 0));
 
           // Time Alive is in nanoseconds; convert back to seconds
           this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
-          this.sendTimeStampMsg(deviceToken, Tokens.SoundSwitch);
+          // this.sendTimeStampMsg(deviceToken, Tokens.SoundSwitch);
           break;
         case MessageId.ServicesAnnouncement:
           const service = ctx.readNetworkStringUTF16();
@@ -103,7 +104,6 @@ export class NetworkDevice {
           break;
         default:
           assert.fail(`NetworkDevice Unhandled message id '${id}'`);
-          break;
       }
     }
   }
@@ -289,14 +289,14 @@ export class NetworkDevice {
     });
   }
 
-  private async sendTimeStampMsg(deviceToken: Uint8Array, userToken: Uint8Array, timeAlive?: bigint) {
-    const ctx = new WriteContext();
-    ctx.writeUInt32(MessageId.TimeStamp);
-    ctx.write(deviceToken);
-    ctx.write(userToken);
-    const timeAliveNumber:bigint = (!!timeAlive) ? timeAlive : 0n;
-    ctx.writeUInt64(timeAliveNumber);
-    const written = await this.connection.write(ctx.getBuffer());
-    assert(written === ctx.tell());
-  }
+  // private async sendTimeStampMsg(deviceToken: Uint8Array, userToken: Uint8Array, timeAlive?: bigint) {
+  //   const ctx = new WriteContext();
+  //   ctx.writeUInt32(MessageId.TimeStamp);
+  //   ctx.write(deviceToken);
+  //   ctx.write(userToken);
+  //   const timeAliveNumber:bigint = (!!timeAlive) ? timeAlive : 0n;
+  //   ctx.writeUInt64(timeAliveNumber);
+  //   const written = await this.connection.write(ctx.getBuffer());
+  //   assert(written === ctx.tell());
+  // }
 }
