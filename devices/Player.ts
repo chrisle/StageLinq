@@ -153,7 +153,7 @@ export class Player extends EventEmitter {
     const isSongLoaded = data.hasOwnProperty('songLoaded');
 
     // If a new song is loaded drop all the previous track data.
-    if (isNewTrack) {
+    if (isNewTrack && isSongLoaded) {
       Logger.debug(`Replacing state ${layer}`);
       this.decks.set(layer, data);
     } else {
