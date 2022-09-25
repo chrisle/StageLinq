@@ -158,6 +158,9 @@ export class StageLinqDevices extends EventEmitter {
         const networkDevice = new NetworkDevice(connectionInfo);
         await networkDevice.connect();
 
+        // Setup file transfer service
+        await this.setupFileTransferService(networkDevice, connectionInfo);
+
         // Download the database
         if (this.options.downloadDbSources) {
           await this.downloadDatabase(networkDevice, connectionInfo);
@@ -192,13 +195,7 @@ export class StageLinqDevices extends EventEmitter {
     throw new Error(`Could not connect to ${this.deviceId(connectionInfo)}`);
   }
 
-  /**
-   * Download databases from the device.
-   *
-   * @param connectionInfo Connection info
-   * @returns
-   */
-  private async downloadDatabase(networkDevice: NetworkDevice, connectionInfo: ConnectionInfo) {
+  private async setupFileTransferService(networkDevice: NetworkDevice, connectionInfo: ConnectionInfo) {
     const sourceId = this.sourceId(connectionInfo);
     Logger.info(`Starting file transfer for ${this.deviceId(connectionInfo)}`);
     const fileTransfer = await networkDevice.connectToService(FileTransfer);
@@ -207,7 +204,15 @@ export class StageLinqDevices extends EventEmitter {
       networkDevice: networkDevice,
       fileTransferService: fileTransfer
     });
+  }
 
+  /**
+   * Download databases from the device.
+   *
+   * @param connectionInfo Connection info
+   * @returns
+   */
+  private async downloadDatabase(networkDevice: NetworkDevice, connectionInfo: ConnectionInfo) {
     const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
     Logger.debug(`Database sources: ${sources.join(', ')}`);
     Logger.debug(`Database download complete for ${connectionInfo.source}`);
