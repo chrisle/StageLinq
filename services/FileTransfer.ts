@@ -206,6 +206,7 @@ export class FileTransfer extends Service<FileTransferData> {
       } catch (err) {
         const msg = `Could not read database from ${p_location}: ${err.message}`
         Logger.error(msg);
+        this._available = true;
         throw new Error(msg);
       }
 
