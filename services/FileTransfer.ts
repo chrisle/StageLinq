@@ -36,6 +36,7 @@ export declare interface FileTransfer {
 
 export class FileTransfer extends Service<FileTransferData> {
   private receivedFile: WriteContext = null;
+  private _available: boolean = true;
 
   async init() {}
 
@@ -162,6 +163,9 @@ export class FileTransfer extends Service<FileTransferData> {
   async getFile(p_location: string): Promise<Uint8Array> {
     assert(this.receivedFile === null);
 
+    if (this._available) {
+      this._available = false;
+    }
     await this.requestFileTransferId(p_location);
     const txinfo = await this.waitForMessage(MessageId.FileTransferId);
 
@@ -207,10 +211,12 @@ export class FileTransfer extends Service<FileTransferData> {
 
       Logger.debug(`Signaling transfer complete.`);
       await this.signalTransferComplete();
+      this._available = true;
     }
 
     const buf = this.receivedFile ? this.receivedFile.getBuffer() : null;
     this.receivedFile = null;
+  
     return buf;
   }
 
@@ -300,4 +306,11 @@ export class FileTransfer extends Service<FileTransferData> {
     ctx.writeUInt32(0x7d6);
     await this.writeWithLength(ctx);
   }
+
+  public async waitTillAvailable(): Promise<void> {
+    while (!this._available) {
+      await sleep(250);
+    }
+  }
+
 }

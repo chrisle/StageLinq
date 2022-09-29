@@ -84,6 +84,8 @@ export class StageLinqDevices extends EventEmitter {
 
   async downloadFile(deviceId: string, path: string) {
     const device = this.devices.get(deviceId);
+    //Wait until FileTransfer.getFile is free
+    await device.fileTransferService.waitTillAvailable();
     const file = await device.fileTransferService.getFile(path);
     return file;
   }
