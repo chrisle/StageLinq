@@ -54,6 +54,7 @@ export class Databases extends EventEmitter {
     });
 
     // Save database to a file
+    await service.waitTillAvailable();
     const file = await service.getFile(source.database.location);
     Logger.debug(`Saving ${sourceId} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
