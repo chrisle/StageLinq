@@ -21,6 +21,7 @@ enum MessageId {
   FileTransferId = 0x4,
   FileTransferChunk = 0x5,
   Unknown0 = 0x8,
+  ServiceDisconnect = 0x9,
 }
 
 interface FileTransferProgress {
@@ -137,6 +138,15 @@ export class FileTransfer extends Service<FileTransferData> {
       }
 
       case MessageId.Unknown0: {
+        return {
+          id: messageId,
+          message: null,
+        };
+      }
+      
+      case MessageId.ServiceDisconnect: {
+        //This message is received when the player that FileTransfer is connected to shuts down 
+        this.disconnect();
         return {
           id: messageId,
           message: null,
