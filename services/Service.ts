@@ -89,6 +89,7 @@ export abstract class Service<T> extends EventEmitter {
 	disconnect() {
 		assert(this.connection);
 		try {
+			Logger.debug(`Disconnecting ${this.name} Service on ${this.address}`);
 			this.connection.destroy();
 		} catch (e) {
 			Logger.error('Error disconnecting', e);
