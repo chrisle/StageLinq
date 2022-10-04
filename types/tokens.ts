@@ -1,10 +1,12 @@
 import { DiscoveryMessageOptions } from '../network';
 
+//export const CLIENT_TOKEN = new Uint8Array([255, 255, 255, 255, 255, 255, 74, 28, 155, 186, 136, 180, 190, 25, 163, 209]);
 export const Tokens = {
   SoundSwitch: new Uint8Array([82, 253, 252, 7, 33, 130, 101, 79, 22, 63, 95, 15, 154, 98, 29, 114]),
   Sc6000_1: new Uint8Array([ 130, 139, 235, 2, 218, 31, 78, 104, 166, 175, 176, 177, 103, 234, 240, 162 ]),
   Sc6000_2: new Uint8Array([ 38, 210, 56, 103, 28, 214, 78, 63, 128, 161, 17, 130, 106, 196, 17, 32 ]),
-  Resolume: new Uint8Array([ 136, 250, 32, 153, 172, 122, 79, 63, 188, 22, 169, 149, 219, 218, 42, 66 ])
+  Resolume: new Uint8Array([ 136, 250, 32, 153, 172, 122, 79, 63, 188, 22, 169, 149, 219, 218, 42, 66 ]),
+  Listen: new Uint8Array([255, 255, 255, 255, 255, 255, 74, 28, 155, 186, 136, 180, 190, 25, 163, 209])
 }
 
 export const ActingAsDevice: {[name: string]: DiscoveryMessageOptions} = {
@@ -12,7 +14,7 @@ export const ActingAsDevice: {[name: string]: DiscoveryMessageOptions} = {
     name: 'nowplaying',
     version: '2.2.0',
     source: 'np2',
-    token: Tokens.SoundSwitch
+    token: Tokens.Listen
   },
 
   Sc6000_1: {

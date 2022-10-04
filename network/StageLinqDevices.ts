@@ -3,9 +3,13 @@ import { EventEmitter } from 'events';
 import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { sleep } from '../utils';
-import { FileTransfer, StateData, StateMap } from '../services';
+import { Directory, FileTransfer, StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
+import * as services from '../services';
+import { throws } from 'assert';
+import { dir } from 'console';
+import { AddressInfo } from 'net';
 
 enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
 
@@ -34,21 +38,22 @@ export declare interface StageLinqDevices {
  * StageLinq network.
  */
 export class StageLinqDevices extends EventEmitter {
-
+  public directoryPort: number = 0;
+  private services: Record<string, InstanceType<typeof services.Service>> = {};
   private _databases: Databases;
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
   private discoveryStatus: Map<string, ConnectionStatus> = new Map();
   private options: StageLinqOptions;
 
   private deviceWatchTimeout: NodeJS.Timeout | null = null;
-  private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
+  //private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
 
   constructor(options: StageLinqOptions) {
     super();
     this.options = options;
     this._databases = new Databases();
-    this.waitForAllDevices = this.waitForAllDevices.bind(this);
-    this.waitForAllDevices();
+   // this.waitForAllDevices = this.waitForAllDevices.bind(this);
+    //this.waitForAllDevices();
   }
 
   /**
@@ -56,6 +61,52 @@ export class StageLinqDevices extends EventEmitter {
    *
    * @param connectionInfo Connection info.
    */
+
+  async initialize(): Promise<AddressInfo> {
+    const directory = new Directory()//await this.startServiceListener(Directory);
+    const serverInfo = await directory.listen()
+    await sleep(500);
+    return serverInfo
+    this.services[directory.name] = directory 
+    //this.services
+    Logger.warn(this.services);
+    /*await this.startServiceListener(Directory);
+    this.services['Directory'].on('listening', (serverInfo) =>{
+      this.directoryPort = serverInfo.port
+      return 
+    });
+    */
+  }
+
+   // Factory function
+   async startServiceListener<T extends InstanceType<typeof services.Service>>(ctor: {
+    new (): T;
+    }): Promise<T> {
+    //assert(this.connection);
+    // FIXME: find out why we need these waits before connecting to a service
+    await sleep(500);
+
+    const serviceName = ctor.name;
+
+    //if (this.services[serviceName]) {
+    //  return this.services[serviceName] as T;
+    //}
+
+    //assert(this.servicePorts.hasOwnProperty(serviceName));
+    //assert(this.servicePorts[serviceName] > 0);
+    //const port = this.servicePorts[serviceName];
+
+    const service = new ctor();
+
+    await service.listen();
+    //service.on('listening', (serverInfo) =>{
+    //  this.directoryPort = serverInfo.port;
+    this.services[serviceName] = service;
+    //});
+    return service;
+   
+  }
+
   async handleDevice(connectionInfo: ConnectionInfo) {
     Logger.silly(this.showDiscoveryStatus(connectionInfo));
 
@@ -66,7 +117,9 @@ export class StageLinqDevices extends EventEmitter {
       || this.isFailed(connectionInfo)
       || this.isIgnored(connectionInfo)) return;
 
-    this.connectToDevice(connectionInfo);
+    //this.connectToDevice(connectionInfo);
+    const networkDevice = new NetworkDevice(connectionInfo);
+    networkDevice.listen();
   }
 
   /**
@@ -113,6 +166,7 @@ export class StageLinqDevices extends EventEmitter {
    * have their databases loaded before initializing the StateMap.
    *
    */
+  /*
   private waitForAllDevices() {
     Logger.log('Start watching for devices ...');
     this.deviceWatchTimeout = setInterval(async () => {
@@ -136,7 +190,7 @@ export class StageLinqDevices extends EventEmitter {
       }
     }, WAIT_FOR_DEVICES_TIMEOUT_MS);
   }
-
+*/
   /**
    * Attempt to connect to a device. Retry if necessary.
    *
@@ -174,7 +228,7 @@ export class StageLinqDevices extends EventEmitter {
         // ConnectionStatus.CONNECTED
 
         // Append to the list of states we need to setup later.
-        this.stateMapCallback.push({ connectionInfo, networkDevice });
+        //this.stateMapCallback.push({ connectionInfo, networkDevice });
 
         // Mark this device as connected.
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);

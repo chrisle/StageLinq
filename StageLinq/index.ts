@@ -32,10 +32,15 @@ export class StageLinq extends EventEmitter {
    */
   async connect() {
     this.listener = new StageLinqListener();
+    const address = await this.devices.initialize();
     const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
+    
+    msg.port = address.port;
     await announce(msg);
+    Logger.warn(msg);
     this.listener.listenForDevices(async (connectionInfo) => {
-      await this.devices.handleDevice(connectionInfo);
+      //await this.devices.handleDevice(connectionInfo);
+      //Logger.warn(connectionInfo);
     });
   }
 

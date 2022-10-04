@@ -116,12 +116,13 @@ export interface DiscoveryMessageOptions {
   version: string;
   source: string;
   token: Uint8Array;
+  port?: number
 };
 
 export function createDiscoveryMessage(action: string, discoveryMessageOptions: DiscoveryMessageOptions) {
   const msg: DiscoveryMessage = {
     action: action,
-    port: 0,
+    port: discoveryMessageOptions.port || 0,
     software: {
       name: discoveryMessageOptions.name,
       version: discoveryMessageOptions.version

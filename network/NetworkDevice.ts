@@ -8,7 +8,10 @@ import * as FileType from 'file-type';
 import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
+import { Server, Socket, AddressInfo } from 'net';
+import { PromiseSocket } from 'promise-socket';
 import Database = require('better-sqlite3');
+
 
 
 interface SourceAndTrackPath {
@@ -17,6 +20,7 @@ interface SourceAndTrackPath {
 }
 
 export class NetworkDevice {
+  public listenPort:number = 0;
   private connection: tcp.Connection = null;
   //private source: string = null;
   private serviceRequestAllowed = false;
@@ -39,6 +43,8 @@ export class NetworkDevice {
 
   constructor(info: ConnectionInfo) {
     this.connectionInfo = info;
+    this.listen();
+    
   }
 
   private get address() {
@@ -51,6 +57,36 @@ export class NetworkDevice {
 
   ///////////////////////////////////////////////////////////////////////////
   // Connect / Disconnect
+
+  async listen(): Promise<void> {
+		const server = new Server
+		server.listen();
+
+    server.on('listening',() => {
+      const  { port } = server.address() as AddressInfo;
+      this.listenPort = port;
+      Logger.warn(`server listening on port ${port}`);
+    })
+
+		server.on('error', err =>{
+			//throw new error err
+			throw new Error(`Server Error ${err}`);
+		});
+		server.on('connection', socket =>{
+      const promiseSocket = new PromiseSocket(socket);
+      //promiseSocket.
+      this.connection = promiseSocket;
+      socket.on('data', (p_message: Buffer) => {
+        this.messageHandler(p_message);
+      
+      }); 
+		});
+    
+		//const  { port } = server.address() as AddressInfo;
+    //this.listenPort = port;
+
+
+	}
 
   async connect(): Promise<void> {
     const info = this.connectionInfo;
