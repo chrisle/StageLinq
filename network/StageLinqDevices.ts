@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { sleep } from '../utils';
-import { Directory, FileTransfer, StateData, StateMap } from '../services';
+import { Directory, FileTransfer, StateData, StateMap, TimeSynchronization } from '../services';
 import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
 import * as services from '../services';
@@ -17,6 +17,11 @@ interface StageLinqDevice {
   networkDevice: NetworkDevice;
   fileTransferService: FileTransfer;
 };
+
+export interface ServiceInitMessage {
+  parent: InstanceType<typeof StageLinqDevices>;
+  services?: Map<string,number>;
+}
 
 // This time needs to be just long enough for discovery messages from all to
 // come through.
@@ -42,6 +47,7 @@ export class StageLinqDevices extends EventEmitter {
   private services: Record<string, InstanceType<typeof services.Service>> = {};
   private _databases: Databases;
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
+  private services2: Map<string, InstanceType<typeof services.Service>> = new Map();
   private discoveryStatus: Map<string, ConnectionStatus> = new Map();
   private options: StageLinqOptions;
 
@@ -63,13 +69,31 @@ export class StageLinqDevices extends EventEmitter {
    */
 
   async initialize(): Promise<AddressInfo> {
-    const directory = new Directory()//await this.startServiceListener(Directory);
-    const serverInfo = await directory.listen()
+    let initMsg: ServiceInitMessage = {
+      parent: this,
+    }
+
+    initMsg.services = new Map();
+    //const timeSync = new TimeSynchronization(initMsg);
+    //const timeSyncInfo = await timeSync.listen();
+    //initMsg.services.set('TimeSynchronization', timeSyncInfo.port);
+    
+    const stateMap = new StateMap(initMsg);
+    const stateMapInfo = await stateMap.listen();
+    initMsg.services.set('StateMap', stateMapInfo.port);
+    
+    const directory = new Directory(initMsg);//await this.startServiceListener(Directory);
+    const serverInfo = await directory.listen();
+    initMsg.services.set('DirectoryService', serverInfo.port);
+    
     await sleep(500);
-    return serverInfo
-    this.services[directory.name] = directory 
+
+    this.services2.set("StateMap", stateMap);
+    this.services2.set("DirectoryService", directory); 
+    //this.services[timeSync.name] = timeSync
     //this.services
-    Logger.warn(this.services);
+    //Logger.warn(this.services);
+    return serverInfo
     /*await this.startServiceListener(Directory);
     this.services['Directory'].on('listening', (serverInfo) =>{
       this.directoryPort = serverInfo.port
@@ -125,10 +149,16 @@ export class StageLinqDevices extends EventEmitter {
   /**
    * Disconnect from all connected devices
    */
-  disconnectAll() {
-    for (const device of this.devices.values()) {
-      device.networkDevice.disconnect();
-    }
+  async disconnectAll() {
+    //for (const device of this.devices.values()) {
+    //  device.networkDevice.disconnect();
+    //}
+    console.warn('closing servers')
+    let StateMap = this.services2.get('StateMap');
+    let Directory = this.services2.get('DirectoryService');
+    await StateMap.server.close();
+    await Directory.server.close();
+    
   }
 
   get databases() {

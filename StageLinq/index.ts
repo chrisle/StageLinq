@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
 import { Action, ActingAsDevice, StageLinqOptions } from '../types';
+import { sleep } from '../utils';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -37,11 +38,13 @@ export class StageLinq extends EventEmitter {
     
     msg.port = address.port;
     await announce(msg);
-    Logger.warn(msg);
-    this.listener.listenForDevices(async (connectionInfo) => {
+    //Logger.warn(msg);
+    //this.listener.listenForDevices(async (connectionInfo) => {
       //await this.devices.handleDevice(connectionInfo);
       //Logger.warn(connectionInfo);
-    });
+    //});
+    await sleep(1500);
+    //await this.devices.
   }
 
   /**

@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { MessageId, MESSAGE_TIMEOUT, Tokens } from '../types';
 import { NetworkDevice } from '../network/NetworkDevice';
+import { ServiceInitMessage, StageLinqDevices } from '../network';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -30,13 +31,13 @@ export abstract class Service<T> extends EventEmitter {
 	protected controller: NetworkDevice;
 	//protected connection: tcp.Connection = null;
 	protected connection: Socket = null;
+	public server: Server = null;
+	protected parent: InstanceType<typeof StageLinqDevices>;
 
-	constructor(p_address?: string, p_port?: number, p_controller?: NetworkDevice) {
+	//constructor(p_address?: string, p_port?: number, p_controller?: NetworkDevice) {
+	constructor(p_initMsg:ServiceInitMessage) {
 		super();
-		this.address = p_address || null;
-		this.port = p_port || null;
-		this.name = this.constructor.name;
-		this.controller = p_controller || null;
+		this.parent = p_initMsg.parent;
 	}
 
 	async createServer(serviceName: string): Promise<Server> {
@@ -60,7 +61,8 @@ export abstract class Service<T> extends EventEmitter {
 					const ctx = new ReadContext(arrayBuffer, false);
 					queue = null;
 					//const ctx = new ReadContext(data, false);
-					this.parseData(ctx, socket)
+					const parsedData = await this.parseData(ctx, socket)
+					this.messageHandler(parsedData);
 				});
 				
 			}).listen(0, '0.0.0.0', () => {
@@ -77,7 +79,8 @@ export abstract class Service<T> extends EventEmitter {
 	}
 
 	async listen(): Promise<AddressInfo> {
-		const server = await this.createServer('test')
+		const server = await this.createServer(this.name)
+		this.server = server;
 		return server.address() as net.AddressInfo;
 
 
@@ -183,6 +186,10 @@ export abstract class Service<T> extends EventEmitter {
 			this.connection = null;
 		}
 	}
+
+	//closeServer() {
+
+	//}
 
 	async waitForMessage(p_messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
