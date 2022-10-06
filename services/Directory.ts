@@ -33,7 +33,7 @@ export class Directory extends Service<DirectoryData> {
   async init() {
   }
 
-  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
+  protected parseData(ctx: ReadContext, socket: Socket, msgId:number): ServiceMessage<DirectoryData> {
     let deviceId: string = "";
     let servicePorts: ServicePorts = {};
     while (ctx.isEOF() === false) {

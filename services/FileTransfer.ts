@@ -1,17 +1,26 @@
 import { DOWNLOAD_TIMEOUT } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
-import { Service } from './Service';
+import { Service, ServiceData } from './Service';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import type { ServiceMessage, Source } from '../types';
+import { deviceIdFromBuff } from '../types';
+import { Socket, AddressInfo } from 'net';
+import { getTempFilePath } from '../utils';
+import * as fs from 'fs';
 
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
 // FIXME: Strongly type this for all possible messages?
 type FileTransferData = any;
+
+interface FileTransferServiceData extends ServiceData {
+  source?: Source;
+}
+
 
 enum MessageId {
   TimeCode = 0x0,
@@ -34,15 +43,88 @@ export declare interface FileTransfer {
   on(event: 'fileTransferProgress', listener: (progress: FileTransferProgress) => void): this;
 }
 
+
+
 export class FileTransfer extends Service<FileTransferData> {
   private receivedFile: WriteContext = null;
+  public name: string = "FileTransfer";
+  public services: Map<string, FileTransferServiceData> = new Map();
 
   async init() {}
+  
+  private testPoint(ctx: ReadContext, deviceId: string, msgId: number, name: string): ReadContext {
+    const length = ctx.sizeLeft();
+    const buff = ctx.readRemainingAsNewBuffer().toString('hex');
+    ctx.seek(0- length);
+    console.log(`[${msgId}] (${name}) ${deviceId} ${length} ${buff}`);
+    return ctx
+  }
 
-  protected parseData(p_ctx: ReadContext): ServiceMessage<FileTransferData> {
+  protected parseData(p_ctx: ReadContext, socket: Socket, msgId:number): ServiceMessage<FileTransferData> {
+    
+    //p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "pre" );  
+    
+    //test if this is a serviceRequest
+    const checkSvcReq = p_ctx.readUInt32();
+    
+    //if (p_ctx.sizeLeft() === 88 && checkSvcReq === 0) {
+    if (checkSvcReq === 0) {
+      //console.log(msgId, checkSvcReq);
+      const token = p_ctx.read(16);
+      const svcName = p_ctx.readNetworkStringUTF16();
+      const svcPort = p_ctx.readUInt16();
+      const length = p_ctx.readUInt32();
+      const deviceId = deviceIdFromBuff(token);
+      this.deviceIds.set(deviceId,[socket.remoteAddress,socket.remotePort].join(":"));
+      this.deviceIps.set([socket.remoteAddress,socket.remotePort].join(":"), deviceId);
+      
+      const thisDevice: FileTransferServiceData = {
+        deviceId: deviceId,
+        socket: socket,
+        service: this
+      }
+      this.services.set(deviceId, thisDevice);
+      
+      console.log(`[${msgId}] `,deviceId, svcName, svcPort);
+      
+    } else {
+      p_ctx.seek(-4);
+    }
+
+    
+    //p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "pre-mag" );  
+    
+
+    let checkBufferArray = new Uint8Array([0,0,0,0])
+    //const fltxArray = new Uint8Array([102, 108, 116, 120]);
+
+    const shiftLeft = (collection:Uint8Array, value:any) => {
+      for (let i = 0; i < collection.length - 1; i++) {
+        collection[i] = collection[i + 1]; // Shift left
+      }
+      collection[collection.length - 1] = value; // Place new value at tail
+      return collection;
+    }
+
+    let checkString = "";
+  
+   while (checkString !== "666c7478") {
+      shiftLeft(checkBufferArray, p_ctx.read(1));
+      //console.log(checkString);
+      checkString = Buffer.from(checkBufferArray).toString('hex');
+      if (p_ctx.isEOF()) {
+        return
+      }
+    } 
+    
+    p_ctx.seek(-4);
+    
+    //p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "post-mag" );  
+    
     const check = p_ctx.getString(4);
     assert(check === MAGIC_MARKER);
-    const code = p_ctx.readUInt32();
+
+    let code = p_ctx.readUInt32();
 
     // If first 4 bytes are non-zero, a timecode is sent
     if (code > 0) {
@@ -50,6 +132,7 @@ export class FileTransfer extends Service<FileTransferData> {
       const id = p_ctx.readUInt32();
       assert(id === 0x07d2);
       assert(p_ctx.readUInt32() === 0);
+      //console.log(MessageId[id]);
       return {
         id: MessageId.TimeCode,
         message: {
@@ -58,8 +141,12 @@ export class FileTransfer extends Service<FileTransferData> {
       };
     }
 
+   // p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "id" );  
+
     // Else
     const messageId: MessageId = p_ctx.readUInt32();
+    //console.log(`[${msgId}] `,MessageId[messageId], messageId);
+    //console.log(`[${msgId}] `,this.getDeviceIdFromSocket(socket), ' MessageID: ', MessageId[messageId]);
     switch (messageId) {
       case MessageId.SourceLocations: {
         const sources: string[] = [];
@@ -74,6 +161,10 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.readUInt8() === 0x1);
         assert(p_ctx.readUInt8() === 0x1);
         assert(p_ctx.isEOF());
+        console.log(this.getDeviceIdFromSocket(socket), sources);
+        //const device = this.services.get(this.getDeviceIdFromSocket(socket));
+        //console.info(this.services.entries());
+        //this.downloadDb(device);
         return {
           id: messageId,
           message: {
@@ -136,6 +227,19 @@ export class FileTransfer extends Service<FileTransferData> {
       }
 
       case MessageId.Unknown0: {
+        
+        //console.log(this.getDeviceIdFromSocket(socket), ' size left: ', p_ctx.sizeLeft());
+        //console.log(p_ctx.readRemainingAsNewBuffer().toString('hex'));
+        if (p_ctx.sizeLeft() >= 5) {
+          //console.log(`[${msgId}] case`,this.getDeviceIdFromSocket(socket), ' size left: ', p_ctx.sizeLeft());
+          //console.log(`[${msgId}] case`,p_ctx.readRemainingAsNewBuffer().toString('hex'));
+          p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "case" );  
+          console.log(`requesting sources from `, this.getDeviceIdFromSocket(socket));
+          //this.requestSources(socket);
+          const source = this.getSources(socket);
+          //console.debug(this.serviceList);
+        }
+
         return {
           id: messageId,
           message: null,
@@ -151,7 +255,7 @@ export class FileTransfer extends Service<FileTransferData> {
   }
 
   protected messageHandler(p_data: ServiceMessage<FileTransferData>): void {
-    if (p_data.id === MessageId.FileTransferChunk && this.receivedFile) {
+    if (p_data && p_data.id === MessageId.FileTransferChunk && this.receivedFile) {
       assert(this.receivedFile.sizeLeft() >= p_data.message.size);
       this.receivedFile.write(p_data.message.data);
     } else {
@@ -159,10 +263,10 @@ export class FileTransfer extends Service<FileTransferData> {
     }
   }
 
-  async getFile(p_location: string): Promise<Uint8Array> {
+  async getFile(p_location: string, socket: Socket): Promise<Uint8Array> {
     assert(this.receivedFile === null);
 
-    await this.requestFileTransferId(p_location);
+    await this.requestFileTransferId(p_location, socket);
     const txinfo = await this.waitForMessage(MessageId.FileTransferId);
 
     if (txinfo) {
@@ -176,7 +280,7 @@ export class FileTransfer extends Service<FileTransferData> {
         return;
       }
 
-      await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1);
+      await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1, socket);
 
       try {
         await new Promise(async (resolve, reject) => {
@@ -206,7 +310,7 @@ export class FileTransfer extends Service<FileTransferData> {
       }
 
       Logger.debug(`Signaling transfer complete.`);
-      await this.signalTransferComplete();
+      await this.signalTransferComplete(socket);
     }
 
     const buf = this.receivedFile ? this.receivedFile.getBuffer() : null;
@@ -214,18 +318,19 @@ export class FileTransfer extends Service<FileTransferData> {
     return buf;
   }
 
-  async getSources(): Promise<Source[]> {
+  async getSources(socket: Socket): Promise<Source[]> {
     const result: Source[] = [];
 
-    await this.requestSources();
+    await this.requestSources(socket);
     const message = await this.waitForMessage(MessageId.SourceLocations);
     if (message) {
       for (const source of message.sources) {
         //try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
         const databases = [`/${source}/Engine Library/Database2/m.db`, `/${source}/Engine Library/m.db`];
         for (const database of databases) {
-          await this.requestStat(database);
+          await this.requestStat(database, socket);
           const fstatMessage = await this.waitForMessage(MessageId.FileStat);
+          const deviceId = this.getDeviceIdFromSocket(socket);
           if (fstatMessage.size > 0) {
             result.push({
               name: source,
@@ -234,6 +339,21 @@ export class FileTransfer extends Service<FileTransferData> {
                 size: fstatMessage.size,
               },
             });
+            //const data = this.serviceList.get(deviceId);
+            const thisDevice: FileTransferServiceData = {
+              deviceId: deviceId,
+              socket: socket,
+              service: this,
+              source: {
+                name: source,
+                database: {
+                  location: database,
+                  size: fstatMessage.size                
+                }
+              }
+            }
+            this.services.set(deviceId, thisDevice);
+            this.downloadDb(thisDevice);
             break;
           }
         }
@@ -246,27 +366,27 @@ export class FileTransfer extends Service<FileTransferData> {
   ///////////////////////////////////////////////////////////////////////////
   // Private methods
 
-  private async requestStat(p_filepath: string): Promise<void> {
+  private async requestStat(p_filepath: string, socket: Socket): Promise<void> {
     // 0x7d1: seems to request some sort of fstat on a file
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
     ctx.writeUInt32(0x0);
     ctx.writeUInt32(0x7d1);
     ctx.writeNetworkStringUTF16(p_filepath);
-    await this.writeWithLength(ctx);
+    await this.writeWithLength(ctx, socket);
   }
 
-  private async requestSources(): Promise<void> {
+  private async requestSources(socket: Socket): Promise<void> {
     // 0x7d2: Request available sources
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
     ctx.writeUInt32(0x0);
     ctx.writeUInt32(0x7d2); // Database query
     ctx.writeUInt32(0x0);
-    await this.writeWithLength(ctx);
+    await this.writeWithLength(ctx, socket);
   }
 
-  private async requestFileTransferId(p_filepath: string): Promise<void> {
+  private async requestFileTransferId(p_filepath: string, socket: Socket): Promise<void> {
     // 0x7d4: Request transfer id?
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -274,10 +394,10 @@ export class FileTransfer extends Service<FileTransferData> {
     ctx.writeUInt32(0x7d4);
     ctx.writeNetworkStringUTF16(p_filepath);
     ctx.writeUInt32(0x0); // Not sure why we need 0x0 here
-    await this.writeWithLength(ctx);
+    await this.writeWithLength(ctx, socket);
   }
 
-  private async requestChunkRange(p_txid: number, p_chunkStartId: number, p_chunkEndId: number): Promise<void> {
+  private async requestChunkRange(p_txid: number, p_chunkStartId: number, p_chunkEndId: number, socket: Socket): Promise<void> {
     // 0x7d5: seems to be the code to request chunk range
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -289,15 +409,65 @@ export class FileTransfer extends Service<FileTransferData> {
     ctx.writeUInt32(p_chunkStartId);
     ctx.writeUInt32(0x0);
     ctx.writeUInt32(p_chunkEndId);
-    await this.writeWithLength(ctx);
+    await this.writeWithLength(ctx, socket);
   }
 
-  private async signalTransferComplete(): Promise<void> {
+  private async signalTransferComplete(socket: Socket): Promise<void> {
     // 0x7d6: seems to be the code to signal transfer completed
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
     ctx.writeUInt32(0x0);
     ctx.writeUInt32(0x7d6);
-    await this.writeWithLength(ctx);
+    await this.writeWithLength(ctx, socket);
   }
+
+  async downloadDb(source: FileTransferServiceData) { // sourceId: string, service: FileTransfer, _source: Source) {
+    //console.info(source);
+    const dbPath = getTempFilePath(`${source.deviceId}/m.db`);
+    //console.info(source);
+    // Read database from source
+    //if (!source.source) {
+    //  source = this.services.get(source.deviceId);
+    //}
+    Logger.debug(`Reading database ${source.deviceId}`);
+    this.emit('dbDownloading', source.deviceId, dbPath);
+
+    this.on('fileTransferProgress', (progress) => {
+      this.emit('dbProgress', source.deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
+    });
+    
+    // Save database to a file
+    const file = await this.getFile(source.source.database.location, source.socket);
+    Logger.debug(`Saving ${source.deviceId} to ${dbPath}`);
+    fs.writeFileSync(dbPath, Buffer.from(file));
+    //this.sources.set(sourceId, dbPath);
+
+    Logger.debug(`Downloaded ${source.deviceId} to ${dbPath}`);
+    this.emit('dbDownloaded', source.deviceId, dbPath);
+  }
+/*
+  getDbPath(dbSourceName?: string) {
+    if (!this.sources.size)
+      throw new Error(`No data sources have been downloaded`);
+
+    if (!dbSourceName || !this.sources.has(dbSourceName)) {
+
+      // Hack: Denon will save metadata on streaming files but only on an
+      // internal database. So if the source is "(Unknown)streaming://"
+      // return the first internal database we find.
+      for (const entry of Array.from(this.sources.entries())) {
+        if (/\(Internal\)/.test(entry[0])) {
+          Logger.debug(`Returning copy of internal database`);
+          return this.sources.get(entry[0]);
+        }
+      }
+
+      // Else, throw an exception.
+      throw new Error(`Data source "${dbSourceName}" doesn't exist.`);
+    }
+
+    return this.sources.get(dbSourceName);
+  }
+  */
+
 }

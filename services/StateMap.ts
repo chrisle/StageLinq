@@ -109,7 +109,7 @@ export class StateMap extends Service<StateData> {
     }
   }
 
-  protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
+  protected parseData(p_ctx: ReadContext, socket: Socket, msgId: number): ServiceMessage<StateData> {
     
     //test if this is a serviceRequest
     const checkSvcReq = p_ctx.readUInt32();

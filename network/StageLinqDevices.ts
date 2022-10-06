@@ -57,8 +57,6 @@ export class StageLinqDevices extends EventEmitter {
     super();
     this.options = options;
     this._databases = new Databases();
-   // this.waitForAllDevices = this.waitForAllDevices.bind(this);
-    //this.waitForAllDevices();
   }
 
   /**
@@ -79,6 +77,10 @@ export class StageLinqDevices extends EventEmitter {
     
     //await this.startServiceListener(TimeSynchronization);
 
+    const fileTransfer = new FileTransfer(initMsg);
+    const FileTransferInfo = await fileTransfer.listen();
+    initMsg.services.set('FileTransfer', FileTransferInfo.port);
+
     const stateMap = new StateMap(initMsg);
     const stateMapInfo = await stateMap.listen();
     initMsg.services.set('StateMap', stateMapInfo.port);
@@ -91,6 +93,7 @@ export class StageLinqDevices extends EventEmitter {
 
     this.services2.set("StateMap", stateMap);
     this.services2.set("DirectoryService", directory); 
+    this.services2.set("FileTransfer", fileTransfer); 
     //this.services[timeSync.name] = timeSync
     //this.services
     //Logger.warn(this.services);

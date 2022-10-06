@@ -45,7 +45,7 @@ export class StageLinq extends EventEmitter {
       const deviceId = deviceIdFromBuff(connectionInfo.token);
       if (!this.devices.peers.has(deviceId) || this.devices.peers.get(deviceId).port !== connectionInfo.port) {
         this.devices.peers.set(deviceIdFromBuff(connectionInfo.token), connectionInfo);
-        Logger.debug(deviceId, connectionInfo);
+        //Logger.debug(deviceId, connectionInfo);
       }
       
       //Logger.warn(connectionInfo);

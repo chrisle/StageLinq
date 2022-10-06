@@ -21,6 +21,12 @@ export declare interface ServiceDevice {
 	//on(event: 'ready', listener: () => void): this;
   }
 
+export declare type ServiceData = {
+	socket?: Socket;
+	deviceId?: string;
+	service?: InstanceType<typeof Service>;
+}
+
 export abstract class Service<T> extends EventEmitter {
 	//private address: string;
 	//private port: number;
@@ -29,12 +35,16 @@ export abstract class Service<T> extends EventEmitter {
 	public serverInfo: AddressInfo;
 	public serverStatus: string;
 	public connections: Map<string, Socket> = new Map();
+	public deviceIds: Map<string, string> = new Map();
+	public deviceIps: Map<string, string> = new Map();
+	public serviceList: Map<string, ServiceData> = new Map();
 	protected controller: NetworkDevice;
 	//protected connection: tcp.Connection = null;
 	protected connection: Socket = null;
 	public server: Server = null;
 	public serInitMsg: ServiceInitMessage;
 	protected parent: InstanceType<typeof StageLinqDevices>;
+	private msgId: number = 0;
 
 	//constructor(p_address?: string, p_port?: number, p_controller?: NetworkDevice) {
 	constructor(p_initMsg:ServiceInitMessage) {
@@ -57,7 +67,8 @@ export abstract class Service<T> extends EventEmitter {
 				//});
 				socket.on('data', async p_data => {
 					
-					
+					const thisMsgId = this.msgId;
+					this.msgId++
 					
 					
 					//console.log(`Received data on ${serviceName}!!`)
@@ -97,7 +108,7 @@ export abstract class Service<T> extends EventEmitter {
 									const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
 									//Logger.info("RECV", length);
 									//hex(message);
-									const parsedData = this.parseData(new ReadContext(data, false),socket);
+									const parsedData = this.parseData(new ReadContext(data, false),socket,thisMsgId);
 			
 									// Forward parsed data to message handler
 									this.messageHandler(parsedData);
@@ -114,7 +125,7 @@ export abstract class Service<T> extends EventEmitter {
 							Logger.error(err);
 						}
 					} else {
-						const parsedData = await this.parseData(ctx, socket)
+						const parsedData = await this.parseData(ctx, socket,thisMsgId);
 						this.messageHandler(parsedData);
 					}
 
@@ -259,6 +270,12 @@ export abstract class Service<T> extends EventEmitter {
 
 	//}
 
+	getDeviceIdFromSocket(socket: Socket):string {
+		const ipPort = [socket.remoteAddress, socket.remotePort].join(":");
+		const deviceId = this.deviceIps.get(ipPort);
+		return deviceId
+	}
+
 	async waitForMessage(p_messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
 			const listener = (p_message: ServiceMessage<T>) => {
@@ -274,25 +291,25 @@ export abstract class Service<T> extends EventEmitter {
 		});
 	}
 
-	async write(p_ctx: WriteContext) {
+	async write(p_ctx: WriteContext, socket: Socket) {
 		assert(p_ctx.isLittleEndian() === false);
-		assert(this.connection);
+		//assert(this.connection);
 		const buf = p_ctx.getBuffer();
 		// Logger.info("SEND");
 		//hex(buf);
-		const written = await this.connection.write(buf);
+		const written = await socket.write(buf);
 		//assert(written === buf.byteLength);
 		return written;
 	}
 
-	async writeWithLength(p_ctx: WriteContext) {
+	async writeWithLength(p_ctx: WriteContext, socket: Socket) {
 		assert(p_ctx.isLittleEndian() === false);
-		assert(this.connection);
+		//assert(this.connection);
 		const newCtx = new WriteContext({ size: p_ctx.tell() + 4, autoGrow: false });
 		newCtx.writeUInt32(p_ctx.tell());
 		newCtx.write(p_ctx.getBuffer());
 		assert(newCtx.isEOF());
-		return await this.write(newCtx);
+		return await this.write(newCtx, socket);
 	}
 
 	public getIdFromIp(map:Map<string, ConnectionInfo>, val:string) {
@@ -308,7 +325,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	//protected dataPreparser()
 
-	protected abstract parseData(p_ctx: ReadContext, socket?: Socket): ServiceMessage<T>;
+	protected abstract parseData(p_ctx: ReadContext, socket?: Socket, msgId?: number): ServiceMessage<T>;
 
 	protected abstract messageHandler(p_data: ServiceMessage<T>): void;
 }
