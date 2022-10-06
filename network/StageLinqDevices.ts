@@ -44,6 +44,7 @@ export class StageLinqDevices extends EventEmitter {
   public directoryPort: number = 0;
   private services: Record<string, InstanceType<typeof services.Service>> = {};
   private _databases: Databases;
+  public peers: Map<string, ConnectionInfo> = new Map();
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
   private services2: Map<string, InstanceType<typeof services.Service>> = new Map();
   //private discoveryStatus: Map<string, ConnectionStatus> = new Map();
@@ -298,6 +299,7 @@ export class StageLinqDevices extends EventEmitter {
    * @param connectionInfo Connection info
    * @returns
    */
+  /*
   private async downloadDatabase(networkDevice: NetworkDevice, connectionInfo: ConnectionInfo) {
     const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
     Logger.debug(`Database sources: ${sources.join(', ')}`);
@@ -308,6 +310,7 @@ export class StageLinqDevices extends EventEmitter {
     return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
       .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
   }
+  */
 
   /**
    * Setup stateMap.

@@ -43,6 +43,7 @@ export type IpAddress = string;
 
 export interface ConnectionInfo extends DiscoveryMessage {
 	address: IpAddress;
+	addressPort?: string;
 }
 
 

@@ -186,7 +186,7 @@ export class StateMap extends Service<StateData> {
     const ctx = new WriteContext();
     ctx.writeUInt32(message.length);
     ctx.write(message)
-    const written = await socket.write(ctx.getBuffer());
+    await socket.write(ctx.getBuffer());
   }
 }
 

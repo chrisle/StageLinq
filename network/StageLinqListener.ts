@@ -44,6 +44,7 @@ export class StageLinqListener {
       port: p_ctx.readUInt16(),
       address: p_address,
     };
+    result.addressPort = [result.address, result.port].join(":");
     assert(p_ctx.isEOF());
     return result;
   }

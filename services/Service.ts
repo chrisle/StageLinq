@@ -1,7 +1,7 @@
 //import { hex } from '../utils/hex';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { MessageId, MESSAGE_TIMEOUT, Tokens } from '../types';
+import { MessageId, MESSAGE_TIMEOUT, Tokens, ConnectionInfo } from '../types';
 import { NetworkDevice } from '../network/NetworkDevice';
 import { ServiceInitMessage, StageLinqDevices } from '../network';
 import { ReadContext } from '../utils/ReadContext';
@@ -294,6 +294,12 @@ export abstract class Service<T> extends EventEmitter {
 		assert(newCtx.isEOF());
 		return await this.write(newCtx);
 	}
+
+	public getIdFromIp(map:Map<string, ConnectionInfo>, val:string) {
+		const thisEntry = [...map.values()].filter((item: ConnectionInfo) => item.addressPort === val);
+		return thisEntry.keys.toString();
+	  }
+
 
 	// FIXME: Cannot use abstract because of async; is there another way to get this?
 	protected async init() {
