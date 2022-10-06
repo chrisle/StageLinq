@@ -37,13 +37,14 @@ export class StageLinq extends EventEmitter {
     const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
     
     msg.port = address.port;
+    await sleep(500);
     await announce(msg);
     //Logger.warn(msg);
     //this.listener.listenForDevices(async (connectionInfo) => {
       //await this.devices.handleDevice(connectionInfo);
       //Logger.warn(connectionInfo);
     //});
-    await sleep(1500);
+    //await sleep(1500);
     //await this.devices.
   }
 

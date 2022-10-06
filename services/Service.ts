@@ -7,7 +7,7 @@ import { ServiceInitMessage, StageLinqDevices } from '../network';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
-import * as tcp from '../utils/tcp';
+//import * as tcp from '../utils/tcp';
 import {Server, Socket, AddressInfo} from 'net';
 import * as net from 'net';
 import type { ServiceMessage, IpAddress } from '../types';
@@ -22,8 +22,9 @@ export declare interface ServiceDevice {
   }
 
 export abstract class Service<T> extends EventEmitter {
-	private address: string;
-	private port: number;
+	//private address: string;
+	//private port: number;
+	protected preparseData:boolean = true;
 	public readonly name: string;
 	public serverInfo: AddressInfo;
 	public serverStatus: string;
@@ -32,22 +33,33 @@ export abstract class Service<T> extends EventEmitter {
 	//protected connection: tcp.Connection = null;
 	protected connection: Socket = null;
 	public server: Server = null;
+	public serInitMsg: ServiceInitMessage;
 	protected parent: InstanceType<typeof StageLinqDevices>;
 
 	//constructor(p_address?: string, p_port?: number, p_controller?: NetworkDevice) {
 	constructor(p_initMsg:ServiceInitMessage) {
 		super();
 		this.parent = p_initMsg.parent;
+		this.serInitMsg = p_initMsg;
+		
 	}
 
 	async createServer(serviceName: string): Promise<Server> {
 		return await new Promise((resolve, reject) => {
 			let queue: Buffer = null;
 			const server = net.createServer((socket) => {
+				console.log(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
 				socket.on('error', (err) => {
 					reject(err);
 				});
+				//socket.on('connect', () => {
+					
+				//});
 				socket.on('data', async p_data => {
+					
+					
+					
+					
 					//console.log(`Received data on ${serviceName}!!`)
 					let buffer: Buffer = null;
 					if (queue && queue.length > 0) {
@@ -60,15 +72,71 @@ export abstract class Service<T> extends EventEmitter {
 					const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 					const ctx = new ReadContext(arrayBuffer, false);
 					queue = null;
-					//const ctx = new ReadContext(data, false);
-					const parsedData = await this.parseData(ctx, socket)
-					this.messageHandler(parsedData);
+					const testBuf = ctx.readRemainingAsNewBuffer();
+					ctx.rewind();
+					const messageId = ctx.readUInt32();
+					ctx.rewind();
+
+					
+					if (this.preparseData && messageId != 0) {
+						try {
+							while (ctx.isEOF() === false) {
+								//console.log(`size remaining: `,ctx.sizeLeft())
+								if (ctx.sizeLeft() < 4) {
+									queue = ctx.readRemainingAsNewBuffer();
+									break;
+								}
+								//console.log(`size remaining after if: `,ctx.sizeLeft())
+								//const testBuf = ctx.readRemainingAsNewBuffer();
+								const length = ctx.readUInt32();
+								//console.log(length, testBuf);
+
+								if ( length <= ctx.sizeLeft()) {
+									const message = ctx.read(length);
+									// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
+									const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
+									//Logger.info("RECV", length);
+									//hex(message);
+									const parsedData = this.parseData(new ReadContext(data, false),socket);
+			
+									// Forward parsed data to message handler
+									this.messageHandler(parsedData);
+									this.emit('message', parsedData);
+								} else {
+									ctx.seek(-4); // Rewind 4 bytes to include the length again
+									queue = ctx.readRemainingAsNewBuffer();
+									break;
+								}
+							}
+						} catch (err) {
+							// FIXME: Rethrow based on the severity?
+							//console.log(testBuf);
+							Logger.error(err);
+						}
+					} else {
+						const parsedData = await this.parseData(ctx, socket)
+						this.messageHandler(parsedData);
+					}
+
+					
+					
+					
+					
+					
+					
+					
+					
+				
+				
+				
+				
+				
 				});
 				
 			}).listen(0, '0.0.0.0', () => {
 				this.serverInfo = server.address() as net.AddressInfo;
 				//console.log(address,port);
-				console.log(`opened ${serviceName} server on ${this.serverInfo.port}`);
+				console.log(`opened ${this.name} server on ${this.serverInfo.port}`);
 				//this.subConnection[serviceName] = {
 				//	socket: server,
 				//	port: port
@@ -231,6 +299,8 @@ export abstract class Service<T> extends EventEmitter {
 	protected async init() {
 		assert.fail('Implement this');
 	}
+
+	//protected dataPreparser()
 
 	protected abstract parseData(p_ctx: ReadContext, socket?: Socket): ServiceMessage<T>;
 

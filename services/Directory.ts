@@ -3,7 +3,7 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import { ServiceInitMessage } from '../network';
-import { ServiceMessage, ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens } from '../types';
+import { ServiceMessage, ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens, deviceIdFromBuff } from '../types';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils/sleep';
 import { Socket, AddressInfo } from 'net';
@@ -17,48 +17,34 @@ export interface DirectoryData {
 }
 
 export class Directory extends Service<DirectoryData> {
+  public name: string = "Directory";
   public timeAlive: number;
   public servicePorts: ServicePorts;
   public serviceRequestAllowed: boolean = false;
   public services: Map<string, number>;
+  protected preparseData = false;
 
   constructor(p_initMsg:ServiceInitMessage) {
 		super(p_initMsg);
 		this.services = p_initMsg.services;
+    
 	}
   
   async init() {
-    
   }
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
-    
     let deviceId: string = "";
     let servicePorts: ServicePorts = {};
-    //let token: string = null;
     while (ctx.isEOF() === false) {
       const id = ctx.readUInt32();
-      const tokenArray = ctx.read(16);
-      deviceId = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-        .exec(Buffer.from(tokenArray).toString('hex')).splice(1).join('-');
-      //if (!token){
-      //  token = ctx.read(16).toString();
-        this.connections.set(deviceId, socket)
-      //} else {
-      //  ctx.seek(16);
-      //}
-      //ctx.seek(16);
-      //console.log(MessageId[id])
+      const token = ctx.read(16);
+      const deviceId = deviceIdFromBuff(token)
+      this.connections.set(deviceId, socket);
       switch (id) {
         case MessageId.TimeStamp:
           ctx.seek(16);
-          // const secondToken = ctx.read(16); // should be 00..
-          // we _shouldn't_ be receiving anything but blank tokens in the 2nd field
-          // assert(secondToken.every((x) => x === 0));
-
-          // Time Alive is in nanoseconds; convert back to seconds
           this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
-          // this.sendTimeStampMsg(deviceToken, Tokens.SoundSwitch);
           break;
         case MessageId.ServicesAnnouncement:
           const service = ctx.readNetworkStringUTF16();
@@ -69,19 +55,7 @@ export class Directory extends Service<DirectoryData> {
           break;
         case MessageId.ServicesRequest:
           const serviceRequest = ctx.readRemaining();
-          console.log(deviceId,id,serviceRequest);
-          //this.sendServiceRequest(socket);
           this.sendServiceAnnouncement(socket);
-          //this.sendServiceRequest(socket);
-          
-
-          //this.serviceRequestAllowed = true;
-          //try {
-          //  this.requestAllServicePorts(socket);
-          //} catch (err) {
-          //  console.error(err)
-         // }
-          
           break;
         default:
           assert.fail(`NetworkDevice Unhandled message id '${id}'`);
@@ -99,13 +73,29 @@ export class Directory extends Service<DirectoryData> {
   }
 
   protected messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {
-    //const ctx = new ReadContext(p_message.buffer, false);
-    //console.log(directoryMsg.message);
   }
 
+  private async sendServiceAnnouncement(socket?: Socket): Promise<void> {
+    let svc = this.services.entries();
+    //console.warn(svc);
+    await sleep(250);
+    const ctx = new WriteContext();
+    ctx.writeUInt32(MessageId.ServicesRequest);
+    ctx.write(Tokens.Listen);
+    for (let i=0; i<this.services.size;i++) {
+      const svcEntry = svc.next();
+      const value = svcEntry.value;
+      ctx.writeUInt32(MessageId.ServicesAnnouncement);
+      ctx.write(Tokens.Listen);
+      ctx.writeNetworkStringUTF16(value[0]);
+      ctx.writeUInt16(value[1]);
+    }
+   
+    await socket.write(ctx.getBuffer());
+    Logger.debug(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`)
+  }
   
-  //socket.write(wtx3.getBuffer());
-
+/*
   private async sendTimeStampReply(socket: Socket): Promise<void> {
     await sleep(250);
     //const ctx = new WriteContext();
@@ -126,26 +116,7 @@ export class Directory extends Service<DirectoryData> {
     //console.log(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`)
 }
 
-  private async sendServiceAnnouncement(socket?: Socket): Promise<void> {
-    let svc = this.services.entries();
-    //console.warn(svc);
-    await sleep(250);
-    const ctx = new WriteContext();
-    ctx.writeUInt32(MessageId.ServicesRequest);
-    ctx.write(Tokens.Listen);
-    for (let i=0; i<this.services.size;i++) {
-      const svcEntry = svc.next();
-      const value = svcEntry.value;
-      //console.warn(value);
-      ctx.writeUInt32(MessageId.ServicesAnnouncement);
-      ctx.write(Tokens.Listen);
-      ctx.writeNetworkStringUTF16(value[0]);
-      ctx.writeUInt16(value[1]);
-    }
-   
-    await socket.write(ctx.getBuffer());
-    console.log(`sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`)
-}
+  
 
   private async sendServiceRequest(socket?: Socket): Promise<void> {
       await sleep(1500);
@@ -187,7 +158,7 @@ export class Directory extends Service<DirectoryData> {
       }
     });
   }
-
+  */
 }
 
 

@@ -7,11 +7,9 @@ import { Directory, FileTransfer, StateData, StateMap, TimeSynchronization } fro
 import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
 import * as services from '../services';
-import { throws } from 'assert';
-import { dir } from 'console';
 import { AddressInfo } from 'net';
 
-enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
+//enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
 
 interface StageLinqDevice {
   networkDevice: NetworkDevice;
@@ -48,10 +46,10 @@ export class StageLinqDevices extends EventEmitter {
   private _databases: Databases;
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
   private services2: Map<string, InstanceType<typeof services.Service>> = new Map();
-  private discoveryStatus: Map<string, ConnectionStatus> = new Map();
+  //private discoveryStatus: Map<string, ConnectionStatus> = new Map();
   private options: StageLinqOptions;
 
-  private deviceWatchTimeout: NodeJS.Timeout | null = null;
+  //private deviceWatchTimeout: NodeJS.Timeout | null = null;
   //private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
 
   constructor(options: StageLinqOptions) {
@@ -78,6 +76,8 @@ export class StageLinqDevices extends EventEmitter {
     //const timeSyncInfo = await timeSync.listen();
     //initMsg.services.set('TimeSynchronization', timeSyncInfo.port);
     
+    //await this.startServiceListener(TimeSynchronization);
+
     const stateMap = new StateMap(initMsg);
     const stateMapInfo = await stateMap.listen();
     initMsg.services.set('StateMap', stateMapInfo.port);
@@ -86,15 +86,16 @@ export class StageLinqDevices extends EventEmitter {
     const serverInfo = await directory.listen();
     initMsg.services.set('DirectoryService', serverInfo.port);
     
-    await sleep(500);
+    //await sleep(500);
 
     this.services2.set("StateMap", stateMap);
     this.services2.set("DirectoryService", directory); 
     //this.services[timeSync.name] = timeSync
     //this.services
     //Logger.warn(this.services);
+    
     return serverInfo
-    /*await this.startServiceListener(Directory);
+    /*
     this.services['Directory'].on('listening', (serverInfo) =>{
       this.directoryPort = serverInfo.port
       return 
@@ -104,17 +105,17 @@ export class StageLinqDevices extends EventEmitter {
 
    // Factory function
    async startServiceListener<T extends InstanceType<typeof services.Service>>(ctor: {
-    new (): T;
+    new (p_initMsg:ServiceInitMessage): T;
     }): Promise<T> {
     //assert(this.connection);
     // FIXME: find out why we need these waits before connecting to a service
-    await sleep(500);
+    //await sleep(500);
 
     const serviceName = ctor.name;
 
-    //if (this.services[serviceName]) {
-    //  return this.services[serviceName] as T;
-    //}
+    if (this.services[serviceName]) {
+      return this.services[serviceName] as T;
+    }
 
     //assert(this.servicePorts.hasOwnProperty(serviceName));
     //assert(this.servicePorts[serviceName] > 0);
@@ -130,7 +131,7 @@ export class StageLinqDevices extends EventEmitter {
     return service;
    
   }
-
+/*
   async handleDevice(connectionInfo: ConnectionInfo) {
     Logger.silly(this.showDiscoveryStatus(connectionInfo));
 
@@ -145,7 +146,7 @@ export class StageLinqDevices extends EventEmitter {
     const networkDevice = new NetworkDevice(connectionInfo);
     networkDevice.listen();
   }
-
+*/
   /**
    * Disconnect from all connected devices
    */
@@ -227,6 +228,7 @@ export class StageLinqDevices extends EventEmitter {
    * @param connectionInfo Connection info
    * @returns
    */
+  /*
   private async connectToDevice(connectionInfo: ConnectionInfo) {
 
     // Mark this device as connecting.
@@ -289,7 +291,7 @@ export class StageLinqDevices extends EventEmitter {
       fileTransferService: fileTransfer
     });
   }
-
+*/
   /**
    * Download databases from the device.
    *
@@ -313,6 +315,7 @@ export class StageLinqDevices extends EventEmitter {
    * @param connectionInfo Connection info
    * @param networkDevice Network device
    */
+  /*
   private async setupStateMap(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
     // Setup StateMap
     Logger.debug(`Setting up stateMap for ${connectionInfo.address}`);
@@ -389,5 +392,5 @@ export class StageLinqDevices extends EventEmitter {
       : this.isFailed(device) ? '(FAILED)'
       : '(NEW)');
   }
-
+*/
 }
