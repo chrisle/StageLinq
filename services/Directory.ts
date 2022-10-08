@@ -33,18 +33,30 @@ export class Directory extends Service<DirectoryData> {
   async init() {
   }
 
-  protected parseData(ctx: ReadContext, socket: Socket, msgId:number): ServiceMessage<DirectoryData> {
+  protected parseData(ctx: ReadContext, socket: Socket, msgId:number, svcMsg:boolean): ServiceMessage<DirectoryData> {
     let deviceId: string = "";
     let servicePorts: ServicePorts = {};
     while (ctx.isEOF() === false) {
       const id = ctx.readUInt32();
       const token = ctx.read(16);
       const deviceId = deviceIdFromBuff(token)
+      const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(":");
+      //if (!this.deviceIps.has(ipAddressPort) {
+        
+        this.deviceIps.set(ipAddressPort, deviceId);
+      //}
       this.connections.set(deviceId, socket);
+      //this.testPoint(ctx, this.getDeviceIdFromSocket(socket), msgId, "switch", false, svcMsg );
+      //console.log(msgId, id, deviceId);
       switch (id) {
         case MessageId.TimeStamp:
           ctx.seek(16);
           this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
+          if (ctx.isEOF() === false ){
+            //console.log(ctx.readRemainingAsNewBuffer().toString('hex'));
+            ctx.readRemaining();
+          }
+          this.sendTimeStampReply(token,socket);
           break;
         case MessageId.ServicesAnnouncement:
           const service = ctx.readNetworkStringUTF16();
@@ -95,28 +107,32 @@ export class Directory extends Service<DirectoryData> {
     Logger.debug(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`)
   }
   
-/*
-  private async sendTimeStampReply(socket: Socket): Promise<void> {
-    await sleep(250);
+
+  private async sendTimeStampReply(token: Uint8Array ,socket: Socket) {
+    //await sleep(250);
     //const ctx = new WriteContext();
     
     
     const wtx3 = new WriteContext();
     wtx3.writeUInt32(MessageId.TimeStamp);
+    wtx3.write(token);
     wtx3.write(Tokens.Listen);
-    wtx3.write(new Uint8Array(16));
-    wtx3.writeUInt64(BigInt(new Date().getTime()-this.timeConnected));
+    wtx3.writeUInt64(0n);
+    
+    const message = wtx3.getBuffer();
+    assert(message.length === 44);
+    //wtx3.writeUInt64(BigInt(new Date().getTime()-this.timeConnected));
     
     
     //ctx.writeUInt32(MessageId.ServicesAnnouncement);
     //ctx.write(Tokens.Listen);
     //ctx.writeNetworkStringUTF16('DirectoryService');
     //ctx.writeUInt16(this.serverInfo.port);
-   // await socket.write(wtx3.getBuffer());
+    await socket.write(message);
     //console.log(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`)
 }
 
-  
+  /*
 
   private async sendServiceRequest(socket?: Socket): Promise<void> {
       await sleep(1500);

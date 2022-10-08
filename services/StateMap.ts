@@ -14,6 +14,22 @@ export const States = [
   StageLinqValue.MixerCH2faderPosition,
   StageLinqValue.MixerCrossfaderPosition,
 
+  StageLinqValue.ClientPreferencesLayerA,
+  StageLinqValue.ClientPreferencesPlayer,
+  StageLinqValue.ClientPreferencesPlayerJogColorA,
+  StageLinqValue.ClientPreferencesPlayerJogColorB,
+  StageLinqValue.EngineDeck1DeckIsMaster,
+  StageLinqValue.EngineDeck2DeckIsMaster,
+  
+  StageLinqValue.EngineMasterMasterTempo,
+  
+  StageLinqValue.EngineSyncNetworkMasterStatus,
+  StageLinqValue.MixerChannelAssignment1,
+  StageLinqValue.MixerChannelAssignment2,
+  StageLinqValue.MixerChannelAssignment3,
+  StageLinqValue.MixerChannelAssignment4,
+  StageLinqValue.MixerNumberOfChannels,
+
   // Decks
   StageLinqValue.EngineDeck1Play,
   StageLinqValue.EngineDeck1PlayState,
@@ -63,21 +79,6 @@ export const States = [
   StageLinqValue.EngineDeck4CurrentBPM,
   StageLinqValue.EngineDeck4ExternalMixerVolume,
 
-  StageLinqValue.ClientPreferencesLayerA,
-  StageLinqValue.ClientPreferencesPlayer,
-  StageLinqValue.ClientPreferencesPlayerJogColorA,
-  StageLinqValue.ClientPreferencesPlayerJogColorB,
-  StageLinqValue.EngineDeck1DeckIsMaster,
-  StageLinqValue.EngineDeck2DeckIsMaster,
-  
-  StageLinqValue.EngineMasterMasterTempo,
-  
-  StageLinqValue.EngineSyncNetworkMasterStatus,
-  StageLinqValue.MixerChannelAssignment1,
-  StageLinqValue.MixerChannelAssignment2,
-  StageLinqValue.MixerChannelAssignment3,
-  StageLinqValue.MixerChannelAssignment4,
-  StageLinqValue.MixerNumberOfChannels,
 
 ];
 
@@ -106,18 +107,18 @@ export class StateMap extends Service<StateData> {
 
   public async subscribe(socket: Socket) {
     
+    Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort}`);
+    /*
     const keys = Object.keys(StageLinqValueObj);
-    //console.log(keys);
     const values = keys.map(key => Reflect.get(StageLinqValueObj,key))
-    //console.log(values);
+    
     for (const value of values) {
-      //const stateValue: string = StageLinqValueObj[state];
       await this.subscribeState(value, 0, socket);
     }
-    
-    //for (const state of States) {
-    //  await this.subscribeState(state, 0, socket);
-    //}
+    */
+    for (const state of States) {
+      await this.subscribeState(state, 0, socket);
+    }
   }
 
   protected parseData(p_ctx: ReadContext, socket: Socket, msgId: number, isSub: boolean): ServiceMessage<StateData> {
@@ -129,7 +130,7 @@ export class StateMap extends Service<StateData> {
       const token = p_ctx.read(16);
       const svcName = p_ctx.readNetworkStringUTF16();
       const svcPort = p_ctx.readUInt16();
-      console.log(deviceIdFromBuff(token), svcName, svcPort)
+      //console.log(deviceIdFromBuff(token), svcName, svcPort)
       this.subscribe(socket);
       return
     }

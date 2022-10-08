@@ -24,6 +24,10 @@ export declare type ServiceData = {
 	service?: InstanceType<typeof Service>;
 }
 
+type ServiceBuffer = {
+	[key: string]: Buffer;
+}
+
 export abstract class Service<T> extends EventEmitter {
 	//private address: string;
 	//private port: number;
@@ -35,6 +39,7 @@ export abstract class Service<T> extends EventEmitter {
 	public deviceIds: Map<string, string> = new Map();
 	public deviceIps: Map<string, string> = new Map();
 	public serviceList: Map<string, ServiceData> = new Map();
+	protected serviceBuffers: Map<string, Buffer> = new Map();
 	//protected controller: NetworkDevice;
 	//protected connection: tcp.Connection = null;
 	protected connection: Socket = null;
@@ -49,60 +54,30 @@ export abstract class Service<T> extends EventEmitter {
 		this.parent = p_initMsg.parent;
 		this.serInitMsg = p_initMsg;
 	}
-	protected isSubMsg(ctx: ReadContext): boolean {
-		//return new Promise((resolve, reject) => {
-			//const ttx = ctx.readRemainingAsNewBuffer();
-			//ctx.rewind();
-			
-			
+	protected isSubMsg(_ctx: ReadContext): string {
+		
+			const ctx = _ctx.readRemainingAsNewCtx();
 			const messageId = ctx.readUInt32()
-				//console.log(messageId)
 				
 			const token = ctx.read(16);
-
-			if (messageId === 0 && this.parent.peers.has(deviceIdFromBuff(token))) {
-				return true
+			const deviceId = deviceIdFromBuff(token);
+			if (messageId === 0 && this.parent.peers.has(deviceId)) {
+				
+				return deviceId
 			} else {
-				return false
+				return 
 			}
-
-			/*
-			while (ctx.isEOF() === false) {
-				//console.log(ctx.sizeLeft());
-				if (ctx.sizeLeft() <= 20) {break;}
-				const messageId = ctx.readUInt32()
-				//console.log(messageId)
-				if (messageId !== 0) {break;}
-				const token = ctx.read(16);
-				//console.log(Buffer.from(token).toString('hex'))
-				if (ctx.sizeLeft() < 4) {break;}
-				const length = ctx.readUInt32();
-				//console.log(length, ctx.sizeLeft());
-				if (length > ctx.sizeLeft()) {break;}
-				ctx.seek(-4);
-
-				const service = ctx.readNetworkStringUTF16()
-				//console.log(service);
-				//if (ctx.sizeLeft() <= 4) {break;}
-				//ctx.rewind();
-				return true
-				//resolve(new ReadContext(ttx, false));
-			} 
-			//reject(new ReadContext(ttx, false))
-		//});
-		//ctx.rewind();
-		return false
-		*/
-		//const messageId = ctx.readUInt32;
-
 	}
 
 	async createServer(serviceName: string): Promise<Server> {
 		return await new Promise((resolve, reject) => {
-			let queue: Buffer = null;
+			//let queue: Buffer = null;
 			const server = net.createServer((socket) => {
 				//const deviceId = this.deviceIps.set([socket.rem])
 				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
+				const ipAddressPort = [socket.remoteAddress,socket.remotePort].join(":");
+				this.serviceBuffers.set(ipAddressPort,null);
+				let deviceId = (this.deviceIps.has(ipAddressPort)) ? this.deviceIps.get(ipAddressPort) : ipAddressPort;
 
 				socket.on('error', (err) => {
 					reject(err);
@@ -110,13 +85,26 @@ export abstract class Service<T> extends EventEmitter {
 				
 				socket.on('data', p_data => {
 					//let messages:ReadContext[] = [];
+					
+					let queue: Buffer = this.serviceBuffers.get(ipAddressPort);
 					const thisMsgId = this.msgId;
 					this.msgId++
+					//if (p_data.buffer) {
+
+					//}
 					const testArrayBuffer = p_data.buffer.slice(p_data.byteOffset, p_data.byteOffset + p_data.byteLength);
 					const ttx = new ReadContext(testArrayBuffer,false);
-					this.testPoint(ttx, this.getDeviceIdFromSocket(socket), this.msgId, "p_data", true );  
+					this.testPoint(ttx, deviceId, this.msgId, "p_data", true );  
+					//let queue
 					
 					const isSub = this.isSubMsg(ttx);
+					if (isSub && isSub !== deviceId) {
+						deviceId = isSub
+					}
+
+					if (this.deviceIps.has(ipAddressPort) && deviceId === ipAddressPort) {
+						deviceId = this.deviceIps.get(ipAddressPort);
+					}
 
 					let buffer: Buffer = null;
 					if (queue && queue.length > 0) {
@@ -128,7 +116,7 @@ export abstract class Service<T> extends EventEmitter {
 					// FIXME: Clean up this arraybuffer confusion mess
 					const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 					let ctx = new ReadContext(arrayBuffer, false);
-					this.testPoint(ctx, this.getDeviceIdFromSocket(socket), this.msgId, "buffQueue", true );  
+					this.testPoint(ctx, deviceId, this.msgId, "buffQueue", true );  
 					queue = null;
 					//ctx = await this.testPoint(ctx, this.getDeviceIdFromSocket(socket), this.msgId, "data", true );  
 					/*
@@ -155,14 +143,14 @@ export abstract class Service<T> extends EventEmitter {
 					//const messageId = ctx.readUInt32();
 					//ctx.rewind();
 					//console.warn(socket.localPort, " ", this.parent.directoryPort);
-					if (!this.preparseData || socket.localPort === this.parent.directoryPort || isSub) {
+					if (!this.preparseData || socket.localPort === this.parent.directoryPort || !!isSub) {
 						try {
-							//ctx = this.testPoint(ctx, this.getDeviceIdFromSocket(socket), this.msgId, "no-preparse", true );  
-							const parsedData = this.parseData(ctx, socket,thisMsgId, isSub);
+							this.testPoint(ctx, deviceId, this.msgId, "toparse", true );  
+							const parsedData = this.parseData(ctx, socket,thisMsgId);
 							this.emit('message', parsedData);
 							this.messageHandler(parsedData);
 						} catch (err) {
-							Logger.error(this.msgId, err);
+							Logger.error(this.name, this.msgId, deviceId, err);
 						}
 					} else {
 						try {
@@ -184,7 +172,7 @@ export abstract class Service<T> extends EventEmitter {
 									
 									this.msgId++
 									const parsedData = this.parseData(new ReadContext(data,false), socket, thisMsgId);
-									this.testPoint(new ReadContext(data,false), this.getDeviceIdFromSocket(socket), this.msgId, "while", true );  
+									this.testPoint(new ReadContext(data,false), deviceId, this.msgId, "while", true );  
 									//messages.push(new ReadContext(data, false))
 									// Forward parsed data to message handler
 									
@@ -192,7 +180,7 @@ export abstract class Service<T> extends EventEmitter {
 									this.emit('message', parsedData);
 								} else {
 									ctx.seek(-4); // Rewind 4 bytes to include the length again
-									this.testPoint(ctx, this.getDeviceIdFromSocket(socket), this.msgId, "toqueue", true );
+									this.testPoint(ctx, deviceId, this.msgId, "toqueue", true );
 									queue = ctx.readRemainingAsNewBuffer();
 									break;
 								}
@@ -202,7 +190,7 @@ export abstract class Service<T> extends EventEmitter {
 							//	console.log(stringMsg);
 							//}
 						} catch (err) {
-							Logger.error(this.msgId, err);
+							Logger.error(this.name, this.msgId, deviceId, err);
 						}
 					}
 
@@ -339,19 +327,23 @@ export abstract class Service<T> extends EventEmitter {
 		return thisEntry.keys.toString();
 	  }
 
-	protected testPoint(_ctx: ReadContext, deviceId: string, msgId: number, name: string, silent?:boolean, isSvc?: boolean) {
+	protected testPoint(_ctx: ReadContext, deviceId: string, msgId: number, name: string, silent?:boolean) {
 		const ctx = _ctx.readRemainingAsNewCtx();
 		const length = ctx.sizeLeft();
-		let buff = ctx.readRemainingAsNewBuffer().toString('hex');
+		let buff = ""
+		if (!ctx.isEOF()) {
+			buff = ctx.readRemainingAsNewBuffer().toString('hex');
+		}
+		
 		ctx.seek(0- length);
 		if (buff.length > 1000) {
 			buff = buff.substring(0,40);
 			buff += "...";
 		} 
 		if (silent) {
-			Logger.silent(`[${msgId}] [svc:${isSvc}] [${this.name}] (${name}) ${deviceId} ${length} ${buff}`);
+			Logger.silent(`[${msgId}] [${this.name}] ${deviceId} (${name}) ${length} ${buff}`);
 		} else {
-			Logger.debug(`[${msgId}] [svc:${isSvc}] [${this.name}] (${name}) ${deviceId} ${length} ${buff}`);
+			Logger.debug(`[${msgId}] [${this.name}] ${deviceId} (${name}) ${length} ${buff}`);
 		}
 	}
 
