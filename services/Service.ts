@@ -54,14 +54,17 @@ export abstract class Service<T> extends EventEmitter {
 		this.parent = p_initMsg.parent;
 		this.serInitMsg = p_initMsg;
 	}
-	protected isSubMsg(_ctx: ReadContext): string {
+	protected async isSubMsg(_ctx: ReadContext): Promise<string> {
 		
 			const ctx = _ctx.readRemainingAsNewCtx();
 			const messageId = ctx.readUInt32()
 				
 			const token = ctx.read(16);
 			const deviceId = deviceIdFromBuff(token);
-			if (messageId === 0 && this.parent.peers.has(deviceId)) {
+
+			this.testPoint(ctx, deviceId, this.msgId, "isSub", true );
+			const hasPeer = await this.parent.peers.has(deviceId)
+			if (messageId === 0 && hasPeer) {
 				
 				return deviceId
 			} else {
@@ -83,7 +86,7 @@ export abstract class Service<T> extends EventEmitter {
 					reject(err);
 				});
 				
-				socket.on('data', p_data => {
+				socket.on('data', async p_data => {
 					//let messages:ReadContext[] = [];
 					
 					let queue: Buffer = this.serviceBuffers.get(ipAddressPort);
@@ -97,7 +100,7 @@ export abstract class Service<T> extends EventEmitter {
 					this.testPoint(ttx, deviceId, this.msgId, "p_data", true );  
 					//let queue
 					
-					const isSub = this.isSubMsg(ttx);
+					const isSub = await this.isSubMsg(ttx);
 					if (isSub && isSub !== deviceId) {
 						deviceId = isSub
 					}

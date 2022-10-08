@@ -154,14 +154,14 @@ export class FileTransfer extends Service<FileTransferData> {
     p_ctx.seek(-4);
     */
 
-    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "ff-pre", true, svcMsg );
+    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "ff-pre", true );
     if (p_ctx.sizeLeft() < 100) {
       p_ctx = fastForward(p_ctx, "666c7478", msgId);
     }
     
     
     const check = p_ctx.getString(4);
-    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "mag-post", true, svcMsg );
+    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "mag-post", true );
     if (check !== MAGIC_MARKER) {
       Logger.error(msgId,svcMsg, assert(check === MAGIC_MARKER))
     }
@@ -492,7 +492,7 @@ export interface Source {
       }
    //}
     await this.deviceSources.set(msgDeviceId, devices);
-    this.downloadDb(msgDeviceId);
+    //this.downloadDb(msgDeviceId);
     const testDev = this.deviceSources.get(msgDeviceId);
     Logger.info(testDev);
     return result;

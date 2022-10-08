@@ -73,7 +73,7 @@ async function main() {
 
     services: [
       Services.StateMap,
-      //Services.FileTransfer,
+      Services.FileTransfer,
       Services.Directory,
     ],
   }

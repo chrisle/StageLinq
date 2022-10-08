@@ -137,6 +137,10 @@ export class StateMap extends Service<StateData> {
     p_ctx.rewind();
 
     const marker = p_ctx.getString(4);
+    if (marker !== MAGIC_MARKER) {
+      this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "magCheck", true);
+      Logger.error(this.name, msgId)
+    }
     assert(marker === MAGIC_MARKER);
     const type = p_ctx.readUInt32();
     switch (type) {
