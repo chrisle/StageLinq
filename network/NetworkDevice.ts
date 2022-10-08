@@ -1,3 +1,4 @@
+/*
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens } from '../types';
@@ -324,6 +325,7 @@ export class NetworkDevice {
       }
     });
   }
+  */
 
   // private async sendTimeStampMsg(deviceToken: Uint8Array, userToken: Uint8Array, timeAlive?: bigint) {
   //   const ctx = new WriteContext();
@@ -335,4 +337,4 @@ export class NetworkDevice {
   //   const written = await this.connection.write(ctx.getBuffer());
   //   assert(written === ctx.tell());
   // }
-}
+//}

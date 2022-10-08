@@ -1,10 +1,11 @@
-import { ActingAsDevice, PlayerStatus } from '../types';
+import { ActingAsDevice, PlayerStatus, StageLinqOptions, Services } from '../types';
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+
 
 require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
@@ -37,6 +38,8 @@ function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
  * @param status Player to download the current song from.
  * @param dest Path to save file to.
  */
+
+/*
 async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: string) {
   try {
     const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
@@ -48,12 +51,13 @@ async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: st
     console.error(`Could not download ${status.trackPathAbsolute}`);
   }
 }
+*/
 
 async function main() {
 
   console.log('Starting CLI');
 
-  const stageLinqOptions = {
+  const stageLinqOptions: StageLinqOptions = {
 
     // If set to true, download the source DBs in a temporary location.
     // (default: true)
@@ -65,26 +69,50 @@ async function main() {
 
     // What device to emulate on the network.
     // (default: Now Playing)
-    actingAs: ActingAsDevice.NowPlaying
+    actingAs: ActingAsDevice.NowPlaying,
+
+    services: [
+      Services.StateMap,
+      Services.FileTransfer,
+      Services.Directory,
+    ],
   }
 
   const stageLinq = new StageLinq(stageLinqOptions);
 
   // Setup how you want to handle logs coming from StageLinq
+  //let logStream = fs.createWriteStream('log.txt', {flags: 'a'});
+  //const hrTime = process.hrtime();
+//console.log(hrTime[0] * 1000000 + hrTime[1] / 1000)
+  // use {flags: 'a'} to append and {flags: 'w'} to erase and write a new file
+  //logStream.write('Initial line...');
+  
+
   stageLinq.logger.on('error', (...args: any) => {
+    //const hrTime = process.hrtime();
     console.error(...args);
+    //args.push("\n");
+    //logStream.write(args.join(" "));
   });
   stageLinq.logger.on('warn', (...args: any) => {
     console.warn(...args);
+    args.push("\n");
+   // logStream.write(args.join(" "));
   });
   stageLinq.logger.on('info', (...args: any) => {
     console.info(...args);
+    args.push("\n");
+    //logStream.write(args.join(" "));
   });
   stageLinq.logger.on('log', (...args: any) => {
     console.log(...args);
+    args.push("\n");
+    //logStream.write(args.join(" "));
   });
   stageLinq.logger.on('debug', (...args: any) => {
     console.debug(...args);
+    args.push("\n");
+    //logStream.write(args.join(" "));
   });
   // Note: Silly is very verbose!
   // stageLinq.logger.on('silly', (...args: any) => {
@@ -158,7 +186,9 @@ async function main() {
   try {
     process.on('SIGINT', async function () {
       console.info('... exiting');
+      //logStream.end('this is the end line');
       // Ensure SIGINT won't be impeded by some error
+
       try {
         await stageLinq.disconnect();
       } catch (err: any) {

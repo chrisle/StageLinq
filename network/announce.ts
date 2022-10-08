@@ -5,6 +5,7 @@ import {
   LISTEN_PORT,
 } from '../types';
 import { createSocket, Socket as UDPSocket } from 'dgram';
+import * as dgram from 'dgram'
 import { Logger } from '../LogEmitter';
 import { networkInterfaces } from 'os';
 import { strict as assert } from 'assert';
@@ -70,8 +71,10 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
         reject(new Error('Failed to send announcement'));
       }, CONNECT_TIMEOUT);
 
+      const address = announceClient.address()
+      
       announceClient.send(p_message, LISTEN_PORT, p_ip, () => {
-        // Logger.log('UDP message sent to ' + p_ip);
+        // Logger.log('UDP message sent to ' + p_ip, ' from port ' + address.port);
         resolve();
       });
     });
@@ -108,7 +111,7 @@ export async function announce(message: DiscoveryMessage): Promise<void> {
   await broadcastMessage(msg);
 
   announceTimer = setInterval(broadcastMessage, ANNOUNCEMENT_INTERVAL, msg);
-  Logger.info("Announced myself");
+  Logger.info(`Announced myself on ${message.port}`);
 }
 
 export interface DiscoveryMessageOptions {

@@ -59,6 +59,7 @@ export class StageLinq extends EventEmitter {
    */
   async disconnect() {
     try {
+      Logger.warn('disconnecting');
       this.devices.disconnectAll();
       const msg = createDiscoveryMessage(Action.Logout, this.options.actingAs)
       await unannounce(msg);

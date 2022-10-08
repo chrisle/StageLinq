@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { StageLinqValue } from '../types';
+import { StageLinqValue, StageLinqValueObj } from '../types';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
@@ -89,6 +89,7 @@ const MAGIC_MARKER_JSON = 0x00000000;
 export interface StateData {
   name?: string;
   client?: string;
+  msgId?: number;
   json?: {
     type: number;
     string?: string;
@@ -104,13 +105,24 @@ export class StateMap extends Service<StateData> {
   }
 
   public async subscribe(socket: Socket) {
-    for (const state of States) {
-      await this.subscribeState(state, 0, socket);
+    
+    const keys = Object.keys(StageLinqValueObj);
+    //console.log(keys);
+    const values = keys.map(key => Reflect.get(StageLinqValueObj,key))
+    //console.log(values);
+    for (const value of values) {
+      //const stateValue: string = StageLinqValueObj[state];
+      await this.subscribeState(value, 0, socket);
     }
+    
+    //for (const state of States) {
+    //  await this.subscribeState(state, 0, socket);
+    //}
   }
 
-  protected parseData(p_ctx: ReadContext, socket: Socket, msgId: number): ServiceMessage<StateData> {
+  protected parseData(p_ctx: ReadContext, socket: Socket, msgId: number, isSub: boolean): ServiceMessage<StateData> {
     
+    //p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "parseTop",true );  
     //test if this is a serviceRequest
     const checkSvcReq = p_ctx.readUInt32();
     if (p_ctx.sizeLeft() === 38 && checkSvcReq === 0) {
@@ -128,16 +140,26 @@ export class StateMap extends Service<StateData> {
     const type = p_ctx.readUInt32();
     switch (type) {
       case MAGIC_MARKER_JSON: {
+       // p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "parseJSON", true);
         const name = p_ctx.readNetworkStringUTF16();
-        const json = JSON.parse(p_ctx.readNetworkStringUTF16());
-        return {
-          id: MAGIC_MARKER_JSON,
-          message: {
-            name: name,
-            client: [socket.remoteAddress,socket.remotePort].join(":"),
-            json: json,
-          },
-        };
+        let jsonString = "";
+        try {
+          jsonString = p_ctx.readNetworkStringUTF16();
+          const json = JSON.parse(jsonString);
+          return {
+            id: MAGIC_MARKER_JSON,
+            message: {
+              name: name,
+              client: [socket.remoteAddress,socket.remotePort].join(":"),
+              msgId: msgId,
+              json: json,
+            },
+          };
+        } catch(err) {
+          Logger.error(this.name, msgId, jsonString, err);
+        }
+        
+        
       }
 
       case MAGIC_MARKER_INTERVAL: {
@@ -148,6 +170,7 @@ export class StateMap extends Service<StateData> {
           message: {
             name: name,
             client: [socket.remoteAddress,socket.remotePort].join(":"),
+            msgId: msgId,
             interval: interval,
           },
         };
@@ -163,7 +186,7 @@ export class StateMap extends Service<StateData> {
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
     if (p_data && p_data.message.json) { 
       Logger.info(
-       `${p_data.message.client} ${p_data.message.name} => ${
+       `[${p_data.message.msgId}] ${p_data.message.client} ${p_data.message.name} => ${
          p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
        }`
      );
@@ -186,7 +209,11 @@ export class StateMap extends Service<StateData> {
     const ctx = new WriteContext();
     ctx.writeUInt32(message.length);
     ctx.write(message)
-    await socket.write(ctx.getBuffer());
+    const buffer = ctx.getBuffer();
+    //Logger.debug('subscribe ', buffer.toString('hex'));
+    await socket.write(buffer);
+    //ctx.rewind();
+    
   }
 }
 

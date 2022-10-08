@@ -1,3 +1,4 @@
+import { Socket } from 'net';
 import { DiscoveryMessageOptions } from '../network';
 
 export * from './common';
@@ -23,6 +24,7 @@ export interface ServicePorts {
 export interface ServiceMessage<T> {
 	id: number;
 	message: T;
+	socket?: Socket;
 }
 
 export interface Source {
@@ -45,10 +47,16 @@ export interface ConnectionInfo extends DiscoveryMessage {
 	address: IpAddress;
 	addressPort?: string;
 }
+export enum Services  {
+	//StateMap = "StateMap",
+	FileTransfer = "FileTransfer",
+	Directory = "DirectoryService",
+}
 
 
 export interface StageLinqOptions {
 	maxRetries?: number;
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
+	services?: Services[];
 }

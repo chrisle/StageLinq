@@ -3,7 +3,7 @@ import { EventEmitter } from 'stream';
 import { FileTransfer } from '../services';
 import { getTempFilePath } from '../utils';
 import { Logger } from '../LogEmitter';
-import { NetworkDevice } from '../network';
+//import { NetworkDevice } from '../network';
 import * as fs from 'fs';
 
 export declare interface Databases {
