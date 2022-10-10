@@ -2,7 +2,8 @@ import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
-import { ServiceInitMessage } from '../network';
+//import { ServiceInitMessage } from '../network';
+import { ServiceInitMessage, StageLinqDevices } from '../network';
 import { ServiceMessage, ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens, deviceIdFromBuff } from '../types';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils/sleep';
@@ -24,13 +25,17 @@ export class Directory extends Service<DirectoryData> {
   public services: Map<string, number>;
   protected preparseData = false;
 
-  constructor(p_initMsg:ServiceInitMessage) {
-		super(p_initMsg);
-		this.services = p_initMsg.services;
-    
+  constructor(p_parent:InstanceType<typeof StageLinqDevices>) {
+		super(p_parent);
+		//this.services = p_initMsg.services;
+    //this.parent.directoryPort =
 	}
   
   async init() {
+  }
+
+  protected parseServiceData(p_ctx: ReadContext, socket?: Socket, msgId?: number,isSub?:boolean): ServiceMessage<DirectoryData> {
+    return
   }
 
   protected parseData(ctx: ReadContext, socket: Socket, msgId:number, svcMsg:boolean): ServiceMessage<DirectoryData> {
@@ -88,22 +93,31 @@ export class Directory extends Service<DirectoryData> {
   }
 
   private async sendServiceAnnouncement(socket?: Socket): Promise<void> {
-    let svc = this.services.entries();
+    //let svc = this.parent._services.entries();
     //console.warn(svc);
     await sleep(250);
+    const directoryPort = this.serverInfo.port
     const ctx = new WriteContext();
+    
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(Tokens.Listen);
-    for (let i=0; i<this.services.size;i++) {
-      const svcEntry = svc.next();
-      const value = svcEntry.value;
+    //for (let i=0; i<this.parent._services.size;i++) {
+    
+    for (const [key, value] of this.parent._services) {
+     // console.log(key, value);
+  
+      //const svcEntry = svc.next();
+      //const value = svcEntry.value;
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
       ctx.write(Tokens.Listen);
-      ctx.writeNetworkStringUTF16(value[0]);
-      ctx.writeUInt16(value[1]);
+      ctx.writeNetworkStringUTF16(key);
+      ctx.writeUInt16(value.serverInfo.port);
+      //ctx.writeUInt16(directoryPort);
     }
-   
-    await socket.write(ctx.getBuffer());
+    const msg = ctx.getBuffer();
+    //console.log(msg.toString('ascii'));
+    //console.log(msg.toString('hex'));
+    await socket.write(msg);
     Logger.debug(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`)
   }
   

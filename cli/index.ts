@@ -72,7 +72,7 @@ async function main() {
     actingAs: ActingAsDevice.NowPlaying,
 
     services: [
-      Services.StateMap,
+      //Services.StateMap,
       Services.FileTransfer,
       Services.Directory,
     ],

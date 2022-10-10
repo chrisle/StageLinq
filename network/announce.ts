@@ -5,13 +5,13 @@ import {
   LISTEN_PORT,
 } from '../types';
 import { createSocket, Socket as UDPSocket } from 'dgram';
-import * as dgram from 'dgram'
+//import * as dgram from 'dgram'
 import { Logger } from '../LogEmitter';
 import { networkInterfaces } from 'os';
 import { strict as assert } from 'assert';
 import { subnet } from 'ip';
-import { WriteContext } from '../utils/WriteContext';
-import type { DiscoveryMessage } from '../types';
+import { WriteContext } from '../utils';
+import type { DiscoveryMessage, DeviceId } from '../types';
 
 function findBroadcastIPs(): string[] {
   const interfaces = Object.values(networkInterfaces());

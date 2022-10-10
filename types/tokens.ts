@@ -9,10 +9,12 @@ export const Tokens = {
   Listen: new Uint8Array([255, 255, 255, 255, 255, 255, 74, 28, 155, 186, 136, 180, 190, 25, 163, 209])
 }
 
+/*
 export function deviceIdFromBuff(token: Uint8Array): string {
     return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
       .exec(Buffer.from(token).toString('hex')).splice(1).join('-');
 }
+*/
 
 export const ActingAsDevice: {[name: string]: DiscoveryMessageOptions} = {
   NowPlaying: {

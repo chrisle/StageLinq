@@ -5,6 +5,7 @@ export * from './common';
 export * from './player';
 export * from './tokens';
 export * from './models';
+export * from './DeviceId';
 
 export interface DiscoveryMessage {
 	token: Uint8Array;
@@ -15,6 +16,11 @@ export interface DiscoveryMessage {
 		version: string;
 	};
 	port: number;
+}
+
+export interface ConnectionInfo extends DiscoveryMessage {
+	address: IpAddress;
+	addressPort?: string;
 }
 
 export interface ServicePorts {
@@ -42,11 +48,9 @@ export interface FileTransferInfo {
 
 // TODO: Maybe some kind of validation?
 export type IpAddress = string;
+export type IpAddressPort = string;
 
-export interface ConnectionInfo extends DiscoveryMessage {
-	address: IpAddress;
-	addressPort?: string;
-}
+
 export enum Services  {
 	//StateMap = "StateMap",
 	FileTransfer = "FileTransfer",

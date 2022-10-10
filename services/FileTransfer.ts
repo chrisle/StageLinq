@@ -5,7 +5,7 @@ import { Service, ServiceData } from './Service';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
-import type { ServiceMessage, Source } from '../types';
+import type { ServiceMessage, Source, DeviceId } from '../types';
 import { deviceIdFromBuff } from '../types';
 import { Socket, AddressInfo } from 'net';
 import { getTempFilePath } from '../utils';
@@ -90,9 +90,48 @@ export class FileTransfer extends Service<FileTransferData> {
 
   async init() {}
   
+  /*
+  protected parseServiceData(p_ctx: ReadContext, socket?: Socket, msgId?: number,isSub?:boolean): ServiceMessage<FileTransferData> {
+    
+      //console.log(msgId, checkSvcReq);
+      const _msgId = p_ctx.readUInt32();
+      const token = p_ctx.read(16);
+
+      //if (this.parent.peers.has(deviceIdFromBuff(token))) {
+        const svcName = p_ctx.readNetworkStringUTF16();
+        const svcPort = p_ctx.readUInt16();
+        const length = p_ctx.readUInt32();
+        const deviceId = deviceIdFromBuff(token);
+        this.deviceIds.set(deviceId,[socket.remoteAddress,socket.remotePort].join(":"));
+        this.deviceIps.set([socket.remoteAddress,socket.remotePort].join(":"), deviceId);
+        
+        const thisDevice: FileTransferServiceData = {
+          deviceId: deviceId,
+          socket: socket,
+          service: this
+        }
+        this.services.set(deviceId, thisDevice);
+        
+        console.log(`[${msgId}] `,deviceId, svcName, svcPort);
+      //} else {
+      //  p_ctx.seek(-20);
+      //}
+      return
+  }
+  */
+  protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket, msgId?: number,isSub?:boolean): ServiceMessage<StateData> {
+    Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    //assert((this.p))
+    //this.subscribe(socket);
+    return
+  }
+
   protected parseData(p_ctx: ReadContext, socket: Socket, msgId:number, svcMsg?: boolean): ServiceMessage<FileTransferData> {
     
-    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "preSvc", true);  
+    const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
+    const deviceId = this.peerDeviceIds[ipAddressPort];
+
+   // this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "preSvc", true);  
     
     //test if this is a serviceRequest
     
@@ -100,6 +139,7 @@ export class FileTransfer extends Service<FileTransferData> {
     
     //if (p_ctx.sizeLeft() === 88 && checkSvcReq === 0) {
     //console.warn(p_ctx.sizeLeft());
+    /*
     if (svcMsg) {
       //console.log(msgId, checkSvcReq);
       const _msgId = p_ctx.readUInt32();
@@ -124,12 +164,11 @@ export class FileTransfer extends Service<FileTransferData> {
       } else {
         p_ctx.seek(-20);
       }
-      
-      
     } //else {
+      */
       //p_ctx.seek(-4);
     //}
-    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "postSvc", true);  
+   // this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "postSvc", true);  
 
     /*
     let checkBufferArray = new Uint8Array([0,0,0,0])
@@ -154,14 +193,14 @@ export class FileTransfer extends Service<FileTransferData> {
     p_ctx.seek(-4);
     */
 
-    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "ff-pre", true );
-    if (p_ctx.sizeLeft() < 100) {
-      p_ctx = fastForward(p_ctx, "666c7478", msgId);
-    }
+    //this.testPoint(p_ctx, dev, msgId, "ff-pre", true );
+    //if (p_ctx.sizeLeft() < 100) {
+    //  p_ctx = fastForward(p_ctx, "666c7478", msgId);
+    //}
     
     
     const check = p_ctx.getString(4);
-    this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "mag-post", true );
+    //this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "mag-post", true );
     if (check !== MAGIC_MARKER) {
       Logger.error(msgId,svcMsg, assert(check === MAGIC_MARKER))
     }
@@ -189,7 +228,7 @@ export class FileTransfer extends Service<FileTransferData> {
     // Else
     const messageId: MessageId = p_ctx.readUInt32();
     //console.log(`[${msgId}] `,MessageId[messageId], messageId);
-    //console.log(`[${msgId}] `,this.getDeviceIdFromSocket(socket), ' MessageID: ', MessageId[messageId]);
+    console.log(`[${msgId}] `,deviceId.toString(), ' MessageID: ', MessageId[messageId]);
     switch (messageId) {
       case MessageId.SourceLocations: {
         const sources: string[] = [];
@@ -206,7 +245,7 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.isEOF());
         
         if (sources.length) {
-          Logger.debug(`getting sources for `, this.getDeviceIdFromSocket(socket));
+          Logger.debug(`getting sources for `, deviceId.toString());
           this.getSources(sources, socket);
         }
 
@@ -282,7 +321,7 @@ export class FileTransfer extends Service<FileTransferData> {
         
         if (p_ctx.sizeLeft() >= 5) {
         
-          Logger.debug(`requesting sources from `, this.getDeviceIdFromSocket(socket));
+          Logger.debug(`requesting sources from `, deviceId.toString());
           this.requestSources(socket);
 
         }
@@ -318,6 +357,7 @@ export class FileTransfer extends Service<FileTransferData> {
     const txinfo = await this.waitForMessage(MessageId.FileTransferId);
 
     if (txinfo) {
+      Logger.info(`heard ${txinfo}`);
       this.receivedFile = new WriteContext({ size: txinfo.size });
 
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
@@ -492,7 +532,8 @@ export interface Source {
       }
    //}
     await this.deviceSources.set(msgDeviceId, devices);
-    //this.downloadDb(msgDeviceId);
+    await sleep(500);
+    //this.downloadDb(msgDeviceId, socket);
     const testDev = this.deviceSources.get(msgDeviceId);
     Logger.info(testDev);
     return result;
@@ -556,7 +597,7 @@ export interface Source {
     await this.writeWithLength(ctx, socket);
   }
 
-  async downloadDb(deviceId: string) { // sourceId: string, service: FileTransfer, _source: Source) {
+  async downloadDb(deviceId: string, socket: Socket) { // sourceId: string, service: FileTransfer, _source: Source) {
     //console.info(source);
     Logger.info(`downloadDb request for ${deviceId}`);
     const deviceSources = this.deviceSources.get(deviceId);
@@ -576,7 +617,7 @@ export interface Source {
     //});
     
     // Save database to a file
-    const file = await this.getFile(source.database.location, service.socket);
+    const file = await this.getFile(source.database.location, socket);
     Logger.debug(`Saving ${service.deviceId}/${sourceName} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
 

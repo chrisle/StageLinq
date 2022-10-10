@@ -1,13 +1,13 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { MessageId, MESSAGE_TIMEOUT, Tokens, ConnectionInfo, deviceIdFromBuff } from '../types';
+import { MessageId, MESSAGE_TIMEOUT, Tokens, ConnectionInfo, DeviceId, deviceIdFromBuff } from '../types';
 import { ServiceInitMessage, StageLinqDevices } from '../network';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import {Server, Socket, AddressInfo} from 'net';
 import * as net from 'net';
-import type { ServiceMessage, IpAddress } from '../types';
+import type { ServiceMessage, IpAddress, IpAddressPort } from '../types';
 
 export declare interface ServiceDevice {
 	on(event: 'listening', listener: (address: AddressInfo) => void): this;
@@ -20,26 +20,34 @@ export declare interface ServiceDevice {
 
 export declare type ServiceData = {
 	socket?: Socket;
-	deviceId?: string;
+	deviceId?: DeviceId;
 	service?: InstanceType<typeof Service>;
 }
 
-type ServiceBuffer = {
+//type PeerData = {
+	
+//}
+
+type ServiceBuffers = {
 	[key: string]: Buffer;
 }
 
 export abstract class Service<T> extends EventEmitter {
 	//private address: string;
-	//private port: number;
+	public port: number;
 	protected preparseData:boolean = true;
 	public readonly name: string = "Service";
 	public serverInfo: AddressInfo;
-	public serverStatus: string;
+	public peerDeviceIds: Record<IpAddressPort, DeviceId> = {}
+	//public peerDeviceIds: Record<InstanceType, DeviceId> = {}
+	public serverStatus: boolean = false;
 	public connections: Map<string, Socket> = new Map();
 	public deviceIds: Map<string, string> = new Map();
 	public deviceIps: Map<string, string> = new Map();
 	public serviceList: Map<string, ServiceData> = new Map();
-	protected serviceBuffers: Map<string, Buffer> = new Map();
+	public hasSubbed: boolean = false;
+	//protected serviceBuffers: Map<string, Buffer> = new Map();
+	protected serviceBuffers: ServiceBuffers = {};
 	//protected controller: NetworkDevice;
 	//protected connection: tcp.Connection = null;
 	protected connection: Socket = null;
@@ -49,39 +57,69 @@ export abstract class Service<T> extends EventEmitter {
 	private msgId: number = 0;
 
 	//constructor(p_address?: string, p_port?: number, p_controller?: NetworkDevice) {
-	constructor(p_initMsg:ServiceInitMessage) {
+	constructor(p_parent:InstanceType<typeof StageLinqDevices>) {
 		super();
-		this.parent = p_initMsg.parent;
-		this.serInitMsg = p_initMsg;
+		this.parent = p_parent;
+		//this.serInitMsg = p_initMsg;
 	}
-	protected async isSubMsg(_ctx: ReadContext): Promise<string> {
+	protected async isSubMsg(_ctx: ReadContext): Promise<number> {
 		
 			const ctx = _ctx.readRemainingAsNewCtx();
 			const messageId = ctx.readUInt32()
 				
 			const token = ctx.read(16);
 			const deviceId = deviceIdFromBuff(token);
-
-			this.testPoint(ctx, deviceId, this.msgId, "isSub", true );
+			let netStringLength = 0
+			if (_ctx.sizeLeft() >= 8) {
+				netStringLength = ctx.readUInt32();
+				netStringLength += 4;
+			}
+			//this.testPoint(ctx, deviceId, this.msgId, "isSub", true );
 			const hasPeer = await this.parent.peers.has(deviceId)
 			if (messageId === 0 && hasPeer) {
 				
-				return deviceId
+				return (20 + netStringLength)
 			} else {
-				return 
+				return 0
 			}
+	}
+
+	private async serverMessageParser(p_data: Buffer, socket: Socket) {
+		
+	}
+
+	private async serviceMessage(p_data:Buffer, ipAddressPort: IpAddressPort , deviceId:DeviceId) {
+
 	}
 
 	async createServer(serviceName: string): Promise<Server> {
 		return await new Promise((resolve, reject) => {
+			//let serviceBuffers:ServiceBuffers = {}
 			//let queue: Buffer = null;
 			const server = net.createServer((socket) => {
 				//const deviceId = this.deviceIps.set([socket.rem])
 				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
+				
+				//Handle identification of incoming socket. 
+				const addressInfo:AddressInfo = {
+					address: socket.remoteAddress,
+					port: socket.remotePort,
+					family: socket.remoteFamily,
+				}
 				const ipAddressPort = [socket.remoteAddress,socket.remotePort].join(":");
-				this.serviceBuffers.set(ipAddressPort,null);
-				let deviceId = (this.deviceIps.has(ipAddressPort)) ? this.deviceIps.get(ipAddressPort) : ipAddressPort;
 
+				//Initialize new buffer for this connection
+				let queue: Buffer = null;
+				this.serviceBuffers[ipAddressPort] = queue;
+				//this.serviceBuffers.set(ipAddressPort,null);
+				
+				let deviceId = this.peerDeviceIds[ipAddressPort];
+
+				
+				//let deviceId = (this.deviceIps.has(ipAddressPort)) ? this.deviceIps.get(ipAddressPort) : ipAddressPort;
+				
+				
+				
 				socket.on('error', (err) => {
 					reject(err);
 				});
@@ -89,29 +127,13 @@ export abstract class Service<T> extends EventEmitter {
 				socket.on('data', async p_data => {
 					//let messages:ReadContext[] = [];
 					
-					let queue: Buffer = this.serviceBuffers.get(ipAddressPort);
 					const thisMsgId = this.msgId;
 					this.msgId++
-					//if (p_data.buffer) {
 
-					//}
-					const testArrayBuffer = p_data.buffer.slice(p_data.byteOffset, p_data.byteOffset + p_data.byteLength);
-					const ttx = new ReadContext(testArrayBuffer,false);
-					this.testPoint(ttx, deviceId, this.msgId, "p_data", true );  
-					//let queue
-					
-					const isSub = await this.isSubMsg(ttx);
-					if (isSub && isSub !== deviceId) {
-						deviceId = isSub
-					}
-
-					if (this.deviceIps.has(ipAddressPort) && deviceId === ipAddressPort) {
-						deviceId = this.deviceIps.get(ipAddressPort);
-					}
-
+					//append queue to current data
 					let buffer: Buffer = null;
-					if (queue && queue.length > 0) {
-						buffer = Buffer.concat([queue, p_data]);
+					if (this.serviceBuffers[ipAddressPort] && this.serviceBuffers[ipAddressPort].length > 0) {
+						buffer = Buffer.concat([this.serviceBuffers[ipAddressPort], p_data]);
 					} else {
 						buffer = p_data;
 					}
@@ -119,8 +141,96 @@ export abstract class Service<T> extends EventEmitter {
 					// FIXME: Clean up this arraybuffer confusion mess
 					const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 					let ctx = new ReadContext(arrayBuffer, false);
-					this.testPoint(ctx, deviceId, this.msgId, "buffQueue", true );  
+
+					//If directory service, send unparsed data immediately, empty buffer
+					if (this.name === "Directory") {
+						const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(),false), socket, thisMsgId,true);
+						//this.testPoint(new ReadContext(testArrayBuffer,false), deviceId, thisMsgId, "while", true );  
+						this.messageHandler(parsedData);
+						this.emit('message', parsedData);
+					}
+					//check if device has announced itself to this service yet
+					if (!deviceId && ctx.sizeLeft() >= 20) {
+						this.testPoint(ctx, "noID", thisMsgId, "!deviceID", true);  
+						const messageId = ctx.readUInt32()
+						deviceId = new DeviceId(ctx.read(16));
+						
+						//peak at network string length then rewind
+						const stringLength = ctx.readUInt32();
+						
+						Logger.debug(`string length: ${stringLength}  ctx sizeLeft: ${ctx.sizeLeft()}`)
+						ctx.seek(-4);
+						(assert (stringLength <= ctx.sizeLeft()));
+						
+						const serviceName = ctx.readNetworkStringUTF16();
+						
+						(assert (ctx.sizeLeft() >= 2));
+						const port = ctx.readUInt16();
+						(assert(port === addressInfo.port))
+						this.peerDeviceIds[ipAddressPort] = deviceId;
+						//this.parseServiceData
+						
+						//const wtx = ne
+						Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+						const parsedData = this.parseServiceData(messageId, deviceId, serviceName, socket, thisMsgId,true);
+						//this.testPoint(new ReadContext(testArrayBuffer,false), deviceId, thisMsgId, "while", true );  
+						this.messageHandler(parsedData);
+						this.emit('message', parsedData);
+					} 
+					
+					
+					/*
+					let hexString = p_data.toString('hex');
+					const hexStringLength = hexString.length;
+					if (hexString.length > 195) {
+						hexString = [hexString.substring(0,20), hexString.substring(hexString.length-20,hexString.length)].join('...');
+					}
+					if (this.name === "FileTransfer") {
+						Logger.debug(this.name, thisMsgId, p_data.length, hexStringLength, hexString);
+					}
+					*/
+
+					//let queue: Buffer = this.serviceBuffers.get(ipAddressPort);
+					
+					//let serviceBuffers:ServiceBuffers = {}
+					
+
+					//if (p_data.buffer) {
+
+					//}
+					/*
+					const testArrayBuffer = p_data.buffer.slice(p_data.byteOffset, p_data.byteOffset + p_data.byteLength);
+					const ttx = new ReadContext(testArrayBuffer,false);
+					//this.testPoint(ttx, deviceId, thisMsgId, "p_data", true );  
+					//let queue
+					let isSub = 0;
+					if (this.name === "Directory")  {
+						isSub = 99
+					} else {
+						isSub = await this.isSubMsg(ttx);
+					}
+					
+
+					if (!!isSub) {
+						Logger.debug(this.name, thisMsgId,' sub msg ', hexString);
+						this.msgId++
+						const parsedData = this.parseData(new ReadContext(testArrayBuffer,false), socket, thisMsgId,true);
+						//this.testPoint(new ReadContext(testArrayBuffer,false), deviceId, thisMsgId, "while", true );  
+						this.messageHandler(parsedData);
+						this.emit('message', parsedData);
+					}
+
+					if (this.deviceIps.has(ipAddressPort) && deviceId === ipAddressPort) {
+						deviceId = this.deviceIps.get(ipAddressPort);
+					}
+
+					
+					const isSubSeek = (isSub > ctx.sizeLeft()) ?  ctx.sizeLeft() : isSub
+					ctx.seek(isSubSeek);
+					this.testPoint(ctx, deviceId, thisMsgId, "buffQueue", true );  
 					queue = null;
+
+					*/
 					//ctx = await this.testPoint(ctx, this.getDeviceIdFromSocket(socket), this.msgId, "data", true );  
 					/*
 					let isSub = false;
@@ -146,19 +256,28 @@ export abstract class Service<T> extends EventEmitter {
 					//const messageId = ctx.readUInt32();
 					//ctx.rewind();
 					//console.warn(socket.localPort, " ", this.parent.directoryPort);
+					
+					/*
 					if (!this.preparseData || socket.localPort === this.parent.directoryPort || !!isSub) {
 						try {
-							this.testPoint(ctx, deviceId, this.msgId, "toparse", true );  
+							this.testPoint(ctx, deviceId, thisMsgId, "toparse", true );  
 							const parsedData = this.parseData(ctx, socket,thisMsgId);
 							this.emit('message', parsedData);
 							this.messageHandler(parsedData);
 						} catch (err) {
-							Logger.error(this.name, this.msgId, deviceId, err);
+							Logger.error(this.name, thisMsgId, deviceId, err);
 						}
 					} else {
+						*/
+						if (this.name !== 'Directory') {
+							//Logger.debug(`[${this.name}] isEof: ${ctx.isEOF()}  ctx sizeLeft: ${ctx.sizeLeft()}`);
+						}
+						
 						try {
 							//ctx = this.testPoint(ctx, this.getDeviceIdFromSocket(socket), this.msgId, "no-preparse", true );  
 							while (ctx.isEOF() === false) {
+								
+								
 								if (ctx.sizeLeft() < 4) {
 									queue = ctx.readRemainingAsNewBuffer();
 									break;
@@ -166,16 +285,22 @@ export abstract class Service<T> extends EventEmitter {
 
 								const length = ctx.readUInt32()
 
+								//if ( length > 0 && length <= ctx.sizeLeft()) {
+
 								if ( length <= ctx.sizeLeft()) {
+									if (length === 0) {
+										Logger.warn('wtf!');
+									}
 									const message = ctx.read(length);
 									// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 									const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
+									
 									//let data = new ReadContext(message.buffer.slice(message.byteOffset, message.byteOffset + length), false)
 									//data = await this.testPoint(data, this.getDeviceIdFromSocket(socket), this.msgId, "preparse", true );  
 									
 									this.msgId++
 									const parsedData = this.parseData(new ReadContext(data,false), socket, thisMsgId);
-									this.testPoint(new ReadContext(data,false), deviceId, this.msgId, "while", true );  
+									this.testPoint(new ReadContext(data,false), deviceId.toString(), thisMsgId, "while", true );  
 									//messages.push(new ReadContext(data, false))
 									// Forward parsed data to message handler
 									
@@ -183,8 +308,11 @@ export abstract class Service<T> extends EventEmitter {
 									this.emit('message', parsedData);
 								} else {
 									ctx.seek(-4); // Rewind 4 bytes to include the length again
-									this.testPoint(ctx, deviceId, this.msgId, "toqueue", true );
+									this.testPoint(ctx, deviceId.toString(), thisMsgId, "toqueue", true );
 									queue = ctx.readRemainingAsNewBuffer();
+									if (queue.length < 50) {
+										Logger.debug(this.name, thisMsgId, queue.toString('hex'));
+									}
 									break;
 								}
 							}
@@ -193,12 +321,13 @@ export abstract class Service<T> extends EventEmitter {
 							//	console.log(stringMsg);
 							//}
 						} catch (err) {
-							Logger.error(this.name, this.msgId, deviceId, err);
+							Logger.error(this.name, thisMsgId, deviceId.toString(), err);
 						}
-					}
+					//}
 
 				});
 			}).listen(0, '0.0.0.0', () => {
+				this.serverStatus = true;
 				this.serverInfo = server.address() as net.AddressInfo;
 				console.log(`opened ${this.name} server on ${this.serverInfo.port}`);
 				resolve(server);
@@ -209,6 +338,9 @@ export abstract class Service<T> extends EventEmitter {
 	async listen(): Promise<AddressInfo> {
 		const server = await this.createServer(this.name)
 		this.server = server;
+		
+		const serverAddress = server.address() as net.AddressInfo;
+		this.port = serverAddress.port;
 		return server.address() as net.AddressInfo;
 	}
 	
@@ -295,8 +427,11 @@ export abstract class Service<T> extends EventEmitter {
 
 	async waitForMessage(p_messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
+			Logger.info(`listening for msg ${p_messageId}`);
 			const listener = (p_message: ServiceMessage<T>) => {
+				//Logger.info(`heard ${p_message.message}`);
 				if (p_message.id === p_messageId) {
+					
 					this.removeListener('message', listener);
 					//resolve(p_message.message);
 					resolve(p_message.message);
@@ -355,6 +490,9 @@ export abstract class Service<T> extends EventEmitter {
 	protected async init() {
 		assert.fail('Implement this');
 	}
+
+	//protected abstract parseServiceData(p_ctx: ReadContext, socket?: Socket, msgId?: number,isSub?:boolean): ServiceMessage<T>;
+	protected abstract parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket, msgId?: number,isSub?:boolean): ServiceMessage<T>;
 
 	protected abstract parseData(p_ctx: ReadContext, socket?: Socket, msgId?: number,isSub?:boolean): ServiceMessage<T>;
 

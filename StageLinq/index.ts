@@ -2,7 +2,7 @@ import { announce, createDiscoveryMessage, StageLinqListener, unannounce } from 
 import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
-import { Action, ActingAsDevice, StageLinqOptions, deviceIdFromBuff } from '../types';
+import { Action, ActingAsDevice, StageLinqOptions, deviceIdFromBuff, DeviceId } from '../types';
 import { sleep } from '../utils';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
@@ -42,8 +42,13 @@ export class StageLinq extends EventEmitter {
     //Logger.warn(msg);
     this.listener.listenForDevices(async (connectionInfo) => {
       //await this.devices.handleDevice(connectionInfo);
-      const deviceId = deviceIdFromBuff(connectionInfo.token);
-      if (!this.devices.peers.has(deviceId) || this.devices.peers.get(deviceId).port !== connectionInfo.port) {
+      
+      const deviceId = new DeviceId(connectionInfo.token);
+      //const deviceId = deviceIdFromBuff(connectionInfo.token);
+      //const ipAddressPort = [connectionInfo.address,connectionInfo.port].join(':');
+      this.devices._peers[connectionInfo.address] = deviceId;
+
+      if (!this.devices.peers.has(deviceId.toString()) || this.devices.peers.get(deviceId.toString()).port !== connectionInfo.port) {
         this.devices.peers.set(deviceIdFromBuff(connectionInfo.token), connectionInfo);
         //Logger.debug(deviceId, connectionInfo);
       }

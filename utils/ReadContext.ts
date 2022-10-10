@@ -34,6 +34,12 @@ export class ReadContext extends Context {
 		return Buffer.from(newArrayBuffer);
 	}
 	
+	readRemainingAsNewArrayBuffer(): ArrayBuffer {
+		const view = this.readRemaining();
+		const newArrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.length);
+		return newArrayBuffer;
+	}
+	
 	readRemainingAsNewCtx(): ReadContext {
 		
 		const newArrayBuffer = this.buffer.slice(this.pos, this.pos + this.sizeLeft());

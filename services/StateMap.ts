@@ -1,9 +1,9 @@
 import { strict as assert } from 'assert';
-import { StageLinqValue, StageLinqValueObj } from '../types';
+import { MessageId, StageLinqValue, StageLinqValueObj } from '../types';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
-import type { ServiceMessage } from '../types';
+import type { ServiceMessage, DeviceId } from '../types';
 import { deviceIdFromBuff } from '../types';
 import { Socket, AddressInfo } from 'net';
 import { Logger } from '../LogEmitter';
@@ -121,10 +121,20 @@ export class StateMap extends Service<StateData> {
     }
   }
 
+  //protected  parseServiceData(p_ctx: ReadContext, socket?: Socket, msgId?: number,isSub?:boolean): ServiceMessage<StateData> {
+    protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket, msgId?: number,isSub?:boolean): ServiceMessage<StateData> {
+      Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+      //assert((this.p))
+      this.subscribe(socket);
+      return
+    }
+  
+
   protected parseData(p_ctx: ReadContext, socket: Socket, msgId: number, isSub: boolean): ServiceMessage<StateData> {
     
     //p_ctx = this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "parseTop",true );  
     //test if this is a serviceRequest
+    /*
     const checkSvcReq = p_ctx.readUInt32();
     if (p_ctx.sizeLeft() === 38 && checkSvcReq === 0) {
       const token = p_ctx.read(16);
@@ -135,10 +145,10 @@ export class StateMap extends Service<StateData> {
       return
     }
     p_ctx.rewind();
-
+*/
     const marker = p_ctx.getString(4);
     if (marker !== MAGIC_MARKER) {
-      this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "magCheck", true);
+      //this.testPoint(p_ctx, this.getDeviceIdFromSocket(socket), msgId, "magCheck", true);
       Logger.error(this.name, msgId)
     }
     assert(marker === MAGIC_MARKER);
