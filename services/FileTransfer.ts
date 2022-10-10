@@ -228,7 +228,7 @@ export class FileTransfer extends Service<FileTransferData> {
     // Else
     const messageId: MessageId = p_ctx.readUInt32();
     //console.log(`[${msgId}] `,MessageId[messageId], messageId);
-    console.log(`[${msgId}] `,deviceId.toString(), ' MessageID: ', MessageId[messageId]);
+    //console.log(`[${msgId}] `,deviceId.toString(), ' MessageID: ', MessageId[messageId]);
     switch (messageId) {
       case MessageId.SourceLocations: {
         const sources: string[] = [];
@@ -357,7 +357,7 @@ export class FileTransfer extends Service<FileTransferData> {
     const txinfo = await this.waitForMessage(MessageId.FileTransferId);
 
     if (txinfo) {
-      Logger.info(`heard ${txinfo}`);
+      //Logger.info(`heard ${txinfo}`);
       this.receivedFile = new WriteContext({ size: txinfo.size });
 
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
@@ -533,7 +533,7 @@ export interface Source {
    //}
     await this.deviceSources.set(msgDeviceId, devices);
     await sleep(500);
-    //this.downloadDb(msgDeviceId, socket);
+    this.downloadDb(msgDeviceId, socket);
     const testDev = this.deviceSources.get(msgDeviceId);
     Logger.info(testDev);
     return result;
@@ -601,7 +601,7 @@ export interface Source {
     //console.info(source);
     Logger.info(`downloadDb request for ${deviceId}`);
     const deviceSources = this.deviceSources.get(deviceId);
-    const service = this.services.get(deviceId)
+   // const service = this.services.get(deviceId)
    
    for (const sourceName in deviceSources) {
     
@@ -618,11 +618,11 @@ export interface Source {
     
     // Save database to a file
     const file = await this.getFile(source.database.location, socket);
-    Logger.debug(`Saving ${service.deviceId}/${sourceName} to ${dbPath}`);
+    Logger.debug(`Saving ${deviceId}/${sourceName} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
 
-    Logger.debug(`Downloaded ${service.deviceId}/${sourceName} to ${dbPath}`);
-    this.emit('dbDownloaded', service.deviceId, dbPath);
+    Logger.debug(`Downloaded ${deviceId}/${sourceName} to ${dbPath}`);
+    this.emit('dbDownloaded', deviceId, dbPath);
   }
    
 }

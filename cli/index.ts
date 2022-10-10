@@ -157,7 +157,7 @@ async function main() {
     }
 
     // Example of how to download the actual track from the media.
-    await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), 'media'));
+    //await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), 'media'));
   });
 
   // Fires when a track has started playing.

@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert';
-import { type } from 'os';
+
 
 class InvalidDeviceIdError extends Error {
     constructor(m?: string) {
