@@ -1,13 +1,13 @@
 # StageLinq - Listener Proof of Concept
 
 ## Description
-This version repredemonstrates a novel way of handling connections with devices and their services on the StageLinq network.
+This branch demonstrates a novel way of handling connections with devices and their services on the StageLinq network.
 Rather than searching out devices via discovery, we are able to have devices initiate connections to the library. As demonstrated, this approach:
 * Greatly reduces complexity. 
 
-* Speeds up the connection & initialization process.
+* Speeds up the connection & initialization process (almost every sleep() call has been eliminated without and affect thus far).
 
-* Handles disconection and reconnection of devices gracefully and simply.
+* Handles disconnection and reconnection of devices gracefully and simply.
 
 * Allows connections from devices we couldn't use previously (i.e. x1800/x1850 mixers).
 
@@ -16,11 +16,11 @@ Rather than searching out devices via discovery, we are able to have devices ini
   
 * Write a DiscoveryMessage which includes the port on which the Discovery service is listening, and announce ourselves on UDP port 51337.
 
-* StageLinq devices on the network will initiate a connection to the Directery service, and send a Service Request (0x2).
+* StageLinq devices on the network will initiate a connection to the Directory service, and send a Service Request (0x2).
 
 * Reply to each device with a Service Announcement (0x0) for each of the services we offer and the port we are listening to them on.
 
-* If a device implements that service it will initiate a connection, sending a Service Announcement (0x0), a Network String with the name of the serivce, and the port it is using.
+* If a device implements that service it will initiate a connection, sending a Service Announcement (0x0), a Network String with the name of the service, and the port it is using.
 
 * The connection to this Device-Service is now open, and we can use it as we normally would.
 
@@ -28,7 +28,7 @@ Rather than searching out devices via discovery, we are able to have devices ini
 
 ### Additional Notes on the Listener Method
 
-* The Directory service is the only one which is *required* as it is the initial connection endpopint for remote devices.
+* The Directory service is the only one which is *required* as it is the initial connection endpoint for remote devices.
 
 * Only tokens of a specific structure seem to work, otherwise devices won't initiate a connection. One requirement *seems* to be that they start with `0xFF FF FF FF FF FF`, but some more research into this is needed.
 
@@ -61,11 +61,15 @@ We can choose which services to implement in the initialize() method in StageLin
 
 ## To Be Implemented / Possibilities
 
-* Some methods from Database.ts have been moved to FileTransfer. This isn't inteded to be permanent, it was just to allow a demonstration of downloading a DB.
+* EventEmitter stuff isn't fully implemented yet, with a few exceptions (those needed for FileTransfer)
+
+* FileTransfer has only been tested with DB.
+
+* Some methods from Database.ts have been moved to FileTransfer. This isn't intended to be permanent, it was just to allow a demonstration of downloading a DB.
 
 * TimeSyc.ts is in the project, but should be disregarded for now.
 
-* We could possibly eliminate StageLinqDevices, as this step is no longer really necessary. Multiple devices are handled by single instances of each serivce.
+* We could possibly eliminate StageLinqDevices, as this step is no longer really necessary. Multiple devices are handled by single instances of each service.
 
 * StageLinqListener and Announce could be reworked into a single class. Presently all StageLinqListener is doing is adding and updating a list of announced devices (StageLinqDevices.peers).
 
