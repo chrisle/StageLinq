@@ -1,4 +1,4 @@
-import { DOWNLOAD_TIMEOUT } from '../types';
+import { DOWNLOAD_TIMEOUT, IpAddressPort } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceData } from './Service';
@@ -120,7 +120,7 @@ export class FileTransfer extends Service<FileTransferData> {
   }
   */
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket, msgId?: number,isSub?:boolean): ServiceMessage<StateData> {
-    Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    //Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
     //assert((this.p))
     //this.subscribe(socket);
     return
@@ -484,7 +484,9 @@ export interface Source {
     //console.log('message ', message);
     //if (message) {
       
-      const msgDeviceId = this.getDeviceIdFromSocket(socket);// : "noSocket"
+      const ipAddressPort:IpAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
+      
+      const msgDeviceId = this.peerDeviceIds[ipAddressPort];// : "noSocket"
       //console.log('message ', msgDeviceId, message.sources);
       for (const source of sources) {
         //Logger.info('getSource source: ', source);
@@ -535,7 +537,7 @@ export interface Source {
     await sleep(500);
     this.downloadDb(msgDeviceId, socket);
     const testDev = this.deviceSources.get(msgDeviceId);
-    Logger.info(testDev);
+    //Logger.info(testDev);
     return result;
   }
 
@@ -600,9 +602,10 @@ export interface Source {
   async downloadDb(deviceId: string, socket: Socket) { // sourceId: string, service: FileTransfer, _source: Source) {
     //console.info(source);
     Logger.info(`downloadDb request for ${deviceId}`);
-    const deviceSources = this.deviceSources.get(deviceId);
+    const deviceSources = await this.deviceSources.get(deviceId);
    // const service = this.services.get(deviceId)
    
+
    for (const sourceName in deviceSources) {
     
     const source = deviceSources[sourceName];

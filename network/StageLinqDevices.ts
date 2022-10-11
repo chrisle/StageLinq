@@ -84,7 +84,7 @@ export class StageLinqDevices extends EventEmitter {
     //if (this.options.services.includes(Services.StateMap)) {
       //const stateMap = new StateMap(this);
       const stateMap = await this.connectToService(StateMap);
-      const fileTransfer = await this.connectToService(FileTransfer);
+      //const fileTransfer = await this.connectToService(FileTransfer);
       const directory = await this.connectToService(Directory);
 
       //fileTransfer.on('dbDownloading', (sourceName, dbPath) => {

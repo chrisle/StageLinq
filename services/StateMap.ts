@@ -108,22 +108,24 @@ export class StateMap extends Service<StateData> {
   public async subscribe(socket: Socket) {
     
     Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort}`);
-    /*
+    
     const keys = Object.keys(StageLinqValueObj);
     const values = keys.map(key => Reflect.get(StageLinqValueObj,key))
     
     for (const value of values) {
-      await this.subscribeState(value, 0, socket);
+     // await this.subscribeState(value, 0, socket);
     }
-    */
+    
+   
     for (const state of States) {
       await this.subscribeState(state, 0, socket);
     }
+    
   }
 
   //protected  parseServiceData(p_ctx: ReadContext, socket?: Socket, msgId?: number,isSub?:boolean): ServiceMessage<StateData> {
     protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket, msgId?: number,isSub?:boolean): ServiceMessage<StateData> {
-      Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+      //Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
       //assert((this.p))
       this.subscribe(socket);
       return

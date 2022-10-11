@@ -215,7 +215,7 @@ export abstract class Service<T> extends EventEmitter {
 						
 						(assert (ctx.sizeLeft() >= 2));
 						const port = ctx.readUInt16();
-						(assert(port === addressInfo.port))
+						//(assert(port === addressInfo.port))
 						this.peerDeviceIds[ipAddressPort] = deviceId;
 						//this.parseServiceData
 						

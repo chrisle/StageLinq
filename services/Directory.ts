@@ -4,7 +4,7 @@ import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 //import { ServiceInitMessage } from '../network';
 import { ServiceInitMessage, StageLinqDevices } from '../network';
-import { ServiceMessage, ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens, deviceIdFromBuff } from '../types';
+import { ServiceMessage, ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens, deviceIdFromBuff, DeviceId } from '../types';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils/sleep';
 import { Socket, AddressInfo } from 'net';
@@ -34,7 +34,7 @@ export class Directory extends Service<DirectoryData> {
   async init() {
   }
 
-  protected parseServiceData(p_ctx: ReadContext, socket?: Socket, msgId?: number,isSub?:boolean): ServiceMessage<DirectoryData> {
+  protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket, msgId?: number, isSub?: boolean): ServiceMessage<DirectoryData> {
     return
   }
 
