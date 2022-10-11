@@ -32,6 +32,7 @@ enum MessageId {
   FileTransferId = 0x4,
   FileTransferChunk = 0x5,
   Unknown0 = 0x8,
+  DeviceShutdown = 0x9,
 }
 
 interface FileTransferProgress {
@@ -187,6 +188,20 @@ export class FileTransfer extends Service<FileTransferData> {
           this.requestSources(socket);
         }
 
+        return {
+          id: messageId,
+          socket: socket,
+          message: null,
+        };
+      }
+
+      case MessageId.DeviceShutdown: {
+        Logger.debug('shutdown msg length', p_ctx.sizeLeft());
+        if (p_ctx.sizeLeft() > 0) {
+          const msg = p_ctx.readRemainingAsNewBuffer().toString('hex');
+          Logger.debug(msg)
+        }
+       
         return {
           id: messageId,
           socket: socket,

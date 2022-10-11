@@ -1,6 +1,7 @@
 import { Socket } from 'net';
 import { DiscoveryMessageOptions } from '../network';
 
+
 export * from './common';
 export * from './player';
 export * from './tokens';
@@ -52,7 +53,7 @@ export type IpAddressPort = string;
 
 
 export enum Services  {
-	//StateMap = "StateMap",
+	StateMap =  "StateMap",
 	FileTransfer = "FileTransfer",
 	Directory = "DirectoryService",
 }

@@ -8,7 +8,7 @@
 			"type": "node",
 			"request": "launch",
 			"name": "Launch JS",
-			"program": "${workspaceFolder}/dist/cli.js",
+			"program": "${workspaceFolder}/dist/cli/index.js",
 			"internalConsoleOptions": "openOnSessionStart",
 			"sourceMaps": true,
 			"smartStep": true,

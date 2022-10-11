@@ -1,180 +1,499 @@
-[41] [BEGIN]
+[44] [BEGIN]
 
-[4975] opened StateMap server on 59164
-[6850] opened FileTransfer server on 59165
-[7572] opened Directory server on 59166
-[12861] UDP message sent to 192.168.2.255  from port 49925
-[12995] Announced myself on 59166
-[46385] [Directory] connection from 192.168.2.84:59125
-[47193] [Directory] connection from 192.168.2.84:58323
-[47398] [Directory] connection from 192.168.2.83:40143
-[47582] [Directory] connection from 192.168.2.84:41505
-[47745] [Directory] connection from 192.168.2.83:42957
-[47898] [Directory] connection from 192.168.2.83:60365
-[49460] [Directory] sent ServiceAnnouncement to 192.168.2.84:59125
-[50638] [Directory] sent ServiceAnnouncement to 192.168.2.84:58323
-[51089] [Directory] sent ServiceAnnouncement to 192.168.2.83:40143
-[51358] [Directory] sent ServiceAnnouncement to 192.168.2.84:41505
-[51617] [Directory] sent ServiceAnnouncement to 192.168.2.83:42957
-[51854] [Directory] sent ServiceAnnouncement to 192.168.2.83:60365
-[72744] [FileTransfer] connection from 192.168.2.83:54245
-[72998] [FileTransfer] connection from 192.168.2.84:60113
-[73146] [FileTransfer] connection from 192.168.2.84:51205
-[73280] [FileTransfer] connection from 192.168.2.83:51783
-[73408] [FileTransfer] connection from 192.168.2.83:43079
-[73529] [FileTransfer] connection from 192.168.2.84:51121
-[73657] [StateMap] connection from 192.168.2.84:56371
-[73766] [StateMap] connection from 192.168.2.83:36975
-[74051] ServicesAnnouncement to FileTransfer from f2befde7-cf4f-424d-ab2f-4f0f7edcb387
-[74085] TimeCode to FileTransfer from f2befde7-cf4f-424d-ab2f-4f0f7edcb387
-[74383] ServicesAnnouncement to FileTransfer from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
-[74389] TimeCode to FileTransfer from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
-[74404] requesting sources from  1e6c417a-b674-4c87-b4aa-fb7ad2298976
-[74871] ServicesAnnouncement to FileTransfer from 94c669ad-c31c-47b0-96b9-e9e5b874db05
-[74878] TimeCode to FileTransfer from 94c669ad-c31c-47b0-96b9-e9e5b874db05
-[74981] ServicesAnnouncement to FileTransfer from 4be14112-5ead-4848-a07d-b37ca8a7220e
-[74986] TimeCode to FileTransfer from 4be14112-5ead-4848-a07d-b37ca8a7220e
-[74999] requesting sources from  4be14112-5ead-4848-a07d-b37ca8a7220e
-[75336] ServicesAnnouncement to FileTransfer from 69632315-3d54-4096-bbb9-b4b7f0cc0554
-[75343] TimeCode to FileTransfer from 69632315-3d54-4096-bbb9-b4b7f0cc0554
-[75441] ServicesAnnouncement to FileTransfer from cfdf92af-2e4a-4e8b-8c27-b65560e197fa
-[75448] TimeCode to FileTransfer from cfdf92af-2e4a-4e8b-8c27-b65560e197fa
-[75637] ServicesAnnouncement to StateMap from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
-[75678] ServicesAnnouncement to StateMap from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
-[75744] Sending Statemap subscriptions to 192.168.2.84:56371
-[80151] ServicesAnnouncement to StateMap from 4be14112-5ead-4848-a07d-b37ca8a7220e
-[80166] ServicesAnnouncement to StateMap from 4be14112-5ead-4848-a07d-b37ca8a7220e
-[80184] Sending Statemap subscriptions to 192.168.2.83:36975
-[96474] 192.168.2.84:56371 /Client/Preferences/Player => {"string":"2","type":4}
-[96896] getting sources for  4be14112-5ead-4848-a07d-b37ca8a7220e
-[98301] 192.168.2.83:36975 /Client/Preferences/Player => {"string":"1","type":4}
-[99076] 192.168.2.84:56371 /Client/Preferences/PlayerJogColorA => {"color":"#ff2b84ef","type":16}
-[99489] 192.168.2.84:56371 /Client/Preferences/PlayerJogColorB => {"color":"#ff02c63e","type":16}
-[99828] 192.168.2.84:56371 /Engine/Master/MasterTempo => {"type":0,"value":122}
-[100268] 192.168.2.84:56371 /Engine/Sync/Network/MasterStatus => {"state":false,"type":1}
-[100782] 192.168.2.84:56371 /Engine/Deck1/Play => {"state":false,"type":1}
-[101190] 192.168.2.84:56371 /Engine/Deck1/PlayState => {"state":false,"type":1}
-[102395] 192.168.2.84:56371 /Engine/Deck1/Track/ArtistName => {"string":"Space Food","type":8}
-[102845] 192.168.2.84:56371 /Engine/Deck1/Track/TrackNetworkPath => {"string":"net://4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/Contents/Space Food/Flying Steps/15036956_Rise Up_(Original Mix).mp3","type":8}
-[103194] 192.168.2.84:56371 /Engine/Deck1/Track/SongLoaded => {"state":true,"type":1}
-[103529] 192.168.2.84:56371 /Engine/Deck1/Track/SongName => {"string":"Rise Up (Original Mix)","type":8}
-[103846] 192.168.2.84:56371 /Engine/Deck1/Track/TrackData => {"state":true,"type":3}
-[104188] 192.168.2.84:56371 /Engine/Deck1/Track/TrackName => {"string":"net://4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/Contents/Space Food/Flying Steps/15036956_Rise Up_(Original Mix).mp3","type":8}
-[104494] 192.168.2.84:56371 /Engine/Deck1/CurrentBPM => {"type":0,"value":120}
-[104794] 192.168.2.84:56371 /Engine/Deck1/ExternalMixerVolume => {"type":0,"value":0}
-[105095] 192.168.2.84:56371 /Engine/Deck2/Play => {"state":false,"type":1}
-[105413] 192.168.2.84:56371 /Engine/Deck2/PlayState => {"state":false,"type":1}
-[105714] 192.168.2.84:56371 /Engine/Deck2/Track/ArtistName => {"string":"","type":8}
-[106020] 192.168.2.84:56371 /Engine/Deck2/Track/TrackNetworkPath => {"string":"","type":8}
-[107089] 192.168.2.84:56371 /Engine/Deck2/Track/SongLoaded => {"state":false,"type":1}
-[107401] 192.168.2.84:56371 /Engine/Deck2/Track/SongName => {"string":"","type":8}
-[107708] 192.168.2.84:56371 /Engine/Deck2/Track/TrackData => {"state":false,"type":3}
-[108012] 192.168.2.84:56371 /Engine/Deck2/Track/TrackName => {"string":"","type":8}
-[108374] 192.168.2.84:56371 /Engine/Deck2/CurrentBPM => {"type":0,"value":120}
-[108730] 192.168.2.84:56371 /Engine/Deck2/ExternalMixerVolume => {"type":0,"value":0}
-[108954] [Directory] connection from 192.168.2.99:49205
-[109613] 192.168.2.83:36975 /Client/Preferences/PlayerJogColorA => {"color":"#ff2b84ef","type":16}
-[109947] 192.168.2.83:36975 /Client/Preferences/PlayerJogColorB => {"color":"#ff02c63e","type":16}
-[110280] 192.168.2.83:36975 /Engine/Master/MasterTempo => {"type":0,"value":122.00059509277344}
-[110590] 192.168.2.83:36975 /Engine/Sync/Network/MasterStatus => {"state":false,"type":1}
-[110896] 192.168.2.83:36975 /Engine/Deck1/Play => {"state":false,"type":1}
-[111204] 192.168.2.83:36975 /Engine/Deck1/PlayState => {"state":false,"type":1}
-[111511] 192.168.2.83:36975 /Engine/Deck1/Track/ArtistName => {"string":"Made In TLV","type":8}
-[111862] 192.168.2.83:36975 /Engine/Deck1/Track/TrackNetworkPath => {"string":"net://4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/Contents/Made In TLV/Isla Blanca/15564436_Isla Blanca_(Original Mix).mp3","type":8}
-[112243] 192.168.2.83:36975 /Engine/Deck1/Track/SongLoaded => {"state":true,"type":1}
-[112620] 192.168.2.83:36975 /Engine/Deck1/Track/SongName => {"string":"Isla Blanca (Original Mix)","type":8}
-[112960] 192.168.2.83:36975 /Engine/Deck1/Track/TrackData => {"state":true,"type":3}
-[113312] 192.168.2.83:36975 /Engine/Deck1/Track/TrackName => {"string":"/media/HONUSZ/Contents/Made In TLV/Isla Blanca/15564436_Isla Blanca_(Original Mix).mp3","type":8}
-[113620] 192.168.2.83:36975 /Engine/Deck1/CurrentBPM => {"type":0,"value":120}
-[113921] 192.168.2.83:36975 /Engine/Deck1/ExternalMixerVolume => {"type":0,"value":0}
-[114218] 192.168.2.83:36975 /Engine/Deck2/Play => {"state":false,"type":1}
-[114509] 192.168.2.83:36975 /Engine/Deck2/PlayState => {"state":false,"type":1}
-[114807] 192.168.2.83:36975 /Engine/Deck2/Track/ArtistName => {"string":"","type":8}
-[115122] 192.168.2.83:36975 /Engine/Deck2/Track/TrackNetworkPath => {"string":"","type":8}
-[115424] 192.168.2.83:36975 /Engine/Deck2/Track/SongLoaded => {"state":false,"type":1}
-[115730] 192.168.2.83:36975 /Engine/Deck2/Track/SongName => {"string":"","type":8}
-[116039] 192.168.2.83:36975 /Engine/Deck2/Track/TrackData => {"state":false,"type":3}
-[116973] 192.168.2.83:36975 /Engine/Deck2/Track/TrackName => {"string":"","type":8}
-[117286] 192.168.2.83:36975 /Engine/Deck2/CurrentBPM => {"type":0,"value":120}
-[117592] 192.168.2.83:36975 /Engine/Deck2/ExternalMixerVolume => {"type":0,"value":0}
-[118191] [Directory] sent ServiceAnnouncement to 192.168.2.99:49205
-[134843] [StateMap] connection from 192.168.2.99:49206
-[135128] ServicesAnnouncement to StateMap from 00000000-0000-0000-8000-00059501ab6f
-[135208] ServicesAnnouncement to StateMap from 00000000-0000-0000-8000-00059501ab6f
-[135221] Sending Statemap subscriptions to 192.168.2.99:49206
-[149449] 192.168.2.99:49206 /Mixer/CH1faderPosition => {"type":0,"value":1.27}
-[149956] 192.168.2.99:49206 /Mixer/ChannelAssignment1 => {"string":",1","type":8}
-[150370] 192.168.2.99:49206 /Mixer/ChannelAssignment2 => {"string":",1","type":8}
-[150773] 192.168.2.99:49206 /Mixer/ChannelAssignment3 => {"string":",1","type":8}
-[151168] 192.168.2.99:49206 /Mixer/ChannelAssignment4 => {"string":",1","type":8}
-[151564] 192.168.2.99:49206 /Mixer/CrossfaderPosition => {"type":0,"value":0.84}
-[151961] 192.168.2.99:49206 /Mixer/CH2faderPosition => {"type":0,"value":1.27}
-[617520] downloadDb request for 4be14112-5ead-4848-a07d-b37ca8a7220e
-[623196] Reading database 4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)
-[632545] dbProgress 4be14112-5ead-4848-a07d-b37ca8a7220e 270336 0 0
-[633658] Reading /HONUSZ (USB 1)/Engine Library/Database2/m.db progressComplete=0% 0/270336
-[840682] Download complete.
-[840950] Signaling transfer complete.
-[843338] Saving 4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1) to /var/folders/zk/cdxdvt1j13311r5t6_d9vpbc0000gn/T/localdb/4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/m.db
-[846738] Downloaded 4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1) to /var/folders/zk/cdxdvt1j13311r5t6_d9vpbc0000gn/T/localdb/4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/m.db
-[1022246] UDP message sent to 192.168.2.255  from port 49925
-[1060981] sent TimeStamp to 192.168.2.99:49205
-[2025007] UDP message sent to 192.168.2.255  from port 49925
-[2633341] sent TimeStamp to 192.168.2.99:49205
-[3032183] UDP message sent to 192.168.2.255  from port 49925
-[3352868] sent TimeStamp to 192.168.2.83:60365
-[4035450] UDP message sent to 192.168.2.255  from port 49925
-[4061430] sent TimeStamp to 192.168.2.99:49205
-[4376713] sent TimeStamp to 192.168.2.83:42957
-[4378355] sent TimeStamp to 192.168.2.83:40143
-[4782904] sent TimeStamp to 192.168.2.84:58323
-[4783739] sent TimeStamp to 192.168.2.84:59125
-[4784341] sent TimeStamp to 192.168.2.84:41505
-[5042331] UDP message sent to 192.168.2.255  from port 49925
-[5561244] sent TimeStamp to 192.168.2.99:49205
-[6044303] UDP message sent to 192.168.2.255  from port 49925
-[7044767] UDP message sent to 192.168.2.255  from port 49925
-[7063825] sent TimeStamp to 192.168.2.99:49205
-[8043401] UDP message sent to 192.168.2.255  from port 49925
-[8367621] sent TimeStamp to 192.168.2.83:60365
-[8563586] sent TimeStamp to 192.168.2.99:49205
-[9046337] UDP message sent to 192.168.2.255  from port 49925
-[9393810] sent TimeStamp to 192.168.2.83:42957
-[9395208] sent TimeStamp to 192.168.2.83:40143
-[9802773] sent TimeStamp to 192.168.2.84:58323
-[9803980] sent TimeStamp to 192.168.2.84:59125
-[9804745] sent TimeStamp to 192.168.2.84:41505
-[10052900] UDP message sent to 192.168.2.255  from port 49925
-[10061797] sent TimeStamp to 192.168.2.99:49205
-[11050626] UDP message sent to 192.168.2.255  from port 49925
-[11584767] sent TimeStamp to 192.168.2.99:49205
-[12051110] UDP message sent to 192.168.2.255  from port 49925
-[13052886] UDP message sent to 192.168.2.255  from port 49925
-[13066269] sent TimeStamp to 192.168.2.99:49205
-[13385822] sent TimeStamp to 192.168.2.83:60365
-[14054642] UDP message sent to 192.168.2.255  from port 49925
-[14302889] sent TimeStamp to 192.168.2.83:42957
-[14304840] sent TimeStamp to 192.168.2.83:40143
-[14617758] sent TimeStamp to 192.168.2.99:49205
-[14730719] sent TimeStamp to 192.168.2.84:58323
-[14732091] sent TimeStamp to 192.168.2.84:59125
-[14732979] sent TimeStamp to 192.168.2.84:41505
-[15057390] UDP message sent to 192.168.2.255  from port 49925
-[16057075] UDP message sent to 192.168.2.255  from port 49925
-[16070918] sent TimeStamp to 192.168.2.99:49205
-[17056491] UDP message sent to 192.168.2.255  from port 49925
-[17566917] sent TimeStamp to 192.168.2.99:49205
-[18060610] UDP message sent to 192.168.2.255  from port 49925
-[18300426] sent TimeStamp to 192.168.2.83:60365
-[19061741] UDP message sent to 192.168.2.255  from port 49925
-[19074979] sent TimeStamp to 192.168.2.99:49205
-[19302478] sent TimeStamp to 192.168.2.83:42957
-[19304335] sent TimeStamp to 192.168.2.83:40143
-[19729080] sent TimeStamp to 192.168.2.84:58323
-[19730807] sent TimeStamp to 192.168.2.84:59125
-[19731743] sent TimeStamp to 192.168.2.84:41505
-[20062623] UDP message sent to 192.168.2.255  from port 49925
-[20630099] sent TimeStamp to 192.168.2.99:49205
-[21068123] UDP message sent to 192.168.2.255  from port 49925
-[22068009] UDP message sent to 192.168.2.255  from port 49925
-[22083938] sent TimeStamp to 192.168.2.99:49205
+[4933] opened StateMap server on 60454
+[6884] opened FileTransfer server on 60455
+[7604] opened Directory server on 60456
+[12354] UDP message sent to 192.168.2.255  from port 55570
+[13543] Announced myself on 60456
+[81054] [Directory] connection from 192.168.2.84:46167
+[82136] [Directory] connection from 192.168.2.84:52171
+[82656] [Directory] connection from 192.168.2.84:33279
+[84011] [Directory] sent ServiceAnnouncement to 192.168.2.84:46167
+[84802] [Directory] sent ServiceAnnouncement to 192.168.2.84:52171
+[85359] [Directory] sent ServiceAnnouncement to 192.168.2.84:33279
+[87021] [Directory] connection from 192.168.2.99:49207
+[87579] [Directory] connection from 192.168.2.83:44351
+[88044] [Directory] connection from 192.168.2.83:36873
+[88466] [Directory] connection from 192.168.2.83:51993
+[89158] [Directory] sent ServiceAnnouncement to 192.168.2.99:49207
+[89695] [Directory] sent ServiceAnnouncement to 192.168.2.83:44351
+[90205] [Directory] sent ServiceAnnouncement to 192.168.2.83:36873
+[90702] [Directory] sent ServiceAnnouncement to 192.168.2.83:51993
+[100015] [FileTransfer] connection from 192.168.2.84:33259
+[100750] ServicesAnnouncement to FileTransfer from 82b44917-28c1-498e-9bb8-acf9e8d0fdb6
+[101160] TimeCode to FileTransfer from 82b44917-28c1-498e-9bb8-acf9e8d0fdb6
+[105491] [FileTransfer] connection from 192.168.2.84:57023
+[105974] [FileTransfer] connection from 192.168.2.84:33477
+[106428] [StateMap] connection from 192.168.2.84:37641
+[106930] ServicesAnnouncement to FileTransfer from 07faa3e3-bd0b-4888-845e-b0d5c37e6483
+[107219] TimeCode to FileTransfer from 07faa3e3-bd0b-4888-845e-b0d5c37e6483
+[107657] [StateMap] connection from 192.168.2.83:51905
+[108154] ServicesAnnouncement to FileTransfer from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
+[108437] TimeCode to FileTransfer from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
+[108752] requesting sources from  1e6c417a-b674-4c87-b4aa-fb7ad2298976
+[109523] [FileTransfer] connection from 192.168.2.83:36811
+[109937] [FileTransfer] connection from 192.168.2.83:56369
+[110415] ServicesAnnouncement to StateMap from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
+[110731] ServicesAnnouncement to StateMap from 1e6c417a-b674-4c87-b4aa-fb7ad2298976
+[111097] Sending Statemap subscriptions to 192.168.2.84:37641 1e6c417a-b674-4c87-b4aa-fb7ad2298976
+[115512] [StateMap] connection from 192.168.2.99:49208
+[116148] [FileTransfer] connection from 192.168.2.83:57341
+[116620] ServicesAnnouncement to StateMap from 4be14112-5ead-4848-a07d-b37ca8a7220e
+[116910] ServicesAnnouncement to StateMap from 4be14112-5ead-4848-a07d-b37ca8a7220e
+[117218] Sending Statemap subscriptions to 192.168.2.83:51905 4be14112-5ead-4848-a07d-b37ca8a7220e
+[120925] ServicesAnnouncement to FileTransfer from 94be47d0-8232-4cbf-934a-73255a403965
+[121267] TimeCode to FileTransfer from 94be47d0-8232-4cbf-934a-73255a403965
+[121749] ServicesAnnouncement to FileTransfer from f9d4390e-2500-469d-9e0a-d6a1de595e8c
+[122231] TimeCode to FileTransfer from f9d4390e-2500-469d-9e0a-d6a1de595e8c
+[123512] ServicesAnnouncement to StateMap from 00000000-0000-0000-8000-00059501ab6f
+[123810] ServicesAnnouncement to StateMap from 00000000-0000-0000-8000-00059501ab6f
+[124178] Sending Statemap subscriptions to 192.168.2.99:49208 00000000-0000-0000-8000-00059501ab6f
+[127098] ServicesAnnouncement to FileTransfer from 4be14112-5ead-4848-a07d-b37ca8a7220e
+[127396] TimeCode to FileTransfer from 4be14112-5ead-4848-a07d-b37ca8a7220e
+[127715] requesting sources from  4be14112-5ead-4848-a07d-b37ca8a7220e
+[128985] 192.168.2.83:51905 /Client/Preferences/Player => {"string":"1","type":4}
+[129352] 192.168.2.83:51905 /Client/Preferences/PlayerJogColorA => {"color":"#ff2b84ef","type":16}
+[129677] 192.168.2.83:51905 /Client/Preferences/PlayerJogColorB => {"color":"#ff02c63e","type":16}
+[130006] 192.168.2.83:51905 /Engine/Master/MasterTempo => {"type":0,"value":122.00059509277344}
+[130317] 192.168.2.83:51905 /Engine/Sync/Network/MasterStatus => {"state":false,"type":1}
+[132932] 192.168.2.84:37641 /Client/Preferences/Player => {"string":"2","type":4}
+[133487] 192.168.2.83:51905 /Engine/Deck1/Play => {"state":false,"type":1}
+[133801] 192.168.2.83:51905 /Engine/Deck1/PlayState => {"state":false,"type":1}
+[134113] 192.168.2.83:51905 /Engine/Deck1/Track/ArtistName => {"string":"Goom Gum","type":8}
+[134458] 192.168.2.83:51905 /Engine/Deck1/Track/TrackNetworkPath => {"string":"net://4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/Contents/Goom Gum/Aposch/15921162_Aposch_(Original Mix).mp3","type":8}
+[134764] 192.168.2.83:51905 /Engine/Deck1/Track/SongLoaded => {"state":true,"type":1}
+[135088] 192.168.2.83:51905 /Engine/Deck1/Track/SongName => {"string":"Aposch (Original Mix)","type":8}
+[135399] 192.168.2.83:51905 /Engine/Deck1/Track/TrackData => {"state":true,"type":3}
+[135734] 192.168.2.83:51905 /Engine/Deck1/Track/TrackName => {"string":"/media/HONUSZ/Contents/Goom Gum/Aposch/15921162_Aposch_(Original Mix).mp3","type":8}
+[136451] 192.168.2.84:37641 /Client/Preferences/PlayerJogColorA => {"color":"#ff2b84ef","type":16}
+[136775] 192.168.2.84:37641 /Client/Preferences/PlayerJogColorB => {"color":"#ff02c63e","type":16}
+[137094] 192.168.2.84:37641 /Engine/Master/MasterTempo => {"type":0,"value":122}
+[137414] 192.168.2.84:37641 /Engine/Sync/Network/MasterStatus => {"state":false,"type":1}
+[137720] 192.168.2.84:37641 /Engine/Deck1/Play => {"state":false,"type":1}
+[138033] 192.168.2.84:37641 /Engine/Deck1/PlayState => {"state":false,"type":1}
+[138344] 192.168.2.84:37641 /Engine/Deck1/Track/ArtistName => {"string":"Space Food","type":8}
+[138692] 192.168.2.84:37641 /Engine/Deck1/Track/TrackNetworkPath => {"string":"net://4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/Contents/Space Food/Stay In/14786650_Dark Force_(Original Mix).mp3","type":8}
+[139024] 192.168.2.84:37641 /Engine/Deck1/Track/SongLoaded => {"state":true,"type":1}
+[139823] 192.168.2.84:37641 /Engine/Deck1/Track/SongName => {"string":"Dark Force (Original Mix)","type":8}
+[140143] 192.168.2.84:37641 /Engine/Deck1/Track/TrackData => {"state":true,"type":3}
+[140492] 192.168.2.84:37641 /Engine/Deck1/Track/TrackName => {"string":"net://4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/Contents/Space Food/Stay In/14786650_Dark Force_(Original Mix).mp3","type":8}
+[140803] 192.168.2.84:37641 /Engine/Deck1/CurrentBPM => {"type":0,"value":122}
+[141122] 192.168.2.84:37641 /Engine/Deck1/ExternalMixerVolume => {"type":0,"value":0}
+[141432] 192.168.2.84:37641 /Engine/Deck2/Play => {"state":false,"type":1}
+[141736] 192.168.2.84:37641 /Engine/Deck2/PlayState => {"state":false,"type":1}
+[142047] 192.168.2.84:37641 /Engine/Deck2/Track/ArtistName => {"string":"","type":8}
+[142358] 192.168.2.84:37641 /Engine/Deck2/Track/TrackNetworkPath => {"string":"","type":8}
+[142899] 192.168.2.83:51905 /Engine/Deck1/CurrentBPM => {"type":0,"value":120}
+[143215] 192.168.2.83:51905 /Engine/Deck1/ExternalMixerVolume => {"type":0,"value":0}
+[143549] 192.168.2.83:51905 /Engine/Deck2/Play => {"state":false,"type":1}
+[143864] 192.168.2.83:51905 /Engine/Deck2/PlayState => {"state":false,"type":1}
+[144175] 192.168.2.83:51905 /Engine/Deck2/Track/ArtistName => {"string":"","type":8}
+[144495] 192.168.2.83:51905 /Engine/Deck2/Track/TrackNetworkPath => {"string":"","type":8}
+[144803] 192.168.2.83:51905 /Engine/Deck2/Track/SongLoaded => {"state":false,"type":1}
+[145118] 192.168.2.83:51905 /Engine/Deck2/Track/SongName => {"string":"","type":8}
+[145431] 192.168.2.83:51905 /Engine/Deck2/Track/TrackData => {"state":false,"type":3}
+[145861] 192.168.2.83:51905 /Engine/Deck2/Track/TrackName => {"string":"","type":8}
+[146284] 192.168.2.83:51905 /Engine/Deck2/CurrentBPM => {"type":0,"value":120}
+[146604] 192.168.2.83:51905 /Engine/Deck2/ExternalMixerVolume => {"type":0,"value":0}
+[147179] getting sources for  4be14112-5ead-4848-a07d-b37ca8a7220e
+[148284] 192.168.2.99:49208 /Mixer/CH1faderPosition => {"type":0,"value":1.27}
+[148617] 192.168.2.99:49208 /Mixer/ChannelAssignment1 => {"string":",1","type":8}
+[148961] 192.168.2.99:49208 /Mixer/ChannelAssignment2 => {"string":",1","type":8}
+[149284] 192.168.2.99:49208 /Mixer/ChannelAssignment3 => {"string":",1","type":8}
+[149604] 192.168.2.99:49208 /Mixer/ChannelAssignment4 => {"string":",1","type":8}
+[149925] 192.168.2.99:49208 /Mixer/CrossfaderPosition => {"type":0,"value":0.84}
+[150263] 192.168.2.99:49208 /Mixer/CH2faderPosition => {"type":0,"value":1.27}
+[151299] 192.168.2.84:37641 /Engine/Deck2/Track/SongLoaded => {"state":false,"type":1}
+[151620] 192.168.2.84:37641 /Engine/Deck2/Track/SongName => {"string":"","type":8}
+[151937] 192.168.2.84:37641 /Engine/Deck2/Track/TrackData => {"state":false,"type":3}
+[152412] 192.168.2.84:37641 /Engine/Deck2/Track/TrackName => {"string":"","type":8}
+[153231] 192.168.2.84:37641 /Engine/Deck2/CurrentBPM => {"type":0,"value":120}
+[153555] 192.168.2.84:37641 /Engine/Deck2/ExternalMixerVolume => {"type":0,"value":0}
+[662625] downloadDb request for 4be14112-5ead-4848-a07d-b37ca8a7220e
+[669626] Reading database 4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)
+[686001] dbProgress 4be14112-5ead-4848-a07d-b37ca8a7220e 270336 0 0
+[687354] Reading /HONUSZ (USB 1)/Engine Library/Database2/m.db progressComplete=0% 0/270336
+[890691] Download complete.
+[891810] Signaling transfer complete.
+[893358] Saving 4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1) to /var/folders/zk/cdxdvt1j13311r5t6_d9vpbc0000gn/T/localdb/4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/m.db
+[896499] Downloaded 4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1) to /var/folders/zk/cdxdvt1j13311r5t6_d9vpbc0000gn/T/localdb/4be14112-5ead-4848-a07d-b37ca8a7220e/HONUSZ (USB 1)/m.db
+[990248] sent TimeStamp to 192.168.2.99:49207
+[1021572] UDP message sent to 192.168.2.255  from port 55570
+[1276553] sent TimeStamp to 192.168.2.83:51993
+[2024180] UDP message sent to 192.168.2.255  from port 55570
+[2279186] sent TimeStamp to 192.168.2.83:44351
+[2280749] sent TimeStamp to 192.168.2.83:36873
+[2495796] sent TimeStamp to 192.168.2.99:49207
+[3025441] UDP message sent to 192.168.2.255  from port 55570
+[3033758] 192.168.2.83:51905 /Engine/Deck1/PlayState => {"state":false,"type":1}
+[3443500] sent TimeStamp to 192.168.2.84:52171
+[3444222] sent TimeStamp to 192.168.2.84:33279
+[3444715] sent TimeStamp to 192.168.2.84:46167
+[4034072] UDP message sent to 192.168.2.255  from port 55570
+[4047388] sent TimeStamp to 192.168.2.99:49207
+[5034563] UDP message sent to 192.168.2.255  from port 55570
+[5499160] sent TimeStamp to 192.168.2.99:49207
+[6035889] UDP message sent to 192.168.2.255  from port 55570
+[6275416] sent TimeStamp to 192.168.2.83:51993
+[6996568] sent TimeStamp to 192.168.2.99:49207
+[7039091] UDP message sent to 192.168.2.255  from port 55570
+[7333793] sent TimeStamp to 192.168.2.83:36873
+[7335111] sent TimeStamp to 192.168.2.83:44351
+[8040044] UDP message sent to 192.168.2.255  from port 55570
+[8459603] sent TimeStamp to 192.168.2.84:52171
+[8461027] sent TimeStamp to 192.168.2.84:33279
+[8462002] sent TimeStamp to 192.168.2.84:46167
+[8498144] sent TimeStamp to 192.168.2.99:49207
+[9041241] UDP message sent to 192.168.2.255  from port 55570
+[10045242] UDP message sent to 192.168.2.255  from port 55570
+[10058376] sent TimeStamp to 192.168.2.99:49207
+[11044195] UDP message sent to 192.168.2.255  from port 55570
+[11328556] sent TimeStamp to 192.168.2.83:51993
+[11499504] sent TimeStamp to 192.168.2.99:49207
+[12047169] UDP message sent to 192.168.2.255  from port 55570
+[12354856] sent TimeStamp to 192.168.2.83:36873
+[12356429] sent TimeStamp to 192.168.2.83:44351
+[12998649] sent TimeStamp to 192.168.2.99:49207
+[13050990] UDP message sent to 192.168.2.255  from port 55570
+[13477994] sent TimeStamp to 192.168.2.84:33279
+[13479402] sent TimeStamp to 192.168.2.84:46167
+[13480471] sent TimeStamp to 192.168.2.84:52171
+[14049512] UDP message sent to 192.168.2.255  from port 55570
+[14501242] sent TimeStamp to 192.168.2.99:49207
+[15053459] UDP message sent to 192.168.2.255  from port 55570
+[16004242] sent TimeStamp to 192.168.2.99:49207
+[16052890] UDP message sent to 192.168.2.255  from port 55570
+[16348849] sent TimeStamp to 192.168.2.83:51993
+[17052065] UDP message sent to 192.168.2.255  from port 55570
+[17276308] sent TimeStamp to 192.168.2.83:36873
+[17277213] sent TimeStamp to 192.168.2.83:44351
+[17593541] sent TimeStamp to 192.168.2.99:49207
+[18052921] UDP message sent to 192.168.2.255  from port 55570
+[18415141] sent TimeStamp to 192.168.2.84:52171
+[18416616] sent TimeStamp to 192.168.2.84:33279
+[18417559] sent TimeStamp to 192.168.2.84:46167
+[19055579] UDP message sent to 192.168.2.255  from port 55570
+[19117691] sent TimeStamp to 192.168.2.99:49207
+[20057840] UDP message sent to 192.168.2.255  from port 55570
+[20507577] sent TimeStamp to 192.168.2.99:49207
+[21059682] UDP message sent to 192.168.2.255  from port 55570
+[21275560] sent TimeStamp to 192.168.2.83:51993
+[22060582] UDP message sent to 192.168.2.255  from port 55570
+[22070285] sent TimeStamp to 192.168.2.99:49207
+[22276785] sent TimeStamp to 192.168.2.83:36873
+[22278428] sent TimeStamp to 192.168.2.83:44351
+[23060164] UDP message sent to 192.168.2.255  from port 55570
+[23370543] sent TimeStamp to 192.168.2.84:52171
+[23372058] sent TimeStamp to 192.168.2.84:33279
+[23372838] sent TimeStamp to 192.168.2.84:46167
+[23785478] sent TimeStamp to 192.168.2.99:49207
+[24062134] UDP message sent to 192.168.2.255  from port 55570
+[25050290] sent TimeStamp to 192.168.2.99:49207
+[25063253] UDP message sent to 192.168.2.255  from port 55570
+[26067330] UDP message sent to 192.168.2.255  from port 55570
+[26279792] sent TimeStamp to 192.168.2.83:51993
+[26512812] sent TimeStamp to 192.168.2.99:49207
+[27066911] UDP message sent to 192.168.2.255  from port 55570
+[27277928] sent TimeStamp to 192.168.2.83:36873
+[27279057] sent TimeStamp to 192.168.2.83:44351
+[28068432] UDP message sent to 192.168.2.255  from port 55570
+[28079756] sent TimeStamp to 192.168.2.99:49207
+[28374585] sent TimeStamp to 192.168.2.84:46167
+[28375565] sent TimeStamp to 192.168.2.84:52171
+[28376327] sent TimeStamp to 192.168.2.84:33279
+[29069427] UDP message sent to 192.168.2.255  from port 55570
+[29555164] sent TimeStamp to 192.168.2.99:49207
+[30070316] UDP message sent to 192.168.2.255  from port 55570
+[31073705] UDP message sent to 192.168.2.255  from port 55570
+[31085036] sent TimeStamp to 192.168.2.99:49207
+[31278370] sent TimeStamp to 192.168.2.83:51993
+[32075431] UDP message sent to 192.168.2.255  from port 55570
+[32277214] sent TimeStamp to 192.168.2.83:36873
+[32278807] sent TimeStamp to 192.168.2.83:44351
+[32525578] sent TimeStamp to 192.168.2.99:49207
+[33076604] UDP message sent to 192.168.2.255  from port 55570
+[33448103] sent TimeStamp to 192.168.2.84:46167
+[33449063] sent TimeStamp to 192.168.2.84:52171
+[33449730] sent TimeStamp to 192.168.2.84:33279
+[34063002] sent TimeStamp to 192.168.2.99:49207
+[34076245] UDP message sent to 192.168.2.255  from port 55570
+[35078058] UDP message sent to 192.168.2.255  from port 55570
+[35675114] sent TimeStamp to 192.168.2.99:49207
+[36080867] UDP message sent to 192.168.2.255  from port 55570
+[36277314] sent TimeStamp to 192.168.2.83:51993
+[37029902] sent TimeStamp to 192.168.2.99:49207
+[37081758] UDP message sent to 192.168.2.255  from port 55570
+[37277637] sent TimeStamp to 192.168.2.83:44351
+[37279023] sent TimeStamp to 192.168.2.83:36873
+[38083479] UDP message sent to 192.168.2.255  from port 55570
+[38372068] sent TimeStamp to 192.168.2.84:46167
+[38373702] sent TimeStamp to 192.168.2.84:33279
+[38376722] sent TimeStamp to 192.168.2.84:52171
+[38494797] sent TimeStamp to 192.168.2.99:49207
+[39083407] UDP message sent to 192.168.2.255  from port 55570
+[40083911] UDP message sent to 192.168.2.255  from port 55570
+[40099549] sent TimeStamp to 192.168.2.99:49207
+[41089080] UDP message sent to 192.168.2.255  from port 55570
+[41278759] sent TimeStamp to 192.168.2.83:51993
+[41538222] sent TimeStamp to 192.168.2.99:49207
+[42088939] UDP message sent to 192.168.2.255  from port 55570
+[42277600] sent TimeStamp to 192.168.2.83:44351
+[42279533] sent TimeStamp to 192.168.2.83:36873
+[43073556] sent TimeStamp to 192.168.2.99:49207
+[43090058] UDP message sent to 192.168.2.255  from port 55570
+[43479829] sent TimeStamp to 192.168.2.84:46167
+[43481050] sent TimeStamp to 192.168.2.84:52171
+[43482174] sent TimeStamp to 192.168.2.84:33279
+[44089920] UDP message sent to 192.168.2.255  from port 55570
+[44611253] sent TimeStamp to 192.168.2.99:49207
+[45092346] UDP message sent to 192.168.2.255  from port 55570
+[46045224] sent TimeStamp to 192.168.2.99:49207
+[46097126] UDP message sent to 192.168.2.255  from port 55570
+[46286492] sent TimeStamp to 192.168.2.83:51993
+[47096253] UDP message sent to 192.168.2.255  from port 55570
+[47279124] sent TimeStamp to 192.168.2.83:44351
+[47280480] sent TimeStamp to 192.168.2.83:36873
+[47497248] sent TimeStamp to 192.168.2.99:49207
+[48099827] UDP message sent to 192.168.2.255  from port 55570
+[48402282] sent TimeStamp to 192.168.2.84:52171
+[48403666] sent TimeStamp to 192.168.2.84:46167
+[48404645] sent TimeStamp to 192.168.2.84:33279
+[49011695] sent TimeStamp to 192.168.2.99:49207
+[49097509] UDP message sent to 192.168.2.255  from port 55570
+[50097579] UDP message sent to 192.168.2.255  from port 55570
+[50497850] sent TimeStamp to 192.168.2.99:49207
+[51101258] UDP message sent to 192.168.2.255  from port 55570
+[51279814] sent TimeStamp to 192.168.2.83:51993
+[52001278] sent TimeStamp to 192.168.2.99:49207
+[52102934] UDP message sent to 192.168.2.255  from port 55570
+[52277754] sent TimeStamp to 192.168.2.83:36873
+[52279479] sent TimeStamp to 192.168.2.83:44351
+[53107412] UDP message sent to 192.168.2.255  from port 55570
+[53375773] sent TimeStamp to 192.168.2.84:33279
+[53377130] sent TimeStamp to 192.168.2.84:46167
+[53378260] sent TimeStamp to 192.168.2.84:52171
+[53502349] sent TimeStamp to 192.168.2.99:49207
+[54107732] UDP message sent to 192.168.2.255  from port 55570
+[55053463] sent TimeStamp to 192.168.2.99:49207
+[55110796] UDP message sent to 192.168.2.255  from port 55570
+[56110359] UDP message sent to 192.168.2.255  from port 55570
+[56275091] sent TimeStamp to 192.168.2.83:51993
+[56588659] sent TimeStamp to 192.168.2.99:49207
+[57111032] UDP message sent to 192.168.2.255  from port 55570
+[57282008] sent TimeStamp to 192.168.2.83:36873
+[57282974] sent TimeStamp to 192.168.2.83:44351
+[58022800] sent TimeStamp to 192.168.2.99:49207
+[58113086] UDP message sent to 192.168.2.255  from port 55570
+[58369815] sent TimeStamp to 192.168.2.84:33279
+[58370583] sent TimeStamp to 192.168.2.84:46167
+[58371142] sent TimeStamp to 192.168.2.84:52171
+[59113779] UDP message sent to 192.168.2.255  from port 55570
+[59572751] sent TimeStamp to 192.168.2.99:49207
+[60116796] UDP message sent to 192.168.2.255  from port 55570
+[61095700] sent TimeStamp to 192.168.2.99:49207
+[61121332] UDP message sent to 192.168.2.255  from port 55570
+[61276051] sent TimeStamp to 192.168.2.83:51993
+[62118222] UDP message sent to 192.168.2.255  from port 55570
+[62275595] sent TimeStamp to 192.168.2.83:36873
+[62277295] sent TimeStamp to 192.168.2.83:44351
+[62508773] sent TimeStamp to 192.168.2.99:49207
+[63120589] UDP message sent to 192.168.2.255  from port 55570
+[63448902] sent TimeStamp to 192.168.2.84:52171
+[63450022] sent TimeStamp to 192.168.2.84:33279
+[63450759] sent TimeStamp to 192.168.2.84:46167
+[64008306] sent TimeStamp to 192.168.2.99:49207
+[64120934] UDP message sent to 192.168.2.255  from port 55570
+[65124993] UDP message sent to 192.168.2.255  from port 55570
+[65601180] sent TimeStamp to 192.168.2.99:49207
+[66126340] UDP message sent to 192.168.2.255  from port 55570
+[66276185] sent TimeStamp to 192.168.2.83:51993
+[67032858] sent TimeStamp to 192.168.2.99:49207
+[67124901] UDP message sent to 192.168.2.255  from port 55570
+[67275703] sent TimeStamp to 192.168.2.83:36873
+[67276855] sent TimeStamp to 192.168.2.83:44351
+[68125388] UDP message sent to 192.168.2.255  from port 55570
+[68466508] sent TimeStamp to 192.168.2.84:46167
+[68468264] sent TimeStamp to 192.168.2.84:52171
+[68469540] sent TimeStamp to 192.168.2.84:33279
+[68511517] sent TimeStamp to 192.168.2.99:49207
+[69126270] UDP message sent to 192.168.2.255  from port 55570
+[70107763] sent TimeStamp to 192.168.2.99:49207
+[70124695] UDP message sent to 192.168.2.255  from port 55570
+[71132186] UDP message sent to 192.168.2.255  from port 55570
+[71279049] sent TimeStamp to 192.168.2.83:51993
+[71554486] sent TimeStamp to 192.168.2.99:49207
+[72131567] UDP message sent to 192.168.2.255  from port 55570
+[72277945] sent TimeStamp to 192.168.2.83:36873
+[72279181] sent TimeStamp to 192.168.2.83:44351
+[73039150] sent TimeStamp to 192.168.2.99:49207
+[73132810] UDP message sent to 192.168.2.255  from port 55570
+[73381565] sent TimeStamp to 192.168.2.84:52171
+[73382353] sent TimeStamp to 192.168.2.84:46167
+[73382961] sent TimeStamp to 192.168.2.84:33279
+[74132582] UDP message sent to 192.168.2.255  from port 55570
+[74497378] sent TimeStamp to 192.168.2.99:49207
+[75135086] UDP message sent to 192.168.2.255  from port 55570
+[76000927] sent TimeStamp to 192.168.2.99:49207
+[76139147] UDP message sent to 192.168.2.255  from port 55570
+[76274968] sent TimeStamp to 192.168.2.83:51993
+[77140833] UDP message sent to 192.168.2.255  from port 55570
+[77272749] sent TimeStamp to 192.168.2.83:36873
+[77273601] sent TimeStamp to 192.168.2.83:44351
+[77532357] sent TimeStamp to 192.168.2.99:49207
+[78141243] UDP message sent to 192.168.2.255  from port 55570
+[78368115] sent TimeStamp to 192.168.2.84:52171
+[78369879] sent TimeStamp to 192.168.2.84:33279
+[78370759] sent TimeStamp to 192.168.2.84:46167
+[79014069] sent TimeStamp to 192.168.2.99:49207
+[79140677] UDP message sent to 192.168.2.255  from port 55570
+[80141139] UDP message sent to 192.168.2.255  from port 55570
+[80551699] sent TimeStamp to 192.168.2.99:49207
+[81146005] UDP message sent to 192.168.2.255  from port 55570
+[81274891] sent TimeStamp to 192.168.2.83:51993
+[82084880] sent TimeStamp to 192.168.2.99:49207
+[82145837] UDP message sent to 192.168.2.255  from port 55570
+[82275126] sent TimeStamp to 192.168.2.83:36873
+[82276540] sent TimeStamp to 192.168.2.83:44351
+[83145719] UDP message sent to 192.168.2.255  from port 55570
+[83417706] sent TimeStamp to 192.168.2.84:52171
+[83419672] sent TimeStamp to 192.168.2.84:46167
+[83421006] sent TimeStamp to 192.168.2.84:33279
+[83528326] sent TimeStamp to 192.168.2.99:49207
+[84146863] UDP message sent to 192.168.2.255  from port 55570
+[85061255] sent TimeStamp to 192.168.2.99:49207
+[85149381] UDP message sent to 192.168.2.255  from port 55570
+[86150631] UDP message sent to 192.168.2.255  from port 55570
+[86276056] sent TimeStamp to 192.168.2.83:51993
+[86529909] sent TimeStamp to 192.168.2.99:49207
+[87151736] UDP message sent to 192.168.2.255  from port 55570
+[87273161] sent TimeStamp to 192.168.2.83:36873
+[87274044] sent TimeStamp to 192.168.2.83:44351
+[88030452] sent TimeStamp to 192.168.2.99:49207
+[88154127] UDP message sent to 192.168.2.255  from port 55570
+[88439902] sent TimeStamp to 192.168.2.84:52171
+[88441325] sent TimeStamp to 192.168.2.84:33279
+[88442362] sent TimeStamp to 192.168.2.84:46167
+[89153879] UDP message sent to 192.168.2.255  from port 55570
+[89564259] sent TimeStamp to 192.168.2.99:49207
+[90153250] UDP message sent to 192.168.2.255  from port 55570
+[91100952] sent TimeStamp to 192.168.2.99:49207
+[91157450] UDP message sent to 192.168.2.255  from port 55570
+[91273593] sent TimeStamp to 192.168.2.83:51993
+[92157743] UDP message sent to 192.168.2.255  from port 55570
+[92272712] sent TimeStamp to 192.168.2.83:36873
+[92273485] sent TimeStamp to 192.168.2.83:44351
+[92532948] sent TimeStamp to 192.168.2.99:49207
+[93161474] UDP message sent to 192.168.2.255  from port 55570
+[93370870] sent TimeStamp to 192.168.2.84:33279
+[93372541] sent TimeStamp to 192.168.2.84:46167
+[93373762] sent TimeStamp to 192.168.2.84:52171
+[94068531] sent TimeStamp to 192.168.2.99:49207
+[94161903] UDP message sent to 192.168.2.255  from port 55570
+[95162611] UDP message sent to 192.168.2.255  from port 55570
+[95690154] sent TimeStamp to 192.168.2.99:49207
+[96165023] UDP message sent to 192.168.2.255  from port 55570
+[96279544] sent TimeStamp to 192.168.2.83:51993
+[97037651] sent TimeStamp to 192.168.2.99:49207
+[97165376] UDP message sent to 192.168.2.255  from port 55570
+[97273823] sent TimeStamp to 192.168.2.83:36873
+[97275127] sent TimeStamp to 192.168.2.83:44351
+[98165587] UDP message sent to 192.168.2.255  from port 55570
+[98369012] sent TimeStamp to 192.168.2.84:52171
+[98370527] sent TimeStamp to 192.168.2.84:46167
+[98371776] sent TimeStamp to 192.168.2.84:33279
+[98509434] sent TimeStamp to 192.168.2.99:49207
+[99165270] UDP message sent to 192.168.2.255  from port 55570
+[100111347] sent TimeStamp to 192.168.2.99:49207
+[100169962] UDP message sent to 192.168.2.255  from port 55570
+[101173035] UDP message sent to 192.168.2.255  from port 55570
+[101275705] sent TimeStamp to 192.168.2.83:51993
+[101542951] sent TimeStamp to 192.168.2.99:49207
+[102172300] UDP message sent to 192.168.2.255  from port 55570
+[102275220] sent TimeStamp to 192.168.2.83:36873
+[102276314] sent TimeStamp to 192.168.2.83:44351
+[103081881] sent TimeStamp to 192.168.2.99:49207
+[103172343] UDP message sent to 192.168.2.255  from port 55570
+[103366969] sent TimeStamp to 192.168.2.84:52171
+[103376054] sent TimeStamp to 192.168.2.84:46167
+[103377471] sent TimeStamp to 192.168.2.84:33279
+[104172057] UDP message sent to 192.168.2.255  from port 55570
+[104615625] sent TimeStamp to 192.168.2.99:49207
+[105175820] UDP message sent to 192.168.2.255  from port 55570
+[106051294] sent TimeStamp to 192.168.2.99:49207
+[106179992] UDP message sent to 192.168.2.255  from port 55570
+[106275173] sent TimeStamp to 192.168.2.83:51993
+[107182777] UDP message sent to 192.168.2.255  from port 55570
+[107280481] sent TimeStamp to 192.168.2.83:36873
+[107282095] sent TimeStamp to 192.168.2.83:44351
+[107592581] sent TimeStamp to 192.168.2.99:49207
+[108182560] UDP message sent to 192.168.2.255  from port 55570
+[108369299] sent TimeStamp to 192.168.2.84:33279
+[108370267] sent TimeStamp to 192.168.2.84:46167
+[108370927] sent TimeStamp to 192.168.2.84:52171
+[109123758] sent TimeStamp to 192.168.2.99:49207
+[109183158] UDP message sent to 192.168.2.255  from port 55570
+[110183595] UDP message sent to 192.168.2.255  from port 55570
+[110518417] sent TimeStamp to 192.168.2.99:49207
+[111184657] UDP message sent to 192.168.2.255  from port 55570
+[111276297] sent TimeStamp to 192.168.2.83:51993
+[112091286] sent TimeStamp to 192.168.2.99:49207
+[112189040] UDP message sent to 192.168.2.255  from port 55570
+[112283459] sent TimeStamp to 192.168.2.83:36873
+[112284823] sent TimeStamp to 192.168.2.83:44351
+[113189633] UDP message sent to 192.168.2.255  from port 55570
+[113370557] sent TimeStamp to 192.168.2.84:52171
+[113372027] sent TimeStamp to 192.168.2.84:46167
+[113373310] sent TimeStamp to 192.168.2.84:33279
+[113500539] sent TimeStamp to 192.168.2.99:49207
+[114190385] UDP message sent to 192.168.2.255  from port 55570
+[115062647] sent TimeStamp to 192.168.2.99:49207
+[115190688] UDP message sent to 192.168.2.255  from port 55570
+[116191657] UDP message sent to 192.168.2.255  from port 55570
+[116276047] sent TimeStamp to 192.168.2.83:51993
+[116596824] sent TimeStamp to 192.168.2.99:49207
+[117192350] UDP message sent to 192.168.2.255  from port 55570
+[117275111] sent TimeStamp to 192.168.2.83:44351
+[117276899] sent TimeStamp to 192.168.2.83:36873
+[118134425] sent TimeStamp to 192.168.2.99:49207
+[118196299] UDP message sent to 192.168.2.255  from port 55570
+[118369611] sent TimeStamp to 192.168.2.84:46167
+[118371043] sent TimeStamp to 192.168.2.84:52171
+[118372047] sent TimeStamp to 192.168.2.84:33279
+[119196014] UDP message sent to 192.168.2.255  from port 55570
+[119572923] sent TimeStamp to 192.168.2.99:49207
+[120197076] UDP message sent to 192.168.2.255  from port 55570
+[121005814] sent TimeStamp to 192.168.2.99:49207
+[121197928] UDP message sent to 192.168.2.255  from port 55570
+[121275770] sent TimeStamp to 192.168.2.83:51993
+[122198270] UDP message sent to 192.168.2.255  from port 55570
+[122276225] sent TimeStamp to 192.168.2.83:36873
+[122277333] sent TimeStamp to 192.168.2.83:44351
+[122507585] sent TimeStamp to 192.168.2.99:49207
+[123199485] UDP message sent to 192.168.2.255  from port 55570
+[123368124] sent TimeStamp to 192.168.2.84:52171
+[123369396] sent TimeStamp to 192.168.2.84:33279
+[123370192] sent TimeStamp to 192.168.2.84:46167
+[124073626] sent TimeStamp to 192.168.2.99:49207
+[124200615] UDP message sent to 192.168.2.255  from port 55570
+[125202533] UDP message sent to 192.168.2.255  from port 55570
+[125609623] sent TimeStamp to 192.168.2.99:49207
+[126203353] UDP message sent to 192.168.2.255  from port 55570
+[126275779] sent TimeStamp to 192.168.2.83:51993
+[127040730] sent TimeStamp to 192.168.2.99:49207
+[127204024] UDP message sent to 192.168.2.255  from port 55570
+[127274792] sent TimeStamp to 192.168.2.83:36873
+[127276153] sent TimeStamp to 192.168.2.83:44351
+[128206206] UDP message sent to 192.168.2.255  from port 55570
+[128372269] sent TimeStamp to 192.168.2.84:52171
+[128373336] sent TimeStamp to 192.168.2.84:33279
+[128374119] sent TimeStamp to 192.168.2.84:46167
+[128512696] sent TimeStamp to 192.168.2.99:49207
+[129208098] UDP message sent to 192.168.2.255  from port 55570
+[130117666] sent TimeStamp to 192.168.2.99:49207
+[130209704] UDP message sent to 192.168.2.255  from port 55570
+[131210040] UDP message sent to 192.168.2.255  from port 55570
+[131275852] sent TimeStamp to 192.168.2.83:51993
+[131558241] sent TimeStamp to 192.168.2.99:49207
+[132212093] UDP message sent to 192.168.2.255  from port 55570
+[132275768] sent TimeStamp to 192.168.2.83:36873
+[132276669] sent TimeStamp to 192.168.2.83:44351
