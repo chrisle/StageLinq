@@ -10,12 +10,19 @@ import { Service } from './Service';
 import type { ServiceMessage, DeviceId } from '../types';
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
-
+  
 export const States = [
   // Mixer
   StageLinqValue.MixerCH1faderPosition,
   StageLinqValue.MixerCH2faderPosition,
+  StageLinqValue.MixerCH3faderPosition,
+  StageLinqValue.MixerCH4faderPosition,
   StageLinqValue.MixerCrossfaderPosition,
+  StageLinqValue.MixerChannelAssignment1,
+  StageLinqValue.MixerChannelAssignment2,
+  StageLinqValue.MixerChannelAssignment3,
+  StageLinqValue.MixerChannelAssignment4,
+  StageLinqValue.MixerNumberOfChannels,
 
   StageLinqValue.ClientPreferencesLayerA,
   StageLinqValue.ClientPreferencesPlayer,
@@ -27,12 +34,7 @@ export const States = [
   StageLinqValue.EngineMasterMasterTempo,
   
   StageLinqValue.EngineSyncNetworkMasterStatus,
-  StageLinqValue.MixerChannelAssignment1,
-  StageLinqValue.MixerChannelAssignment2,
-  StageLinqValue.MixerChannelAssignment3,
-  StageLinqValue.MixerChannelAssignment4,
-  StageLinqValue.MixerNumberOfChannels,
-
+ 
   // Decks
   StageLinqValue.EngineDeck1Play,
   StageLinqValue.EngineDeck1PlayState,
@@ -127,7 +129,7 @@ export class StateMap extends Service<StateData> {
 
   
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
-    Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
     this.subscribe(socket);
     return
   }

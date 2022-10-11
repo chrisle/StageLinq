@@ -58,7 +58,7 @@ export class FileTransfer extends Service<FileTransferData> {
   
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
     assert((socket));
-    Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
     return
   }
 
@@ -196,7 +196,7 @@ export class FileTransfer extends Service<FileTransferData> {
       }
 
       case MessageId.DeviceShutdown: {
-        Logger.debug('shutdown msg length', p_ctx.sizeLeft());
+       // This message seems to be sent from connected devices when shutdown is started
         if (p_ctx.sizeLeft() > 0) {
           const msg = p_ctx.readRemainingAsNewBuffer().toString('hex');
           Logger.debug(msg)

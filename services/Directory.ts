@@ -16,16 +16,15 @@ export class Directory extends Service<DirectoryData> {
   public name: string = "Directory";
   public timeAlive: number;
   public servicePorts: ServicePorts;
-  //public serviceRequestAllowed: boolean = false;
-  //public services: Map<string, number>;
-  protected isBufferedService = false;
+  
+  protected readonly isBufferedService = false;
   
   async init() {
   }
 
   protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<DirectoryData> {
     assert((socket));
-    Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
     return
   }
 
@@ -50,9 +49,7 @@ export class Directory extends Service<DirectoryData> {
           if (ctx.isEOF() === false ){
             ctx.readRemaining();
           }
-          if (peer.software.name === 'JM08') {
-            //Logger.debug(peer.software, timeAlive, this.timeAlive, ctx.sizeLeft());
-            //sleep(1000)
+          if (peer && peer.software.name === 'JM08') {
             this.sendTimeStampReply(token,socket);
           }
           
@@ -118,6 +115,6 @@ export class Directory extends Service<DirectoryData> {
     assert(message.length === 44);
     await sleep(1400);
     await socket.write(message);
-    Logger.debug(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`)
+    Logger.silly(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`)
   } 
 }

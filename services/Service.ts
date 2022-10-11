@@ -41,7 +41,7 @@ class MsgId {
 }
 
 type PeerBuffers = {
-	[key: string]: Buffer;
+	[key: IpAddressPort]: Buffer;
 }
 
 export abstract class Service<T> extends EventEmitter {
@@ -71,8 +71,6 @@ export abstract class Service<T> extends EventEmitter {
 			
 			const server = net.createServer((socket) => {
 				
-				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
-				
 				//Handle identification of incoming socket. 
 				const addressInfo:AddressInfo = {
 					address: socket.remoteAddress,
@@ -81,10 +79,13 @@ export abstract class Service<T> extends EventEmitter {
 				}
 				const ipAddressPort = [addressInfo.address, addressInfo.port].join(":");
 
-				//Initialize new buffer for this connection
-				let queue: Buffer = null;
-				this.peerBuffers[ipAddressPort] = queue;
+				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
+
+				//Initialize fresh buffer queue for this connection
+			
+				this.peerBuffers[ipAddressPort] = null;
 				
+				//get device id from list of peers. will check if undefined later.
 				let deviceId = this.peerDeviceIds[ipAddressPort];
 
 				socket.on('error', (err) => {
@@ -93,6 +94,7 @@ export abstract class Service<T> extends EventEmitter {
 				
 				socket.on('data', async p_data => {
 					
+					//Only used for debugging. 
 					this.msgId++
 					const msgId = new MsgId(this.msgId);
 
@@ -119,7 +121,8 @@ export abstract class Service<T> extends EventEmitter {
 						this.emit('message', parsedData);
 					};
 					
-					//check if device has announced itself to this service yet
+					//	Check if device has announced itself to this service yet
+					// 	Basically, we only want to handle 
 					if (!deviceId && ctx.sizeLeft() >= 20) { 
 						
 						const messageId = ctx.readUInt32();
@@ -137,7 +140,7 @@ export abstract class Service<T> extends EventEmitter {
 						
 						this.peerDeviceIds[ipAddressPort] = deviceId;
 						
-						Logger.debug(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`);
+						Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`);
 						
 						const parsedData = this.parseServiceData(messageId, deviceId, serviceName, socket);
 						this.messageHandler(parsedData);
@@ -203,7 +206,6 @@ export abstract class Service<T> extends EventEmitter {
 	}
 
 	getDeviceIdFromSocket(socket: Socket): DeviceId {
-
 		return this.peerDeviceIds[[socket.remoteAddress, socket.remotePort].join(':')]
 	}
 
@@ -241,7 +243,7 @@ export abstract class Service<T> extends EventEmitter {
 	public getIdFromIp(map:Map<string, ConnectionInfo>, val:string) {
 		const thisEntry = [...map.values()].filter((item: ConnectionInfo) => item.addressPort === val);
 		return thisEntry.keys.toString();
-	  }
+	}
 
 	protected testPoint(_ctx: ReadContext, deviceId: string, name: string, silent?:boolean) {
 		const ctx = _ctx.readRemainingAsNewCtx();
