@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
 import { Action, ActingAsDevice, StageLinqOptions, deviceIdFromBuff, DeviceId } from '../types';
-import { sleep } from '../utils';
+//import { sleep } from '../utils';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -37,26 +37,16 @@ export class StageLinq extends EventEmitter {
     const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
     
     msg.port = address.port;
-    //await sleep(500);
     await announce(msg);
-    //Logger.warn(msg);
     this.listener.listenForDevices(async (connectionInfo) => {
-      //await this.devices.handleDevice(connectionInfo);
       
       const deviceId = new DeviceId(connectionInfo.token);
-      //const deviceId = deviceIdFromBuff(connectionInfo.token);
-      //const ipAddressPort = [connectionInfo.address,connectionInfo.port].join(':');
       this.devices._peers[connectionInfo.address] = deviceId;
 
       if (!this.devices.peers.has(deviceId.toString()) || this.devices.peers.get(deviceId.toString()).port !== connectionInfo.port) {
         this.devices.peers.set(deviceIdFromBuff(connectionInfo.token), connectionInfo);
-        //Logger.debug(deviceId, connectionInfo);
       }
-      
-      //Logger.warn(connectionInfo);
     });
-    //await sleep(1500);
-    //await this.devices.
   }
 
   /**

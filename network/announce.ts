@@ -5,13 +5,12 @@ import {
   LISTEN_PORT,
 } from '../types';
 import { createSocket, Socket as UDPSocket } from 'dgram';
-//import * as dgram from 'dgram'
 import { Logger } from '../LogEmitter';
 import { networkInterfaces } from 'os';
 import { strict as assert } from 'assert';
 import { subnet } from 'ip';
 import { WriteContext } from '../utils';
-import type { DiscoveryMessage, DeviceId } from '../types';
+import type { DiscoveryMessage } from '../types';
 
 function findBroadcastIPs(): string[] {
   const interfaces = Object.values(networkInterfaces());
@@ -28,7 +27,6 @@ function findBroadcastIPs(): string[] {
   }
   return ips;
 }
-
 
 let announceClient: UDPSocket | null = null;
 let announceTimer: NodeJS.Timer | null = null;
@@ -74,7 +72,7 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
       const address = announceClient.address()
       
       announceClient.send(p_message, LISTEN_PORT, p_ip, () => {
-        // Logger.log('UDP message sent to ' + p_ip, ' from port ' + address.port);
+        Logger.silly('UDP message sent to ' + p_ip, ' from port ' + address.port);
         resolve();
       });
     });
@@ -92,7 +90,7 @@ export async function unannounce(message: DiscoveryMessage): Promise<void> {
   writeDiscoveryMessage(ctx, message);
   const msg = new Uint8Array(ctx.getBuffer());
   await broadcastMessage(msg);
-  // Logger.info("Unannounced myself");
+  Logger.debug("Unannounced myself");
 }
 
 export async function announce(message: DiscoveryMessage): Promise<void> {
@@ -111,14 +109,14 @@ export async function announce(message: DiscoveryMessage): Promise<void> {
   await broadcastMessage(msg);
 
   announceTimer = setInterval(broadcastMessage, ANNOUNCEMENT_INTERVAL, msg);
-  Logger.info(`Announced myself on ${message.port}`);
+  Logger.debug(`Announced myself on ${message.port}`);
 }
 
 export interface DiscoveryMessageOptions {
   name: string;
   version: string;
   source: string;
-  token: Uint8Array;
+  token: Uint8Array; //FIXME make this DeviceId
   port?: number
 };
 
@@ -131,7 +129,7 @@ export function createDiscoveryMessage(action: string, discoveryMessageOptions: 
       version: discoveryMessageOptions.version
     },
     source: discoveryMessageOptions.source,
-    token: discoveryMessageOptions.token
+    token: discoveryMessageOptions.token //FIXME make this DeviceId
   };
   return msg;
 }

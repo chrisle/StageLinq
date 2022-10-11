@@ -1,3 +1,4 @@
+/*
 import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
@@ -129,3 +130,4 @@ export class TimeSynchronization extends Service<TimeSyncData> {
 	    }
     }
 }
+*/

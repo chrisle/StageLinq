@@ -1,30 +1,25 @@
-import { ConnectionInfo, IpAddress, PlayerStatus, ServiceMessage, DeviceId, StageLinqOptions } from '../types';
+import { ConnectionInfo, PlayerStatus, ServiceMessage, DeviceId, StageLinqOptions } from '../types';
 import { EventEmitter } from 'events';
-//import { NetworkDevice } from '.';
-import { Player } from '../devices/Player';
-import { sleep } from '../utils';
-import { FileTransfer, StateData, StateMap, TimeSynchronization, Directory } from '../services';
-import { Logger } from '../LogEmitter';
+//import { Player } from '../devices/Player';
+//import { sleep } from '../utils';
+import { 
+  FileTransfer, 
+  StateData, 
+  StateMap, 
+  //TimeSynchronization, 
+  Directory 
+} from '../services';
+//import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
 import * as services from '../services';
 import { AddressInfo } from 'net';
-import { dir } from 'console';
 
-//enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
-
+/*
 interface StageLinqDevice {
   //networkDevice: NetworkDevice;
   fileTransferService: FileTransfer;
 };
-
-export interface ServiceInitMessage {
-  parent: InstanceType<typeof StageLinqDevices>;
-  services?: Map<string,number>;
-}
-
-// This time needs to be just long enough for discovery messages from all to
-// come through.
-const WAIT_FOR_DEVICES_TIMEOUT_MS = 3000;
+*/
 
 export declare interface StageLinqDevices {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
@@ -48,13 +43,8 @@ export class StageLinqDevices extends EventEmitter {
   private _databases: Databases;
   public peers: Map<string, ConnectionInfo> = new Map();
   public _peers: Record<string, DeviceId> = {};
-  private devices: Map<IpAddress, StageLinqDevice> = new Map();
-  //private services2: Map<string, InstanceType<typeof services.Service>> = new Map();
-  //private discoveryStatus: Map<string, ConnectionStatus> = new Map();
-  private options: StageLinqOptions;
-
-  //private deviceWatchTimeout: NodeJS.Timeout | null = null;
-  //private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
+  
+  protected options: StageLinqOptions;
 
   constructor(options: StageLinqOptions) {
     super();
@@ -69,80 +59,19 @@ export class StageLinqDevices extends EventEmitter {
    */
 
   async initialize(): Promise<AddressInfo> {
-    let initMsg: ServiceInitMessage = {
-      parent: this,
-    }
-
-    initMsg.services = new Map();
-    //const timeSync = new TimeSynchronization(initMsg);
-    //const timeSyncInfo = await timeSync.listen();
-    //initMsg.services.set('TimeSynchronization', timeSyncInfo.port);
     
-    //await this.startServiceListener(TimeSynchronization);
+    await this.startServiceListener(StateMap);
+    await this.startServiceListener(FileTransfer);
+    const directory = await this.startServiceListener(Directory); //we need the server's port for announcement message
 
-
-    //if (this.options.services.includes(Services.StateMap)) {
-      //const stateMap = new StateMap(this);
-      const stateMap = await this.connectToService(StateMap);
-      //const fileTransfer = await this.connectToService(FileTransfer);
-      const directory = await this.connectToService(Directory);
-
-      //fileTransfer.on('dbDownloading', (sourceName, dbPath) => {
-      //  console.log(`Downloading ${sourceName} to ${dbPath}`);
-      //});
-
-      // Fires while the database source is being read
-      //stageLinq.databases.on('dbProgress', (sourceName, total, bytes, percent) => {
-      //  console.debug(`Reading ${sourceName}: ${bytes}/${total} (${Math.ceil(percent)}%)`);
-      //});
-
-      // Fires when the database source has been read and saved to a temporary path.
-      //fileTransfer.on('dbDownloaded', (sourceName, dbPath) => {
-      //  console.log(`Database (${sourceName}) has been downloaded to ${dbPath}`);
-      //});)
-      //const stateMapInfo = await stateMap.listen();
-      //initMsg.services.set('StateMap', stateMapInfo.port);
-      //this.services[StateMap.name] = stateMap;
-      //this._services.set(StateMap.name, stateMap);
-    //}
-/*
-    if (this.options.services.includes(Services.FileTransfer)) {
-      const fileTransfer = new FileTransfer(this);
-      const FileTransferInfo = await fileTransfer.listen();
-      initMsg.services.set('FileTransfer', FileTransferInfo.port);
-      this.services[FileTransfer.name] = fileTransfer;
-      this._services.set(FileTransfer.name, fileTransfer);
-    }
-
-   
-    const directory = new Directory(this);
-    const directoryInfo = await directory.listen();
-    initMsg.services.set('DirectoryService', directoryInfo.port);
-    this.directoryPort = directoryInfo.port;
-    this.services[Directory.name] = directory;
-    this._services.set(Directory.name, directory);
-    */
     return directory.serverInfo
   }
 
-  async connectToService<T extends InstanceType<typeof services.Service>>(ctor: {
+  async startServiceListener<T extends InstanceType<typeof services.Service>>(ctor: {
     new (parent: InstanceType<typeof StageLinqDevices>): T;
-  }): Promise<T> {
-      //assert(this.connection);
-      // FIXME: find out why we need these waits before connecting to a service
-      //await sleep(500);
-
-      const serviceName = ctor.name;
-
-
-      //if (this.services[serviceName]) {
-      //  return this.services[serviceName] as T;
-     // }
-
-      //assert(this.servicePorts.hasOwnProperty(serviceName));
-      //assert(this.servicePorts[serviceName] > 0);
-      //const port = this.servicePorts[serviceName];
-
+  }): Promise<T> {     
+      
+    const serviceName = ctor.name;
       const service = new ctor(this);
 
       await service.listen();
@@ -150,57 +79,16 @@ export class StageLinqDevices extends EventEmitter {
       this.services[serviceName] = service;
       return service;
   }
-/*
-   // Factory function
-   async startServiceListener<T extends InstanceType<typeof services.Service>>(ctor: {
-    new (p_initMsg:ServiceInitMessage): T;
-    }): Promise<T> {
-    //assert(this.connection);
-    // FIXME: find out why we need these waits before connecting to a service
-    //await sleep(500);
-
-    const serviceName = ctor.name;
-
-    if (this.services[serviceName]) {
-      return this.services[serviceName] as T;
-    }
-
-    //assert(this.servicePorts.hasOwnProperty(serviceName));
-    //assert(this.servicePorts[serviceName] > 0);
-    //const port = this.servicePorts[serviceName];
-
-    const service = new ctor();
-
-    await service.listen();
-    //service.on('listening', (serverInfo) =>{
-    //  this.directoryPort = serverInfo.port;
-    this.services[serviceName] = service;
-    //});
-    return service;
-   
-  }
-  */
-  
 
   /**
    * Disconnect from all connected devices
    */
   async disconnectAll() {
-    //for (const device of this.devices.values()) {
-    //  device.networkDevice.disconnect();
-    //}
-    //console.info('closing servers')
+    
     this._services.forEach(service => {
       console.info(`Closing ${service.name} server port ${service.serverInfo.port}`);
-      service.server.close();
-    })
-
-    //const stateMap = this.services[StateMap.name];
-    //const directory = this.services[Directory.name];
-    //this.services
-    //await stateMap.server.close();
-    //await directory.server.close();
-    
+      service.closeServer();
+    });
   }
 
   get databases() {
@@ -223,6 +111,7 @@ export class StageLinqDevices extends EventEmitter {
    * @param connectionInfo Connection info
    * @param networkDevice Network device
    */
+ 
   /*
   private async setupStateMap(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
     // Setup StateMap
