@@ -1,7 +1,7 @@
 # StageLinq - Listener Proof of Concept
 
 ## Description
-This version repredemonstrates a novel way of handling connections with devices and their services on the StageLinq network.
+This branch demonstrates a novel way of handling connections with devices and their services on the StageLinq network.
 Rather than searching out devices via discovery, we are able to have devices initiate connections to the library. As demonstrated, this approach:
 * Greatly reduces complexity. 
 
