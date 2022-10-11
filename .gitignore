@@ -104,3 +104,7 @@ typings/
 .tern-port
 scratch.ts
 log.txt
+log.txt
+.vscode/settings.json
+version
+log.txt

@@ -2,10 +2,9 @@ import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
-//import { StageLinqDevices } from '../network';
 import { ServiceMessage, ServicePorts, MessageId, Tokens, DeviceId } from '../types';
 import { Logger } from '../LogEmitter';
-//import { sleep } from '../utils/sleep';
+import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
 
 export interface DirectoryData {
@@ -38,18 +37,25 @@ export class Directory extends Service<DirectoryData> {
       const token = ctx.read(16);
       const deviceId = new DeviceId(token);
       const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(":");
-        
+      const peer = this.parent.peers.get(deviceId.toString())  
+      
       this.peerDeviceIds[ipAddressPort] = deviceId;
       this.peerSockets.set(deviceId, socket);
 
       switch (id) {
         case MessageId.TimeStamp:
           ctx.seek(16);
-          this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
+          const timeAlive = ctx.readUInt64();
+          this.timeAlive = Number(timeAlive / (1000n * 1000n * 1000n));
           if (ctx.isEOF() === false ){
             ctx.readRemaining();
           }
-          this.sendTimeStampReply(token,socket);
+          if (peer.software.name === 'JM08') {
+            //Logger.debug(peer.software, timeAlive, this.timeAlive, ctx.sizeLeft());
+            //sleep(1000)
+            this.sendTimeStampReply(token,socket);
+          }
+          
           break;
         case MessageId.ServicesAnnouncement:
           const service = ctx.readNetworkStringUTF16();
@@ -106,12 +112,12 @@ export class Directory extends Service<DirectoryData> {
     ctx.writeUInt32(MessageId.TimeStamp);
     ctx.write(token);
     ctx.write(Tokens.Listen);
+    //ctx.writeUInt64(BigInt(this.timeAlive*10000));
     ctx.writeUInt64(0n);
-    
     const message = ctx.getBuffer();
     assert(message.length === 44);
-    
+    await sleep(1400);
     await socket.write(message);
-    Logger.silly(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`)
+    Logger.debug(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`)
   } 
 }
