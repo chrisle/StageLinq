@@ -11,7 +11,9 @@ export class DeviceId {
   protected m_str: string;
   protected m_array: Uint8Array;
 
-  constructor(deviceId: string | Uint8Array) {
+  constructor(deviceId: string);
+  constructor(deficeId: Uint8Array);
+  constructor(deviceId: any) {
     this.m_str = this.forceString(deviceId);
     this.m_array = this.forceArray(deviceId);
 
@@ -28,17 +30,22 @@ export class DeviceId {
   }
 
   //there must be a less hack way to do this...
-  private forceString(deviceId: string | Uint8Array): string {
-    switch (typeof deviceId) {
-      case 'string':
-        return deviceId as string;
-      case 'object':
-        return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-          .exec(Buffer.from(deviceId).toString('hex'))
-          .splice(1)
-          .join('-') as string;
-        //return toStr(deviceId) as string
+  private forceString(deviceId: string): string;
+  private forceString(deviceId: Uint8Array): string;
+  private forceString(deviceId: unknown): string {
+    if (typeof deviceId === 'string') {
+      return deviceId as string;
     }
+
+    if (typeof deviceId === 'object') {
+      return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
+        .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
+        .splice(1)
+        .join('-') as string;
+      //return toStr(deviceId) as string
+    }
+
+    throw new Error(`Hell froze over: deviceId is not a string or Uint8Array`);
   }
 
   private forceArray(deviceId: string | Uint8Array): Uint8Array {
