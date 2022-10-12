@@ -11,6 +11,9 @@ export declare interface Logger {
   on(event: 'any', listener: (...args: any) => void): this;
 }
 
+/**
+ * Simple logger event emitter implemented as a singleton.
+ */
 export class Logger extends EventEmitter {
 
   private logStream: fs.WriteStream = null;
@@ -19,7 +22,7 @@ export class Logger extends EventEmitter {
 
   constructor (_fileName?: string) {
     super();
-    
+
     const fileName = _fileName || 'log.txt';
     this.logStream = fs.createWriteStream(fileName);//, {flags: 'a'});
     const hrTime = process.hrtime();
