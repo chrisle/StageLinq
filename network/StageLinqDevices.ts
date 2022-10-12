@@ -59,7 +59,7 @@ export class StageLinqDevices extends EventEmitter {
   async initialize(): Promise<AddressInfo> {
     await this.startServiceListener(StateMap);
     await this.startServiceListener(FileTransfer);
-    const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
+    const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message
     return directory.serverInfo;
   }
 

@@ -26,7 +26,8 @@ interface SourceAndTrackPath {
 }
 
 /**
- * A player represents a device on the StageLinq network.
+ * Abstraction layer on top of the StageLinq raw data that consolidates and
+ * interprets messages into events that can be more easily used.
  *
  * A player on the network may have up to 4 decks (or "layers" as they're
  * called on the hardware). A player may also be given a player number.

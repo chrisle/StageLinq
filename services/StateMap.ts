@@ -101,6 +101,10 @@ export interface StateData {
   interval?: number;
 }
 
+export declare interface StateMap {
+  on(event: 'message', listener: (stateData: StateData) => void): this;
+}
+
 export class StateMap extends Service<StateData> {
   name: string = 'StateMap';
 

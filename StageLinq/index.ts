@@ -2,13 +2,13 @@ import { announce, createDiscoveryMessage, StageLinqListener, unannounce } from 
 import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
-import { Action, ActingAsDevice, StageLinqOptions, DeviceId } from '../types';
+import { Action, ActingAsDevice, StageLinqOptions, DeviceId, ConnectionInfo } from '../types';
 //import { sleep } from '../utils';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
   actingAs: ActingAsDevice.NowPlaying,
-  downloadDbSources: true,
+  downloadDbSources: false,
 };
 
 /**
@@ -41,10 +41,8 @@ export class StageLinq extends EventEmitter {
       const deviceId = new DeviceId(connectionInfo.token);
       this.devices._peers[connectionInfo.address] = deviceId;
 
-      if (
-        !this.devices.peers.has(deviceId.toString()) ||
-        this.devices.peers.get(deviceId.toString()).port !== connectionInfo.port
-      ) {
+
+      if (!this.devices.peers.has(deviceId.toString()) || this.devices.peers.get(deviceId.toString()).port !== connectionInfo.port) {
         this.devices.peers.set(deviceId.toString(), connectionInfo);
       }
     });
@@ -62,6 +60,10 @@ export class StageLinq extends EventEmitter {
     } catch (e) {
       throw new Error(e);
     }
+  }
+
+  private isPlayer(connectionInfo: ConnectionInfo) {
+    return (connectionInfo.software.name === 'JP13')
   }
 
   get databases() {
