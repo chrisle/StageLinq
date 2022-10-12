@@ -20,7 +20,7 @@ interface FileTransferServiceData extends ServiceData {
   source?: Source
 }
 
-type DeviceSources = {  
+type DeviceSources = {
   [key: string]: Source;
 }
 
@@ -51,11 +51,11 @@ export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
   public services: Map<string, FileTransferServiceData> = new Map();
   public sources: Map<string, Source> = new Map();
-  
+
   public deviceSources: Map<string, DeviceSources> = new Map();
 
   async init() {}
-  
+
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
     assert((socket));
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
@@ -63,7 +63,7 @@ export class FileTransfer extends Service<FileTransferData> {
   }
 
   protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<FileTransferData> {
-    
+
     const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
     const deviceId = this.peerDeviceIds[ipAddressPort];
 
@@ -80,7 +80,7 @@ export class FileTransfer extends Service<FileTransferData> {
       const id = p_ctx.readUInt32();
       assert(id === 0x07d2);
       assert(p_ctx.readUInt32() === 0);
-      
+
       return {
         id: MessageId.TimeCode,
         message: {
@@ -106,12 +106,12 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.readUInt8() === 0x1);
         assert(p_ctx.readUInt8() === 0x1);
         assert(p_ctx.isEOF());
-        
+
         if (sources.length) {
           Logger.debug(`getting sources for `, deviceId.toString());
           this.getSources(sources, socket);
         }
-       
+
         return {
           id: messageId,
           message: {
@@ -126,7 +126,7 @@ export class FileTransfer extends Service<FileTransferData> {
         // Last 4 bytes (FAT32) indicate size of file
         p_ctx.seek(49);
         const size = p_ctx.readUInt32();
-        
+
         return {
           id: messageId,
           message: {
@@ -138,7 +138,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
       case MessageId.EndOfMessage: {
         // End of result indication?
-        
+
         return {
           id: messageId,
           message: null,
@@ -201,7 +201,7 @@ export class FileTransfer extends Service<FileTransferData> {
           const msg = p_ctx.readRemainingAsNewBuffer().toString('hex');
           Logger.debug(msg)
         }
-       
+
         return {
           id: messageId,
           socket: socket,
@@ -221,11 +221,24 @@ export class FileTransfer extends Service<FileTransferData> {
     if (p_data && p_data.id === MessageId.FileTransferChunk && this.receivedFile) {
       assert(this.receivedFile.sizeLeft() >= p_data.message.size);
       this.receivedFile.write(p_data.message.data);
-    } 
+    }
   }
 
+  /**
+   * Reads a file on the device and returns a buffer.
+   *
+   * >> USE WITH CAUTION! <<
+   *
+   * Downloading seems eat a lot of CPU on the device and might cause it to
+   * be unresponsive while downloading big files. Also, it seems that transfers
+   * top out at around 10MB/sec.
+   *
+   * @param p_location Location of the file on the device.
+   * @param socket Socket.
+   * @returns Contents of the file.
+   */
   async getFile(p_location: string, socket: Socket): Promise<Uint8Array> {
-   
+
     assert(this.receivedFile === null);
     await this.requestFileTransferId(p_location, socket);
     const txinfo = await this.waitForMessage(MessageId.FileTransferId);
@@ -240,7 +253,7 @@ export class FileTransfer extends Service<FileTransferData> {
         return;
       }
       await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1, socket);
-      
+
       try {
         await new Promise(async (resolve, reject) => {
           setTimeout(() => {
@@ -276,23 +289,23 @@ export class FileTransfer extends Service<FileTransferData> {
     this.receivedFile = null;
     return buf;
   }
-  
+
   async getSources(sources: string[], socket: Socket): Promise<Source[]> {
     const result: Source[] = [];
     let devices: DeviceSources = {}
-      
+
     const ipAddressPort:IpAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
     const msgDeviceId = this.peerDeviceIds[ipAddressPort];
-    
+
     for (const source of sources) {
       //try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
       const databases = [`/${source}/Engine Library/Database2/m.db`, `/${source}/Engine Library/m.db`];
       for (const database of databases) {
         await this.requestStat(database, socket);
         const fstatMessage = await this.waitForMessage(MessageId.FileStat);
-        
+
         if (fstatMessage.size > 0) {
-          
+
           const thisSource: Source = {
             name: source,
             database: {
@@ -302,18 +315,18 @@ export class FileTransfer extends Service<FileTransferData> {
           }
 
           result.push(thisSource);
-          
+
           devices[source] = thisSource;
-          
+
           break;
         }
       }
     }
-   
+
     await this.deviceSources.set(msgDeviceId.toString(), devices);
     await sleep(500);
     this.downloadDb(msgDeviceId.toString(), socket);
-    
+
     return result;
   }
 
@@ -375,16 +388,16 @@ export class FileTransfer extends Service<FileTransferData> {
     await this.writeWithLength(ctx, socket);
   }
 
-  async downloadDb(deviceId: string, socket: Socket) { // sourceId: string, service: FileTransfer, _source: Source) {
+  async downloadDb(deviceId: string, socket: Socket) {
     //console.info(source);
     Logger.debug(`downloadDb request for ${deviceId}`);
     const deviceSources = await this.deviceSources.get(deviceId);
-   
+
    for (const sourceName in deviceSources) {
-    
+
     const source = deviceSources[sourceName];
     const dbPath = getTempFilePath(`${deviceId}/${sourceName}/m.db`);
-   
+
     Logger.info(`Reading database ${deviceId}/${source.name}`);
     this.emit('dbDownloading', deviceId, dbPath);
 
@@ -392,7 +405,7 @@ export class FileTransfer extends Service<FileTransferData> {
       this.emit('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
       Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
     });
-    
+
     // Save database to a file
     const file = await this.getFile(source.database.location, socket);
     Logger.info(`Saving ${deviceId}/${sourceName} to ${dbPath}`);
@@ -401,9 +414,9 @@ export class FileTransfer extends Service<FileTransferData> {
     Logger.info(`Downloaded ${deviceId}/${sourceName} to ${dbPath}`);
     this.emit('dbDownloaded', deviceId, dbPath);
   }
-   
+
 }
-    
+
 /*
   getDbPath(dbSourceName?: string) {
     if (!this.sources.size)
