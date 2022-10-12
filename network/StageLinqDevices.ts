@@ -23,6 +23,15 @@ interface StageLinqDevice {
 };
 */
 
+async function testDownloadFile(stageLinq: InstanceType<typeof StageLinqDevices>) {
+  const trackNetworkPath = '/HONUSZ (USB 1)/Contents/Space Food/Stay In/14786650_Dark Force_(Original Mix).mp3'
+  const deviceId = new DeviceId('4be14112-5ead-4848-a07d-b37ca8a7220e')
+      
+  const fileName = trackNetworkPath.split('/').pop(); 
+      
+  const buff = stageLinq.downloadFile(deviceId.toString(), trackNetworkPath)
+}
+
 export declare interface StageLinqDevices {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
@@ -64,18 +73,14 @@ export class StageLinqDevices extends EventEmitter {
     const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
     
     stateMap.on('message', (data) => {
-      this.emit('message', data)
+      if (data && data.messsage && data.message.socket) {
+        this.emit('message', data)
+      } 
     });
     
     fileTransfer.on('dbDownloaded', (sourcename, dbPath) => {
       Logger.debug(`received ${sourcename} ${dbPath}`);
-      const trackNetworkPath = '/HONUSZ (USB 1)/Contents/Space Food/Stay In/14786650_Dark Force_(Original Mix).mp3'
-      const deviceId = new DeviceId('4be14112-5ead-4848-a07d-b37ca8a7220e')
-      
-      //const trackPath = trackNetworkPath.substring(42);
-      const fileName = trackNetworkPath.split('/').pop(); 
-      
-      const buff = this.downloadFile(deviceId.toString(), trackNetworkPath)
+      testDownloadFile(this);
     });
 
     return directory.serverInfo;

@@ -57,6 +57,7 @@ async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: st
 //3536b2f3-c80a-4322-89d4-2aceccb60cfb
 //d3fea2b3-a934-47c9-a9a0-1a242db624fe
 
+/*
 let fltxBlock = false;
 
 async function downloadFileTest(stageLinq: StageLinq, trackNetworkPath: string, dest: string) {
@@ -87,6 +88,7 @@ async function downloadFileTest(stageLinq: StageLinq, trackNetworkPath: string, 
   }
   
 }
+*/
 
 
 async function main() {
@@ -187,27 +189,28 @@ async function main() {
   });
 
   // Fires when StageLinq receives messages from a device.
-  stageLinq.devices.on('message', ( async (data) => {
-    //const msg = data.message.json
-    //  ? JSON.stringify(data.message.json)
-    //  : data.message.interval;
-    //console.debug(`${socket.remoteAddress}:${socket.remotePort} ` +
-    //  `${data.message.name} => ${msg}`);
+  stageLinq.devices.on('message',  async (data) => { 
+    const msg = data.message.json
+      ? JSON.stringify(data.message.json)
+      : data.message.interval;
+    console.debug(`${data.message.socket.remoteAddress}:${data.message.socket.remotePort} ` +
+      `${data.message.name} => ${msg}`);
     
     //console.dir(data);
     
-    if (data && data.socket && data.message && data.message.json ) { //&& typeof data.message !== "object") {
+    //if (data && data.socket && data.message && data.message.json ) { //&& typeof data.message !== "object") {
       //console.debug(`${data.socket.remoteAddress}:${data.socket.remotePort} ${data.message.name} ${JSON.stringify(data.message.json)}`);
-      if (data.message.name.substring(data.message.name.length -16,data.message.name.length) === "TrackNetworkPath" && data.message.json.string !== "") {
+     // if (data.message.name.substring(data.message.name.length -16,data.message.name.length) === "TrackNetworkPath" && data.message.json.string !== "") {
         //console.log(data.message.json.string);
         //console.log(data.message.json.string.substring(6,42),data.message.json.string.substring(42));
       //  await downloadFileTest(stageLinq, data.message.json.string, path.resolve(os.tmpdir()));
-      }
-    }
+      //}
+   // }
 
     //if (data.message.name.substring()) {}
     
   });
+  
 
   // Fires when the state of a device has changed.
   stageLinq.devices.on('stateChanged', (status) => {
