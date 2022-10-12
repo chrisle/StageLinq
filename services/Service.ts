@@ -56,7 +56,8 @@ export abstract class Service<T> extends EventEmitter {
 	public serverStatus: boolean = false;
 	
 	protected peerDeviceIds: Record<IpAddressPort, DeviceId> = {}
-	protected peerSockets: Map<DeviceId, Socket> = new Map();
+	public peerSockets: Map<DeviceId, Socket> = new Map();
+	public _peerSockets: Record<string, Socket> = {};
 	protected peerBuffers: PeerBuffers = {};
 	
 	private msgId: number = 0; //only used fro debugging
@@ -139,6 +140,8 @@ export abstract class Service<T> extends EventEmitter {
 						ctx.readUInt16(); //read port, though we don't need it
 						
 						this.peerDeviceIds[ipAddressPort] = deviceId;
+						//this.peerSockets.set(deviceId,socket);
+						this._peerSockets[deviceId.toString()] = socket;
 						
 						Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`);
 						

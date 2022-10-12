@@ -44,6 +44,7 @@ interface FileTransferProgress {
 
 export declare interface FileTransfer {
   on(event: 'fileTransferProgress', listener: (progress: FileTransferProgress) => void): this;
+  on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
 }
 
 export class FileTransfer extends Service<FileTransferData> {
@@ -127,6 +128,7 @@ export class FileTransfer extends Service<FileTransferData> {
         p_ctx.seek(49);
         const size = p_ctx.readUInt32();
 
+        //Logger.debug(size);
         return {
           id: messageId,
           message: {
@@ -152,6 +154,7 @@ export class FileTransfer extends Service<FileTransferData> {
         const filesize = p_ctx.readUInt32();
         const id = p_ctx.readUInt32();
 
+        //Logger.debug(id, filesize);
         return {
           id: messageId,
           socket: socket,
@@ -168,7 +171,8 @@ export class FileTransfer extends Service<FileTransferData> {
         const chunksize = p_ctx.readUInt32();
         assert(chunksize === p_ctx.sizeLeft());
         assert(p_ctx.sizeLeft() <= CHUNK_SIZE);
-
+        
+        //Logger.debug(offset, chunksize);
         return {
           id: messageId,
           socket: socket,
@@ -183,10 +187,10 @@ export class FileTransfer extends Service<FileTransferData> {
       case MessageId.Unknown0: {
         //sizeLeft() of 6 means its not an offline analyzer
         //FIXME actually parse these messages
-        if (p_ctx.sizeLeft() >= 5) {
+        //if (p_ctx.sizeLeft() >= 5) {
           Logger.debug(`requesting sources from `, deviceId.toString());
           this.requestSources(socket);
-        }
+        //}
 
         return {
           id: messageId,
@@ -219,7 +223,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
   protected messageHandler(p_data: ServiceMessage<FileTransferData>): void {
     if (p_data && p_data.id === MessageId.FileTransferChunk && this.receivedFile) {
-      assert(this.receivedFile.sizeLeft() >= p_data.message.size);
+      //assert(this.receivedFile.sizeLeft() >= p_data.message.size);
       this.receivedFile.write(p_data.message.data);
     }
   }
@@ -242,11 +246,12 @@ export class FileTransfer extends Service<FileTransferData> {
     assert(this.receivedFile === null);
     await this.requestFileTransferId(p_location, socket);
     const txinfo = await this.waitForMessage(MessageId.FileTransferId);
-
+    console.dir(txinfo);
     if (txinfo) {
       this.receivedFile = new WriteContext({ size: txinfo.size });
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
       const total = parseInt(txinfo.size);
+      //Logger.debug(totalChunks, total)
 
       if (total === 0) {
         Logger.warn(`${p_location} doesn't exist or is a streaming file`);
@@ -269,6 +274,7 @@ export class FileTransfer extends Service<FileTransferData> {
               bytesDownloaded: bytesDownloaded,
               percentComplete: percentComplete
             })
+            //Logger.info(`sizeleft ${this.receivedFile.sizeLeft()} total ${txinfo.size} total ${total}`);
             Logger.info(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
             await sleep(200);
           }

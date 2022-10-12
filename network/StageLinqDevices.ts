@@ -12,7 +12,9 @@ import {
 //import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
 import * as services from '../services';
-import { AddressInfo } from 'net';
+import { AddressInfo, Socket } from 'net';
+import { assert } from 'console';
+import { Logger } from '../LogEmitter';
 
 /*
 interface StageLinqDevice {
@@ -26,7 +28,7 @@ export declare interface StageLinqDevices {
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
-  on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
+  on(event: 'message', listener: ( message: ServiceMessage<StateData>) => void): this;
   on(event: 'ready', listener: () => void): this;
 }
 
@@ -57,9 +59,25 @@ export class StageLinqDevices extends EventEmitter {
    * @returns
    */
   async initialize(): Promise<AddressInfo> {
-    await this.startServiceListener(StateMap);
-    await this.startServiceListener(FileTransfer);
+    const stateMap = await this.startServiceListener(StateMap);
+    const fileTransfer = await this.startServiceListener(FileTransfer);
     const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
+    
+    stateMap.on('message', (data) => {
+      this.emit('message', data)
+    });
+    
+    fileTransfer.on('dbDownloaded', (sourcename, dbPath) => {
+      Logger.debug(`received ${sourcename} ${dbPath}`);
+      const trackNetworkPath = '/HONUSZ (USB 1)/Contents/Space Food/Stay In/14786650_Dark Force_(Original Mix).mp3'
+      const deviceId = new DeviceId('4be14112-5ead-4848-a07d-b37ca8a7220e')
+      
+      //const trackPath = trackNetworkPath.substring(42);
+      const fileName = trackNetworkPath.split('/').pop(); 
+      
+      const buff = this.downloadFile(deviceId.toString(), trackNetworkPath)
+    });
+
     return directory.serverInfo;
   }
 
@@ -89,13 +107,21 @@ export class StageLinqDevices extends EventEmitter {
     return this._databases;
   }
 
-  /*
-  async downloadFile(deviceId: string, path: string) {
-    const device = this.devices.get(deviceId);
-    const file = await device.fileTransferService.getFile(path);
+  
+  async downloadFile(_deviceId: string, path: string) {
+    const service = this.services["FileTransfer"] as FileTransfer
+    assert(service);
+    const deviceId = new DeviceId(_deviceId);
+    
+    //Logger.debug(service.peerSockets.entries());
+    const socket = service._peerSockets[deviceId.toString()];
+    //Logger.debug(socket);
+    
+    //const file = await service.getFile(`net://${deviceId}${path}`,socket)
+    const file = await service.getFile(path,socket);
     return file;
   }
-  */
+  
 
   ////////////////////////////////////////////////////////////////////////////
 

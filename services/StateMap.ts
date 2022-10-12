@@ -95,6 +95,7 @@ const MAGIC_MARKER_JSON = 0x00000000;
 export interface StateData {
   name?: string;
   client?: string;
+  socket?: Socket;
   json?: {
     type: number;
     string?: string;
@@ -156,6 +157,7 @@ export class StateMap extends Service<StateData> {
               client: [socket.remoteAddress,socket.remotePort].join(":"),
               json: json,
             },
+            socket: socket,
           };
         } catch(err) {
           Logger.error(this.name, jsonString, err);
@@ -171,6 +173,7 @@ export class StateMap extends Service<StateData> {
             name: name,
             client: [socket.remoteAddress,socket.remotePort].join(":"),
             interval: interval,
+          socket: socket,
           },
         };
       }
@@ -184,7 +187,7 @@ export class StateMap extends Service<StateData> {
 
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
     if (p_data && p_data.message.json) { 
-      Logger.info(
+      Logger.silly(
        `${p_data.message.client} ${p_data.message.name} => ${
          p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
        }`
