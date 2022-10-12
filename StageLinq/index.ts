@@ -2,7 +2,8 @@ import { announce, createDiscoveryMessage, StageLinqListener, unannounce } from 
 import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
-import { Action, ActingAsDevice, StageLinqOptions } from '../types';
+import { Action, ActingAsDevice, StageLinqOptions, DeviceId } from '../types';
+//import { sleep } from '../utils';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -32,10 +33,19 @@ export class StageLinq extends EventEmitter {
    */
   async connect() {
     this.listener = new StageLinqListener();
+    const address = await this.devices.initialize();
     const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
+    
+    msg.port = address.port;
     await announce(msg);
     this.listener.listenForDevices(async (connectionInfo) => {
-      await this.devices.handleDevice(connectionInfo);
+      
+      const deviceId = new DeviceId(connectionInfo.token);
+      this.devices._peers[connectionInfo.address] = deviceId;
+
+      if (!this.devices.peers.has(deviceId.toString()) || this.devices.peers.get(deviceId.toString()).port !== connectionInfo.port) {
+        this.devices.peers.set(deviceId.toString(), connectionInfo);
+      }
     });
   }
 
@@ -44,6 +54,7 @@ export class StageLinq extends EventEmitter {
    */
   async disconnect() {
     try {
+      Logger.warn('disconnecting');
       this.devices.disconnectAll();
       const msg = createDiscoveryMessage(Action.Logout, this.options.actingAs)
       await unannounce(msg);

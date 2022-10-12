@@ -1,9 +1,12 @@
+import { Socket } from 'net';
 import { DiscoveryMessageOptions } from '../network';
+
 
 export * from './common';
 export * from './player';
 export * from './tokens';
 export * from './models';
+export * from './DeviceId';
 
 export interface DiscoveryMessage {
 	token: Uint8Array;
@@ -16,6 +19,11 @@ export interface DiscoveryMessage {
 	port: number;
 }
 
+export interface ConnectionInfo extends DiscoveryMessage {
+	address: IpAddress;
+	addressPort?: string;
+}
+
 export interface ServicePorts {
 	[key: string]: number;
 }
@@ -23,6 +31,7 @@ export interface ServicePorts {
 export interface ServiceMessage<T> {
 	id: number;
 	message: T;
+	socket?: Socket;
 }
 
 export interface Source {
@@ -40,9 +49,13 @@ export interface FileTransferInfo {
 
 // TODO: Maybe some kind of validation?
 export type IpAddress = string;
+export type IpAddressPort = string;
 
-export interface ConnectionInfo extends DiscoveryMessage {
-	address: IpAddress;
+
+export enum Services  {
+	StateMap =  "StateMap",
+	FileTransfer = "FileTransfer",
+	Directory = "DirectoryService",
 }
 
 
@@ -50,4 +63,5 @@ export interface StageLinqOptions {
 	maxRetries?: number;
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
+	services?: Services[];
 }

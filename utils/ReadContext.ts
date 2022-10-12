@@ -33,6 +33,18 @@ export class ReadContext extends Context {
 		const newArrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.length);
 		return Buffer.from(newArrayBuffer);
 	}
+	
+	readRemainingAsNewArrayBuffer(): ArrayBuffer {
+		const view = this.readRemaining();
+		const newArrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.length);
+		return newArrayBuffer;
+	}
+	
+	readRemainingAsNewCtx(): ReadContext {
+		
+		const newArrayBuffer = this.buffer.slice(this.pos, this.pos + this.sizeLeft());
+		return new ReadContext(newArrayBuffer,false);
+	}
 
 	getString(p_bytes: number): string {
 		const buf = this.read(p_bytes);
@@ -111,4 +123,40 @@ export class ReadContext extends Context {
 		assert.fail(`Read outside buffer`);
 		return null;
 	}
+
+	/*
+	fastForward(ctx: ReadContext, targetString: string, msgId: number): ReadContext {
+	
+	assert(targetString.length % 2 === 0);
+	const shiftLeft = (collection:Uint8Array, value:any) => {
+		for (let i = 0; i < collection.length - 1; i++) {
+		collection[i] = collection[i + 1]; // Shift left
+		}
+		collection[collection.length - 1] = value; // Place new value at tail
+		return collection;
+	}
+
+	const ctxSize = ctx.sizeLeft();
+	const bufferSize = (targetString.length / 2);
+	let checkBufferArray = new Uint8Array(bufferSize);
+	checkBufferArray.fill(0);
+	let count = 0;
+
+	while (Buffer.from(checkBufferArray).toString('hex') !== targetString) {
+		shiftLeft(checkBufferArray, ctx.read(1));
+		count++
+		if (ctx.isEOF()) {
+		ctx.seek(0-ctxSize)
+		Logger.debug(`[${msgId}] fastForwarded checked ${count} bytes, returned original`);
+		return ctx
+		}
+	} 
+	ctx.seek(0-bufferSize);
+	if (count !== bufferSize) {
+		Logger.debug(`[${msgId}] fastForwarded ${count} bytes`);
+	}
+	return ctx
+	};
+	*/
 }
+

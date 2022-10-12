@@ -1,17 +1,40 @@
 import { strict as assert } from 'assert';
-import { StageLinqValue } from '../types';
+import { 
+  MessageId, 
+  StageLinqValue, 
+  //StageLinqValueObj, 
+} from '../types';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
-import type { ServiceMessage } from '../types';
-// import { Logger } from '../LogEmitter';
-
+import type { ServiceMessage, DeviceId } from '../types';
+import { Socket } from 'net';
+import { Logger } from '../LogEmitter';
+  
 export const States = [
   // Mixer
   StageLinqValue.MixerCH1faderPosition,
   StageLinqValue.MixerCH2faderPosition,
+  StageLinqValue.MixerCH3faderPosition,
+  StageLinqValue.MixerCH4faderPosition,
   StageLinqValue.MixerCrossfaderPosition,
+  StageLinqValue.MixerChannelAssignment1,
+  StageLinqValue.MixerChannelAssignment2,
+  StageLinqValue.MixerChannelAssignment3,
+  StageLinqValue.MixerChannelAssignment4,
+  StageLinqValue.MixerNumberOfChannels,
 
+  StageLinqValue.ClientPreferencesLayerA,
+  StageLinqValue.ClientPreferencesPlayer,
+  StageLinqValue.ClientPreferencesPlayerJogColorA,
+  StageLinqValue.ClientPreferencesPlayerJogColorB,
+  StageLinqValue.EngineDeck1DeckIsMaster,
+  StageLinqValue.EngineDeck2DeckIsMaster,
+  
+  StageLinqValue.EngineMasterMasterTempo,
+  
+  StageLinqValue.EngineSyncNetworkMasterStatus,
+ 
   // Decks
   StageLinqValue.EngineDeck1Play,
   StageLinqValue.EngineDeck1PlayState,
@@ -61,19 +84,6 @@ export const States = [
   StageLinqValue.EngineDeck4CurrentBPM,
   StageLinqValue.EngineDeck4ExternalMixerVolume,
 
-  StageLinqValue.ClientPreferencesLayerA,
-  StageLinqValue.ClientPreferencesPlayer,
-  StageLinqValue.ClientPreferencesPlayerJogColorA,
-  StageLinqValue.ClientPreferencesPlayerJogColorB,
-  StageLinqValue.EngineDeck1DeckIsMaster,
-  StageLinqValue.EngineDeck2DeckIsMaster,
-  StageLinqValue.EngineMasterMasterTempo,
-  StageLinqValue.EngineSyncNetworkMasterStatus,
-  StageLinqValue.MixerChannelAssignment1,
-  StageLinqValue.MixerChannelAssignment2,
-  StageLinqValue.MixerChannelAssignment3,
-  StageLinqValue.MixerChannelAssignment4,
-  StageLinqValue.MixerNumberOfChannels,
 
 ];
 
@@ -83,7 +93,8 @@ const MAGIC_MARKER_INTERVAL = 0x000007d2;
 const MAGIC_MARKER_JSON = 0x00000000;
 
 export interface StateData {
-  name: string;
+  name?: string;
+  client?: string;
   json?: {
     type: number;
     string?: string;
@@ -93,28 +104,62 @@ export interface StateData {
 }
 
 export class StateMap extends Service<StateData> {
+  name: string = "StateMap";
+
   async init() {
-    for (const state of States) {
-      await this.subscribeState(state, 0);
-    }
   }
 
-  protected parseData(p_ctx: ReadContext): ServiceMessage<StateData> {
-    const marker = p_ctx.getString(4);
-    assert(marker === MAGIC_MARKER);
+  public async subscribe(socket: Socket) {
+    
+    Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
+    
+    for (const state of States) {
+      await this.subscribeState(state, 0, socket);
+    }
 
+    //Use this option to subscribe to ALL possible states
+    //Warning, it seems to make mixer not return states
+    //
+    //const keys = Object.keys(StageLinqValueObj);
+    //const values = keys.map(key => Reflect.get(StageLinqValueObj,key))
+    //for (const value of values) {
+    // await this.subscribeState(value, 0, socket);
+    //}    
+  }
+
+  
+  protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
+    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    this.subscribe(socket);
+    return
+  }
+
+  protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
+    
+    const marker = p_ctx.getString(4);
+    if (marker !== MAGIC_MARKER) {
+      Logger.error(assert(marker !== MAGIC_MARKER));
+    }
+    assert(marker === MAGIC_MARKER);
     const type = p_ctx.readUInt32();
     switch (type) {
       case MAGIC_MARKER_JSON: {
         const name = p_ctx.readNetworkStringUTF16();
-        const json = JSON.parse(p_ctx.readNetworkStringUTF16());
-        return {
-          id: MAGIC_MARKER_JSON,
-          message: {
-            name: name,
-            json: json,
-          },
-        };
+        let jsonString = "";
+        try {
+          jsonString = p_ctx.readNetworkStringUTF16();
+          const json = JSON.parse(jsonString);
+          return {
+            id: MAGIC_MARKER_JSON,
+            message: {
+              name: name,
+              client: [socket.remoteAddress,socket.remotePort].join(":"),
+              json: json,
+            },
+          };
+        } catch(err) {
+          Logger.error(this.name, jsonString, err);
+        }
       }
 
       case MAGIC_MARKER_INTERVAL: {
@@ -124,28 +169,31 @@ export class StateMap extends Service<StateData> {
           id: MAGIC_MARKER_INTERVAL,
           message: {
             name: name,
+            client: [socket.remoteAddress,socket.remotePort].join(":"),
             interval: interval,
           },
         };
       }
 
-      default:
-        break;
+      default: 
+      break;
     }
     assert.fail(`Unhandled type ${type}`);
     return null;
   }
 
-  protected messageHandler(_: ServiceMessage<StateData>): void {
-    // Logger.debug(
-    //   `${p_data.message.name} => ${
-    //     p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
-    //   }`
-    // );
+  protected messageHandler(p_data: ServiceMessage<StateData>): void {
+    if (p_data && p_data.message.json) { 
+      Logger.info(
+       `${p_data.message.client} ${p_data.message.name} => ${
+         p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
+       }`
+     );
+    }
   }
 
-  private async subscribeState(p_state: string, p_interval: number) {
-    // Logger.log(`Subscribe to state '${p_state}'`);
+  private async subscribeState(p_state: string, p_interval: number, socket: Socket) {
+    
     const getMessage = function (): Buffer {
       const ctx = new WriteContext();
       ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -156,15 +204,11 @@ export class StateMap extends Service<StateData> {
     };
 
     const message = getMessage();
-    {
-      const ctx = new WriteContext();
-      ctx.writeUInt32(message.length);
-      const written = await this.connection.write(ctx.getBuffer());
-      assert(written === 4);
-    }
-    {
-      const written = await this.connection.write(message);
-      assert(written === message.length);
-    }
+    
+    const ctx = new WriteContext();
+    ctx.writeUInt32(message.length);
+    ctx.write(message)
+    const buffer = ctx.getBuffer();
+    await socket.write(buffer);
   }
 }

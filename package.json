@@ -13,6 +13,8 @@
 	"license": "GNU GPLv3",
 	"main": "index.ts",
 	"dependencies": {
+		"@types/filesystem": "^0.0.32",
+		"@types/uuid": "^8.3.4",
 		"better-sqlite3": "^7.5.0",
 		"console-stamp": "^3.0.3",
 		"file-type": "^16.5.3",

@@ -1,10 +1,11 @@
-import { ActingAsDevice, PlayerStatus } from '../types';
+import { ActingAsDevice, PlayerStatus, StageLinqOptions, Services } from '../types';
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+//import * as fs from 'fs';
+//import * as os from 'os';
+//import * as path from 'path';
+
 
 require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
@@ -37,6 +38,8 @@ function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
  * @param status Player to download the current song from.
  * @param dest Path to save file to.
  */
+
+/*
 async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: string) {
   try {
     const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
@@ -48,12 +51,13 @@ async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: st
     console.error(`Could not download ${status.trackPathAbsolute}`);
   }
 }
+*/
 
 async function main() {
 
   console.log('Starting CLI');
 
-  const stageLinqOptions = {
+  const stageLinqOptions: StageLinqOptions = {
 
     // If set to true, download the source DBs in a temporary location.
     // (default: true)
@@ -65,26 +69,35 @@ async function main() {
 
     // What device to emulate on the network.
     // (default: Now Playing)
-    actingAs: ActingAsDevice.NowPlaying
+    actingAs: ActingAsDevice.NowPlaying,
+
+    services: [
+      Services.StateMap,
+      Services.FileTransfer,
+      Services.Directory,
+    ],
   }
 
-  const stageLinq = new StageLinq(stageLinqOptions);
+  const stageLinq = new StageLinq(stageLinqOptions);  
 
-  // Setup how you want to handle logs coming from StageLinq
   stageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
   });
   stageLinq.logger.on('warn', (...args: any) => {
     console.warn(...args);
+    args.push("\n");
   });
   stageLinq.logger.on('info', (...args: any) => {
     console.info(...args);
+    args.push("\n");
   });
   stageLinq.logger.on('log', (...args: any) => {
     console.log(...args);
+    args.push("\n");
   });
   stageLinq.logger.on('debug', (...args: any) => {
     console.debug(...args);
+    args.push("\n");
   });
   // Note: Silly is very verbose!
   // stageLinq.logger.on('silly', (...args: any) => {
@@ -129,7 +142,7 @@ async function main() {
     }
 
     // Example of how to download the actual track from the media.
-    await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), 'media'));
+    //await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), 'media'));
   });
 
   // Fires when a track has started playing.
@@ -158,7 +171,9 @@ async function main() {
   try {
     process.on('SIGINT', async function () {
       console.info('... exiting');
+      
       // Ensure SIGINT won't be impeded by some error
+
       try {
         await stageLinq.disconnect();
       } catch (err: any) {

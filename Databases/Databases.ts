@@ -1,9 +1,9 @@
+
 import { ConnectionInfo, Source } from '../types';
 import { EventEmitter } from 'stream';
 import { FileTransfer } from '../services';
 import { getTempFilePath } from '../utils';
 import { Logger } from '../LogEmitter';
-import { NetworkDevice } from '../network';
 import * as fs from 'fs';
 
 export declare interface Databases {
@@ -42,6 +42,7 @@ export class Databases extends EventEmitter {
   /**
    * Download databases from this network source.
    */
+  
   async downloadDb(sourceId: string, service: FileTransfer, source: Source) {
     const dbPath = getTempFilePath(`${sourceId}/m.db`);
 

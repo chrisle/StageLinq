@@ -9,7 +9,7 @@ import { Logger } from '../LogEmitter';
 import { networkInterfaces } from 'os';
 import { strict as assert } from 'assert';
 import { subnet } from 'ip';
-import { WriteContext } from '../utils/WriteContext';
+import { WriteContext } from '../utils';
 import type { DiscoveryMessage } from '../types';
 
 function findBroadcastIPs(): string[] {
@@ -27,7 +27,6 @@ function findBroadcastIPs(): string[] {
   }
   return ips;
 }
-
 
 let announceClient: UDPSocket | null = null;
 let announceTimer: NodeJS.Timer | null = null;
@@ -70,8 +69,10 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
         reject(new Error('Failed to send announcement'));
       }, CONNECT_TIMEOUT);
 
+      const address = announceClient.address()
+      
       announceClient.send(p_message, LISTEN_PORT, p_ip, () => {
-        // Logger.log('UDP message sent to ' + p_ip);
+        Logger.silly('UDP message sent to ' + p_ip, ' from port ' + address.port);
         resolve();
       });
     });
@@ -89,7 +90,7 @@ export async function unannounce(message: DiscoveryMessage): Promise<void> {
   writeDiscoveryMessage(ctx, message);
   const msg = new Uint8Array(ctx.getBuffer());
   await broadcastMessage(msg);
-  // Logger.info("Unannounced myself");
+  Logger.debug("Unannounced myself");
 }
 
 export async function announce(message: DiscoveryMessage): Promise<void> {
@@ -108,26 +109,27 @@ export async function announce(message: DiscoveryMessage): Promise<void> {
   await broadcastMessage(msg);
 
   announceTimer = setInterval(broadcastMessage, ANNOUNCEMENT_INTERVAL, msg);
-  Logger.info("Announced myself");
+  Logger.debug(`Announced myself on ${message.port}`);
 }
 
 export interface DiscoveryMessageOptions {
   name: string;
   version: string;
   source: string;
-  token: Uint8Array;
+  token: Uint8Array; //FIXME make this DeviceId
+  port?: number
 };
 
 export function createDiscoveryMessage(action: string, discoveryMessageOptions: DiscoveryMessageOptions) {
   const msg: DiscoveryMessage = {
     action: action,
-    port: 0,
+    port: discoveryMessageOptions.port || 0,
     software: {
       name: discoveryMessageOptions.name,
       version: discoveryMessageOptions.version
     },
     source: discoveryMessageOptions.source,
-    token: discoveryMessageOptions.token
+    token: discoveryMessageOptions.token //FIXME make this DeviceId
   };
   return msg;
 }
