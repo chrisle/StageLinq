@@ -8,14 +8,13 @@ import { Action, ActingAsDevice, StageLinqOptions, DeviceId } from '../types';
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
   actingAs: ActingAsDevice.NowPlaying,
-  downloadDbSources: true
+  downloadDbSources: true,
 };
 
 /**
  * Main StageLinq class.
  */
 export class StageLinq extends EventEmitter {
-
   devices: StageLinqDevices;
   logger: Logger = Logger.instance;
   options: StageLinqOptions;
@@ -35,15 +34,17 @@ export class StageLinq extends EventEmitter {
     this.listener = new StageLinqListener();
     const address = await this.devices.initialize();
     const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
-    
+
     msg.port = address.port;
     await announce(msg);
     this.listener.listenForDevices(async (connectionInfo) => {
-      
       const deviceId = new DeviceId(connectionInfo.token);
       this.devices._peers[connectionInfo.address] = deviceId;
 
-      if (!this.devices.peers.has(deviceId.toString()) || this.devices.peers.get(deviceId.toString()).port !== connectionInfo.port) {
+      if (
+        !this.devices.peers.has(deviceId.toString()) ||
+        this.devices.peers.get(deviceId.toString()).port !== connectionInfo.port
+      ) {
         this.devices.peers.set(deviceId.toString(), connectionInfo);
       }
     });
@@ -56,9 +57,9 @@ export class StageLinq extends EventEmitter {
     try {
       Logger.warn('disconnecting');
       this.devices.disconnectAll();
-      const msg = createDiscoveryMessage(Action.Logout, this.options.actingAs)
+      const msg = createDiscoveryMessage(Action.Logout, this.options.actingAs);
       await unannounce(msg);
-    } catch(e) {
+    } catch (e) {
       throw new Error(e);
     }
   }
@@ -66,5 +67,4 @@ export class StageLinq extends EventEmitter {
   get databases() {
     return this.devices.databases;
   }
-
 }

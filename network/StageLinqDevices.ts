@@ -2,12 +2,12 @@ import { ConnectionInfo, PlayerStatus, ServiceMessage, DeviceId, StageLinqOption
 import { EventEmitter } from 'events';
 //import { Player } from '../devices/Player';
 //import { sleep } from '../utils';
-import { 
-  FileTransfer, 
-  StateData, 
-  StateMap, 
-  //TimeSynchronization, 
-  Directory 
+import {
+  FileTransfer,
+  StateData,
+  StateMap,
+  //TimeSynchronization,
+  Directory,
 } from '../services';
 //import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
@@ -43,7 +43,7 @@ export class StageLinqDevices extends EventEmitter {
   private _databases: Databases;
   public peers: Map<string, ConnectionInfo> = new Map();
   public _peers: Record<string, DeviceId> = {};
-  
+
   protected options: StageLinqOptions;
 
   constructor(options: StageLinqOptions) {
@@ -53,39 +53,33 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   /**
-   * Handle incoming discovery messages from the StageLinq network
-   *
-   * @param connectionInfo Connection info.
+   * Initialize the StageLinq listener.
+   * @returns
    */
-
   async initialize(): Promise<AddressInfo> {
-    
     await this.startServiceListener(StateMap);
     await this.startServiceListener(FileTransfer);
-    const directory = await this.startServiceListener(Directory); //we need the server's port for announcement message
-
-    return directory.serverInfo
+    const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
+    return directory.serverInfo;
   }
 
   async startServiceListener<T extends InstanceType<typeof services.Service>>(ctor: {
     new (parent: InstanceType<typeof StageLinqDevices>): T;
-  }): Promise<T> {     
-      
+  }): Promise<T> {
     const serviceName = ctor.name;
-      const service = new ctor(this);
+    const service = new ctor(this);
 
-      await service.listen();
-      this._services.set(serviceName, service);
-      this.services[serviceName] = service;
-      return service;
+    await service.listen();
+    this._services.set(serviceName, service);
+    this.services[serviceName] = service;
+    return service;
   }
 
   /**
    * Disconnect from all connected devices
    */
   async disconnectAll() {
-    
-    this._services.forEach(service => {
+    this._services.forEach((service) => {
       console.info(`Closing ${service.name} server port ${service.serverInfo.port}`);
       service.closeServer();
     });
@@ -111,7 +105,7 @@ export class StageLinqDevices extends EventEmitter {
    * @param connectionInfo Connection info
    * @param networkDevice Network device
    */
- 
+
   /*
   private async setupStateMap(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
     // Setup StateMap
