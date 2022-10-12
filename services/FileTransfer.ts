@@ -230,8 +230,8 @@ export class FileTransfer extends Service<FileTransferData> {
    * >> USE WITH CAUTION! <<
    *
    * Downloading seems eat a lot of CPU on the device and might cause it to
-   * be unresponsive while downloading. Also, it seems that transfers top out
-   * at around 10MB/sec.
+   * be unresponsive while downloading big files. Also, it seems that transfers
+   * top out at around 10MB/sec.
    *
    * @param p_location Location of the file on the device.
    * @param socket Socket.
