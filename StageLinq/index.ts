@@ -13,10 +13,8 @@ import {
 
 import { Databases } from '../Databases';
 import * as services from '../services';
-import { AddressInfo, Socket } from 'net';
+import { Socket } from 'net';
 import { assert } from 'console';
-
-
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
@@ -53,9 +51,9 @@ export class StageLinq extends EventEmitter {
 
   private listener: StageLinqListener;
 
-  constructor(options: StageLinqOptions) {
+  constructor(options?: StageLinqOptions) {
     super();
-    this.options = options;
+    this.options = options || DEFAULT_OPTIONS;
     this._databases = new Databases();
   }
 
@@ -141,13 +139,15 @@ export class StageLinq extends EventEmitter {
     });
 
     // Setup Player
-   stateMap.on('newStateMapDevice',  (deviceId, socket) => {
+   await stateMap.on('newStateMapDevice',  (deviceId, socket) => {
     const player = new Player({
       stateMap: stateMap,
       address: socket.remoteAddress,
       port: socket.remotePort,
       deviceId: deviceId.toString(),
     });
+
+    stateMap.subscribe(socket);
 
     player.on('trackLoaded', (status) => {
       this.emit('trackLoaded', status);
