@@ -52,10 +52,6 @@ async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: st
   }
 }
 */
-//1e6c417a-b674-4c87-b4aa-fb7ad2298976
-//6b0d659c-dffa-464e-8580-54fe3e21770b
-//3536b2f3-c80a-4322-89d4-2aceccb60cfb
-//d3fea2b3-a934-47c9-a9a0-1a242db624fe
 
 /*
 let fltxBlock = false;
@@ -143,7 +139,7 @@ async function main() {
   // });
 
   // Fires when we connect to any device
-  stageLinq.devices.on('connected', async (connectionInfo) => {
+  stageLinq.on('connected', async (connectionInfo) => {
     console.log(`Successfully connected to ${connectionInfo.software.name}`);
 
     if (stageLinq.options.downloadDbSources) {
@@ -166,12 +162,12 @@ async function main() {
   });
 
   // Fires when StageLinq and all devices are ready to use.
-  stageLinq.devices.on('ready', () => {
+  stageLinq.on('ready', () => {
     console.log(`StageLinq is ready!`);
   });
 
   // Fires when a new track is loaded on to a player.
-  stageLinq.devices.on('trackLoaded', async (status) => {
+  stageLinq.on('trackLoaded', async (status) => {
 
     // Example of how to connect to the database using this library's
     // implementation of BetterSqlite3 to get additional information.
@@ -184,18 +180,21 @@ async function main() {
   });
 
   // Fires when a track has started playing.
-  stageLinq.devices.on('nowPlaying', (status) => {
+  stageLinq.on('nowPlaying', (status) => {
     console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
   });
 
   // Fires when StageLinq receives messages from a device.
-  stageLinq.devices.on('message',  async (data) => { 
+  stageLinq.on('message',  (data) => { 
+   if (data.message.json) {
     const msg = data.message.json
-      ? JSON.stringify(data.message.json)
-      : data.message.interval;
-    console.debug(`${data.message.socket.remoteAddress}:${data.message.socket.remotePort} ` +
-      `${data.message.name} => ${msg}`);
-    
+    ? JSON.stringify(data.message.json)
+    : data.message.interval;
+    console.debug(`${data.message.deviceId.toString()} ` +
+    `${data.message.name} => ${msg}`);
+  
+   }
+   
     //console.dir(data);
     
     //if (data && data.socket && data.message && data.message.json ) { //&& typeof data.message !== "object") {
@@ -213,7 +212,7 @@ async function main() {
   
 
   // Fires when the state of a device has changed.
-  stageLinq.devices.on('stateChanged', (status) => {
+  stageLinq.on('stateChanged', (status) => {
     console.log(`Updating state [${status.deck}]`, status)
   });
 
