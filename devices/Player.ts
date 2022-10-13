@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { PlayerLayerState, PlayerStatus, ServiceMessage } from '../types';
+import { DeviceId, PlayerLayerState, PlayerStatus, ServiceMessage } from '../types';
 import { PlayerMessageQueue } from './PlayerMessageQueue';
 import { StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
@@ -16,7 +16,7 @@ interface PlayerOptions {
   stateMap: StateMap;
   address: string,
   port: number;
-  deviceId: string;
+  deviceId: DeviceId;
 }
 
 interface SourceAndTrackPath {
@@ -51,7 +51,8 @@ export class Player extends EventEmitter {
   private decks: Map<string, PlayerLayerState> = new Map();
   private lastTrackNetworkPath: Map<string, string> = new Map();
   private queue: {[layer: string]: PlayerMessageQueue} = {};
-  private deviceId: string;
+  private deviceId: DeviceId;
+  public readonly ready: boolean = false;
 
   /**
    * Initialize a player device.
@@ -71,6 +72,8 @@ export class Player extends EventEmitter {
       C: new PlayerMessageQueue('C').onDataReady(this.handleUpdate.bind(this)),
       D: new PlayerMessageQueue('D').onDataReady(this.handleUpdate.bind(this)),
     };
+    this.ready = true;
+
   }
 
   /**
@@ -84,6 +87,9 @@ export class Player extends EventEmitter {
     if (!message.json) return;
     const name = message.name;
     const json = message.json as any;
+
+    //check if message is for this Player
+    if(message.deviceId.toString() !== this.deviceId.toString()) return;
 
     if (/Client\/Preferences\/Player$/.test(name)) {
       this.player = parseInt(json.string);
@@ -172,7 +178,7 @@ export class Player extends EventEmitter {
       port: this.port,
       masterTempo: this.masterTempo,
       masterStatus: this.masterStatus,
-      deviceId: `net://${this.deviceId}`,
+      deviceId: `net://${this.deviceId.toString()}`,
       ...result
     };
 
@@ -187,7 +193,7 @@ export class Player extends EventEmitter {
       // Tracks from streaming sources won't be in the database.
       currentState.dbSourceName = '';
     } else {
-      currentState.dbSourceName = `net://${this.deviceId}/${currentState.source}`;
+      currentState.dbSourceName = `net://${this.deviceId.toString()}/${currentState.source}`;
     }
 
     // If a song is loaded and we have a location emit the trackLoaded event.

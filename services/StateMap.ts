@@ -154,7 +154,7 @@ export class StateMap extends Service<StateData> {
   
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
-    this.subscribe(socket);
+    //this.subscribe(socket);
     this.emit('newStateMapDevice', deviceId, socket)
     return
   }
