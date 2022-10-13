@@ -108,3 +108,4 @@ log.txt
 .vscode/settings.json
 version
 log.txt
+.DS_Store

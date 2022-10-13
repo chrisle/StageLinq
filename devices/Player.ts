@@ -29,7 +29,7 @@ interface SourceAndTrackPath {
  * A player represents a device on the StageLinq network.
  *
  * A player on the network may have up to 4 decks (or "layers" as they're
- * called on the harware). A player may also be given a player number.
+ * called on the hardware). A player may also be given a player number.
  *
  * If you're using a Denon Prime Go/2/4 then you should only get one number.
  * If you're using a Denon SC5000/SC6000 then you assign the numbers in the

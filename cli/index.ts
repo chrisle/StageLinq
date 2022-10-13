@@ -2,9 +2,9 @@ import { ActingAsDevice, PlayerStatus, StageLinqOptions, Services } from '../typ
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
-//import * as fs from 'fs';
-//import * as os from 'os';
-//import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 
 require('console-stamp')(console, {
@@ -52,6 +52,40 @@ async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: st
   }
 }
 */
+
+/*
+let fltxBlock = false;
+
+async function downloadFileTest(stageLinq: StageLinq, trackNetworkPath: string, dest: string) {
+  
+  await sleep(2000);
+  
+  while (fltxBlock === true) {
+    await sleep(250);
+  }
+
+  const deviceId = trackNetworkPath.substring(6,42);
+  //const deviceId = '1e6c417a-b674-4c87-b4aa-fb7ad2298976';
+  const trackPath = trackNetworkPath.substring(42);
+  const fileName = trackNetworkPath.split('/').pop();
+  console.log(fileName);
+  dest += fileName
+  console.log(dest);
+  //const dest = '../'
+  try {
+    const data = await stageLinq.devices.downloadFile(deviceId, trackPath);
+    if (data) {
+      fs.writeFileSync(dest, Buffer.from(data));
+      console.log(`Downloaded ${trackPath} from ${deviceId} to ${dest}`);
+      fltxBlock = false;
+    }
+  } catch(e) {
+    console.error(`Could not download ${trackPath} Error: ${e}`);
+  }
+  
+}
+*/
+
 
 async function main() {
 
@@ -105,7 +139,7 @@ async function main() {
   // });
 
   // Fires when we connect to any device
-  stageLinq.devices.on('connected', async (connectionInfo) => {
+  stageLinq.on('connected', async (connectionInfo) => {
     console.log(`Successfully connected to ${connectionInfo.software.name}`);
 
     if (stageLinq.options.downloadDbSources) {
@@ -128,12 +162,12 @@ async function main() {
   });
 
   // Fires when StageLinq and all devices are ready to use.
-  stageLinq.devices.on('ready', () => {
+  stageLinq.on('ready', () => {
     console.log(`StageLinq is ready!`);
   });
 
   // Fires when a new track is loaded on to a player.
-  stageLinq.devices.on('trackLoaded', async (status) => {
+  stageLinq.on('trackLoaded', async (status) => {
 
     // Example of how to connect to the database using this library's
     // implementation of BetterSqlite3 to get additional information.
@@ -146,21 +180,39 @@ async function main() {
   });
 
   // Fires when a track has started playing.
-  stageLinq.devices.on('nowPlaying', (status) => {
+  stageLinq.on('nowPlaying', (status) => {
     console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
   });
 
   // Fires when StageLinq receives messages from a device.
-  stageLinq.devices.on('message', (connectionInfo, data) => {
+  stageLinq.on('message',  (data) => { 
+   if (data.message.json) {
     const msg = data.message.json
-      ? JSON.stringify(data.message.json)
-      : data.message.interval;
-    console.debug(`${connectionInfo.address}:${connectionInfo.port} ` +
-      `${data.message.name} => ${msg}`);
+    ? JSON.stringify(data.message.json)
+    : data.message.interval;
+    console.debug(`${data.message.deviceId.toString()} ` +
+    `${data.message.name} => ${msg}`);
+  
+   }
+   
+    //console.dir(data);
+    
+    //if (data && data.socket && data.message && data.message.json ) { //&& typeof data.message !== "object") {
+      //console.debug(`${data.socket.remoteAddress}:${data.socket.remotePort} ${data.message.name} ${JSON.stringify(data.message.json)}`);
+     // if (data.message.name.substring(data.message.name.length -16,data.message.name.length) === "TrackNetworkPath" && data.message.json.string !== "") {
+        //console.log(data.message.json.string);
+        //console.log(data.message.json.string.substring(6,42),data.message.json.string.substring(42));
+      //  await downloadFileTest(stageLinq, data.message.json.string, path.resolve(os.tmpdir()));
+      //}
+   // }
+
+    //if (data.message.name.substring()) {}
+    
   });
+  
 
   // Fires when the state of a device has changed.
-  stageLinq.devices.on('stateChanged', (status) => {
+  stageLinq.on('stateChanged', (status) => {
     console.log(`Updating state [${status.deck}]`, status)
   });
 

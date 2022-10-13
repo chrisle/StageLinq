@@ -10,9 +10,10 @@ import { Service } from './Service';
 import type { ServiceMessage, DeviceId } from '../types';
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
-  
-export const States = [
-  // Mixer
+import { sleep } from '../utils';
+
+
+export const StatesMixer = [ 
   StageLinqValue.MixerCH1faderPosition,
   StageLinqValue.MixerCH2faderPosition,
   StageLinqValue.MixerCH3faderPosition,
@@ -23,7 +24,21 @@ export const States = [
   StageLinqValue.MixerChannelAssignment3,
   StageLinqValue.MixerChannelAssignment4,
   StageLinqValue.MixerNumberOfChannels,
+]
 
+export const States = [
+  // Mixer
+  
+  StageLinqValue.MixerCH1faderPosition,
+  StageLinqValue.MixerCH2faderPosition,
+  StageLinqValue.MixerCH3faderPosition,
+  StageLinqValue.MixerCH4faderPosition,
+  StageLinqValue.MixerCrossfaderPosition,
+  StageLinqValue.MixerChannelAssignment1,
+  StageLinqValue.MixerChannelAssignment2,
+  StageLinqValue.MixerChannelAssignment3,
+  StageLinqValue.MixerChannelAssignment4,
+  StageLinqValue.MixerNumberOfChannels,
   StageLinqValue.ClientPreferencesLayerA,
   StageLinqValue.ClientPreferencesPlayer,
   StageLinqValue.ClientPreferencesPlayerJogColorA,
@@ -83,8 +98,6 @@ export const States = [
   StageLinqValue.EngineDeck4TrackTrackName,
   StageLinqValue.EngineDeck4CurrentBPM,
   StageLinqValue.EngineDeck4ExternalMixerVolume,
-
-
 ];
 
 const MAGIC_MARKER = 'smaa';
@@ -94,7 +107,8 @@ const MAGIC_MARKER_JSON = 0x00000000;
 
 export interface StateData {
   name?: string;
-  client?: string;
+  deviceId?: DeviceId;
+  socket?: Socket;
   json?: {
     type: number;
     string?: string;
@@ -111,31 +125,42 @@ export class StateMap extends Service<StateData> {
 
   public async subscribe(socket: Socket) {
     
-    Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
-    
-    for (const state of States) {
-      await this.subscribeState(state, 0, socket);
+    const deviceId = this.getDeviceIdFromSocket(socket);
+
+    while (!this.parent.peers.has(deviceId.toString())) {
+      await sleep(200);
     }
 
-    //Use this option to subscribe to ALL possible states
-    //Warning, it seems to make mixer not return states
-    //
-    //const keys = Object.keys(StageLinqValueObj);
-    //const values = keys.map(key => Reflect.get(StageLinqValueObj,key))
-    //for (const value of values) {
-    // await this.subscribeState(value, 0, socket);
-    //}    
+    Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
+
+    const thisPeer = this.parent.peers.get(deviceId.toString());
+
+    if (thisPeer.software.name === 'JM08') {
+      for (const state of StatesMixer) {
+        await this.subscribeState(state, 0, socket);
+      }
+    } else {
+      for (const state of States) {
+        await this.subscribeState(state, 0, socket);
+      }
+      //const keys = Object.keys(StageLinqValueObj);
+      //const values = keys.map(key => Reflect.get(StageLinqValueObj,key))
+      //for (const value of values) {
+      //  await this.subscribeState(value, 0, socket);
+      //}    
+    }
   }
 
   
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
     this.subscribe(socket);
+    this.emit('newStateMapDevice', deviceId, socket)
     return
   }
 
   protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
-    
+    const deviceId = this.getDeviceIdFromSocket(socket);
     const marker = p_ctx.getString(4);
     if (marker !== MAGIC_MARKER) {
       Logger.error(assert(marker !== MAGIC_MARKER));
@@ -153,8 +178,9 @@ export class StateMap extends Service<StateData> {
             id: MAGIC_MARKER_JSON,
             message: {
               name: name,
-              client: [socket.remoteAddress,socket.remotePort].join(":"),
+              deviceId: deviceId,
               json: json,
+              socket: socket,
             },
           };
         } catch(err) {
@@ -169,8 +195,9 @@ export class StateMap extends Service<StateData> {
           id: MAGIC_MARKER_INTERVAL,
           message: {
             name: name,
-            client: [socket.remoteAddress,socket.remotePort].join(":"),
+            deviceId: deviceId,
             interval: interval,
+            socket: socket,
           },
         };
       }
@@ -184,8 +211,8 @@ export class StateMap extends Service<StateData> {
 
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
     if (p_data && p_data.message.json) { 
-      Logger.info(
-       `${p_data.message.client} ${p_data.message.name} => ${
+      Logger.silly(
+       `${p_data.message.deviceId.toString()} ${p_data.message.name} => ${
          p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
        }`
      );

@@ -1,13 +1,14 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { MessageId, MESSAGE_TIMEOUT, ConnectionInfo, DeviceId } from '../types';
-import { StageLinqDevices } from '../network';
+//import { StageLinqDevices } from '../network';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import {Server, Socket, AddressInfo} from 'net';
 import * as net from 'net';
 import type { ServiceMessage, IpAddressPort } from '../types';
+import { StageLinq } from '../StageLinq';
 
 export declare interface ServiceDevice {
 	on(event: 'listening', listener: (address: AddressInfo) => void): this;
@@ -49,19 +50,20 @@ export abstract class Service<T> extends EventEmitter {
 	
 	public readonly name: string = "Service";
 	protected isBufferedService: boolean = true;
-	protected parent: InstanceType<typeof StageLinqDevices>;
+	protected parent: InstanceType<typeof StageLinq>;
 	
 	protected server: Server = null;
 	public serverInfo: AddressInfo;
 	public serverStatus: boolean = false;
 	
 	protected peerDeviceIds: Record<IpAddressPort, DeviceId> = {}
-	protected peerSockets: Map<DeviceId, Socket> = new Map();
+	public peerSockets: Map<DeviceId, Socket> = new Map();
+	public _peerSockets: Record<string, Socket> = {};
 	protected peerBuffers: PeerBuffers = {};
 	
 	private msgId: number = 0; //only used fro debugging
 
-	constructor(p_parent:InstanceType<typeof StageLinqDevices>) {
+	constructor(p_parent:InstanceType<typeof StageLinq>) {
 		super();
 		this.parent = p_parent;
 	}
@@ -139,12 +141,14 @@ export abstract class Service<T> extends EventEmitter {
 						ctx.readUInt16(); //read port, though we don't need it
 						
 						this.peerDeviceIds[ipAddressPort] = deviceId;
+						//this.peerSockets.set(deviceId,socket);
+						this._peerSockets[deviceId.toString()] = socket;
 						
 						Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`);
 						
 						const parsedData = this.parseServiceData(messageId, deviceId, serviceName, socket);
 						this.messageHandler(parsedData);
-						this.emit('message', parsedData);
+						//this.emit('message', parsedData);
 					} 
 					
 					try {
