@@ -15,6 +15,7 @@ import { Databases } from '../Databases';
 import * as services from '../services';
 import { Socket } from 'net';
 import { assert } from 'console';
+import { sleep } from '../utils';
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
@@ -146,6 +147,11 @@ export class StageLinq extends EventEmitter {
       port: socket.remotePort,
       deviceId: deviceId.toString(),
     });
+
+    //wait for Player to setup
+    while (!player.ready) {
+      sleep(250);
+    }
 
     stateMap.subscribe(socket);
 
