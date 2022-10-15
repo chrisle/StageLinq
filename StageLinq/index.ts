@@ -61,7 +61,7 @@ export class StageLinq extends EventEmitter {
    */
   async connect() {
     //  Initialize Discovery agent
-    await this.discovery.init();
+    await this.discovery.init(this.options.actingAs);
     
     //  Set up services 
     await this.setupFileTransfer();

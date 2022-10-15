@@ -1,4 +1,4 @@
-import { ConnectionInfo, DiscoveryMessage, Action, ActingAsDevice, IpAddress, DeviceId, } from '../types';
+import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, DeviceId, } from '../types';
 import { Socket, RemoteInfo } from 'dgram';
 import * as UDPSocket from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from '../types/common';
@@ -27,12 +27,14 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 export class Discovery {
     private socket: Socket;
     private address: IpAddress;
-    private a_address: IpAddress;   
-    public peers: Map<string, ConnectionInfo> = new Map();
+    private broadcastAddress: IpAddress;   
+    private options: DiscoveryMessageOptions = null;
+    public peers: Map<string, ConnectionInfo> = new Map(); //FIXME figure out getter/setter methods for this?
 
     private announceTimer: NodeJS.Timer;
   
-    async init() {
+    async init(options:DiscoveryMessageOptions) {
+        this.options = options;
         await this.listenForDevices( (connectionInfo) => {
             const deviceId = new DeviceId(connectionInfo.token)
             this.peers.set(deviceId.toString(), connectionInfo);
@@ -44,8 +46,10 @@ export class Discovery {
         assert(this.socket);
         this.socket.setBroadcast(true);
     
-        let discoveryMessage =  this.createDiscoveryMessage(Action.Login, ActingAsDevice.NowPlaying, port);
+        const discoveryMessage =  this.createDiscoveryMessage(Action.Login, this.options, port);
         
+        //  wait for a recieved UDP message to determine the correct interface
+        //  no need to rush this as we want the list of peers to be close to complete
         while (!this.address) {
             await sleep(250);
         }
@@ -56,14 +60,12 @@ export class Discovery {
             return ip.contains(this.address) === true
         });
 
-        this.a_address = address.shift().broadcastAddress
+        this.broadcastAddress = address.shift().broadcastAddress
         const msg = this.writeDiscoveryMessage(discoveryMessage)
-
-        const options = [msg, LISTEN_PORT,this.a_address ]
         
-        this.broadcastMessage(this.socket, options);
+        this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress );
         Logger.debug("Announced myself");
-        this.announceTimer = setInterval(this.broadcastMessage, ANNOUNCEMENT_INTERVAL, this.socket, options);
+        this.announceTimer = setInterval(this.broadcastMessage, ANNOUNCEMENT_INTERVAL, this.socket, msg, LISTEN_PORT, this.broadcastAddress);
     }
 
 
@@ -72,20 +74,20 @@ export class Discovery {
         clearInterval(this.announceTimer);
         this.announceTimer = null;
         
-        let discoveryMessage = this.createDiscoveryMessage(Action.Logout, ActingAsDevice.NowPlaying);
+        let discoveryMessage = this.createDiscoveryMessage(Action.Logout, this.options);
         const msg = this.writeDiscoveryMessage(discoveryMessage)
 
-        const options = [msg, LISTEN_PORT, this.a_address ]
-        
-        await this.broadcastMessage(this.socket, options);
+        await this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);
         await this.socket.close();
         
         Logger.debug("Unannounced myself");
     }
     
+    //////////// PRIVATE METHODS ///////////////
 
-    private async broadcastMessage(socket: Socket, options: any[]) {  
-        socket.send(options[0],options[1], options[2])
+
+    private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress) {  
+        socket.send(msg, port, address);
     }
 
 
@@ -115,7 +117,7 @@ export class Discovery {
     private readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {
         const magic = p_ctx.getString(4);
         if (magic !== DISCOVERY_MESSAGE_MARKER) {
-        return null;
+            return null;
         }
 
         const result: ConnectionInfo = {
