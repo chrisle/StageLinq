@@ -45,12 +45,10 @@ export class StageLinq extends EventEmitter {
   private services: Record<string, InstanceType<typeof services.Service>> = {};
   public readonly _services: Map<string, InstanceType<typeof services.Service>> = new Map();
   private _databases: Databases;
-  //public peers: Map<string, ConnectionInfo> = new Map();
-  //public _peers: Record<string, DeviceId> = {};
 
   public options: StageLinqOptions;
 
-  public discovery: Discovery;
+  public discovery: Discovery = new Discovery;
 
   constructor(options?: StageLinqOptions) {
     super();
@@ -62,15 +60,15 @@ export class StageLinq extends EventEmitter {
    * Connect to the StageLinq network.
    */
   async connect() {
-    this.discovery = new Discovery();
+    //  Initialize Discovery agent
     await this.discovery.init();
     
-    
-    //set up seriveces 
-    //await this.setupFileTransfer();
+    //  Set up services 
+    await this.setupFileTransfer();
     await this.setupStateMap();
     const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
 
+    //  Announce myself with Directory port
     await this.discovery.announce(directory.serverInfo.port);
   }
 
@@ -85,7 +83,6 @@ export class StageLinq extends EventEmitter {
         service.closeServer();
       });
       
-      //const msg = await this.discovery.createDiscoveryMessage(Action.Logout, this.options.actingAs);
       await this.discovery.unannounce();
     } catch (e) {
       throw new Error(e);
@@ -118,7 +115,6 @@ export class StageLinq extends EventEmitter {
   
   private async setupStateMap() {
     // Setup StateMap
-    //Logger.debug(`Setting up stateMap for ${connectionInfo.address}`);
 
     const stateMap = await this.startServiceListener(StateMap);
 
