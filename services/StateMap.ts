@@ -127,13 +127,14 @@ export class StateMap extends Service<StateData> {
     
     const deviceId = this.getDeviceIdFromSocket(socket);
 
-    while (!this.parent.peers.has(deviceId.toString())) {
+    //Logger.debug('checking stateMap', this.parent.discovery.peers.keys());
+    while (!this.parent.discovery.peers.has(deviceId.toString())) {
       await sleep(200);
     }
 
     Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
 
-    const thisPeer = this.parent.peers.get(deviceId.toString());
+    const thisPeer = this.parent.discovery.peers.get(deviceId.toString());
 
     if (thisPeer.software.name === 'JM08') {
       for (const state of StatesMixer) {

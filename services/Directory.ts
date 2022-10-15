@@ -40,7 +40,7 @@ export class Directory extends Service<DirectoryData> {
       const token = ctx.read(16);
       const deviceId = new DeviceId(token);
       const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-      const peer = this.parent.peers.get(deviceId.toString());
+      const peer = this.parent.discovery.peers.get(deviceId.toString());
 
       this.peerDeviceIds[ipAddressPort] = deviceId;
       this.peerSockets.set(deviceId, socket);

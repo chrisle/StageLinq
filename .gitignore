@@ -109,3 +109,4 @@ log.txt
 version
 log.txt
 .DS_Store
+package-lock.json

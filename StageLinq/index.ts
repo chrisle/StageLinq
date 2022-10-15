@@ -1,8 +1,8 @@
-import { announce, createDiscoveryMessage, StageLinqListener, unannounce } from '../network';
+import { Discovery } from '../network';
 import { Player } from '../devices/Player';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { Action, ActingAsDevice, StageLinqOptions, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus} from '../types';
+import { ActingAsDevice, StageLinqOptions, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus} from '../types';
 import {
   FileTransfer,
   StateData,
@@ -38,19 +38,19 @@ export declare interface StageLinq {
  * Main StageLinq class.
  */
 export class StageLinq extends EventEmitter {
-  //devices: StageLinqDevices;
-  logger: Logger = Logger.instance;
+  
+  public logger: Logger = Logger.instance;
   
   public directoryPort: number = 0;
   private services: Record<string, InstanceType<typeof services.Service>> = {};
   public readonly _services: Map<string, InstanceType<typeof services.Service>> = new Map();
   private _databases: Databases;
-  public peers: Map<string, ConnectionInfo> = new Map();
-  public _peers: Record<string, DeviceId> = {};
+  //public peers: Map<string, ConnectionInfo> = new Map();
+  //public _peers: Record<string, DeviceId> = {};
 
   public options: StageLinqOptions;
 
-  private listener: StageLinqListener;
+  public discovery: Discovery;
 
   constructor(options?: StageLinqOptions) {
     super();
@@ -62,29 +62,16 @@ export class StageLinq extends EventEmitter {
    * Connect to the StageLinq network.
    */
   async connect() {
-    this.listener = new StageLinqListener();
-    this.listener.listenForDevices(async (connectionInfo) => {
-      const deviceId = new DeviceId(connectionInfo.token);
-      this._peers[connectionInfo.address] = deviceId;
-
-      if (
-        !this.peers.has(deviceId.toString()) ||
-        this.peers.get(deviceId.toString()).port !== connectionInfo.port
-      ) {
-        this.peers.set(deviceId.toString(), connectionInfo);
-      }
-    });
-
-
+    this.discovery = new Discovery();
+    await this.discovery.init();
+    
+    
     //set up seriveces 
-    await this.setupFileTransfer();
+    //await this.setupFileTransfer();
     await this.setupStateMap();
     const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
 
-    //create & send discovery messages
-    const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
-    msg.port = directory.serverInfo.port;
-    await announce(msg);
+    await this.discovery.announce(directory.serverInfo.port);
   }
 
   /**
@@ -98,8 +85,8 @@ export class StageLinq extends EventEmitter {
         service.closeServer();
       });
       
-      const msg = createDiscoveryMessage(Action.Logout, this.options.actingAs);
-      await unannounce(msg);
+      //const msg = await this.discovery.createDiscoveryMessage(Action.Logout, this.options.actingAs);
+      await this.discovery.unannounce();
     } catch (e) {
       throw new Error(e);
     }
