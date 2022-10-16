@@ -92,12 +92,7 @@ export class StageLinq extends EventEmitter {
     await this.discovery.announce(directory.serverInfo.port);
 
     await sleep(10000);
-    
-    //Logger.log('services ', Object.keys(this.services));
-    //Logger.log('sockets ', Object.keys( this.sockets));
-    //const thisService = this.services['4be14112-5ead-4848-a07d-b37ca8a7220e'].get('FileTransfer') as Services.FileTransfer;
-    //console.dir(thisService.sources);
-
+   
     this._databases.downloadDb('4be14112-5ead-4848-a07d-b37ca8a7220e')
   }
 
