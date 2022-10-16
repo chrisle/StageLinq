@@ -140,6 +140,7 @@ export abstract class Service<T> extends EventEmitter {
 						(assert (ctx.sizeLeft() >= 2));
 						ctx.readUInt16(); //read port, though we don't need it
 						
+						this.parent.sockets[deviceId.toString()].set(this.name, socket);
 						this.peerDeviceIds[ipAddressPort] = deviceId;
 						//this.peerSockets.set(deviceId,socket);
 						this._peerSockets[deviceId.toString()] = socket;
@@ -185,7 +186,7 @@ export abstract class Service<T> extends EventEmitter {
 			}).listen(0, '0.0.0.0', () => {
 				this.serverStatus = true;
 				this.serverInfo = server.address() as net.AddressInfo;
-				Logger.info(`opened ${this.name} server on ${this.serverInfo.port}`);
+				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
 				resolve(server);
 			});
 		});

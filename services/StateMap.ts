@@ -135,8 +135,9 @@ export class StateMap extends Service<StateData> {
     Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
 
     const thisPeer = this.parent.discovery.peers.get(deviceId.toString());
+    //assert(thisPeer);
 
-    if (thisPeer.software.name === 'JM08') {
+    if (thisPeer && thisPeer.software.name === 'JM08') {
       for (const state of StatesMixer) {
         await this.subscribeState(state, 0, socket);
       }
@@ -155,6 +156,9 @@ export class StateMap extends Service<StateData> {
   
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    sleep(500)
+    
+    
     //this.subscribe(socket);
     this.emit('newStateMapDevice', deviceId, socket)
     return

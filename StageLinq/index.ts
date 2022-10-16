@@ -12,7 +12,7 @@ import {
 } from '../services';
 
 import { Databases } from '../Databases';
-import * as services from '../services';
+import * as Services from '../services';
 import { Socket } from 'net';
 import { assert } from 'console';
 import { sleep } from '../utils';
@@ -23,6 +23,18 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
   actingAs: ActingAsDevice.NowPlaying,
   downloadDbSources: true,
 };
+
+type DeviceService = Map<string, InstanceType<typeof Services.Service>>
+
+export interface DeviceServices {
+  [key: string]: DeviceService;
+}
+
+type DeviceSocket = Map<string, Socket>
+
+export interface DeviceSockets {
+  [key: string]: DeviceSocket;
+}
 
 export declare interface StageLinq {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
@@ -41,9 +53,13 @@ export class StageLinq extends EventEmitter {
   
   public logger: Logger = Logger.instance;
   
-  public directoryPort: number = 0;
-  private services: Record<string, InstanceType<typeof services.Service>> = {};
-  public readonly _services: Map<string, InstanceType<typeof services.Service>> = new Map();
+  //public directoryPort: number = 0;
+ // private _services: Record<string, InstanceType<typeof Services.Service>> = {};
+  //public ipAddressPorts: 
+  public sockets: DeviceSockets = {};
+  public services: DeviceServices = {};
+  public serviceList: string[] = [];
+  public readonly _services: Map<string, InstanceType<typeof Services.Service>> = new Map();
   private _databases: Databases;
 
   public options: StageLinqOptions;
@@ -53,7 +69,7 @@ export class StageLinq extends EventEmitter {
   constructor(options?: StageLinqOptions) {
     super();
     this.options = options || DEFAULT_OPTIONS;
-    this._databases = new Databases();
+    this._databases = new Databases(this);
   }
 
   /**
@@ -64,12 +80,25 @@ export class StageLinq extends EventEmitter {
     await this.discovery.init(this.options.actingAs);
     
     //  Set up services 
-    await this.setupFileTransfer();
-    await this.setupStateMap();
+    //await this.setupFileTransfer();
+    //await this.setupStateMap();
+    this.serviceList = [
+      FileTransfer.name, 
+      StateMap.name,
+    ]
     const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
 
     //  Announce myself with Directory port
     await this.discovery.announce(directory.serverInfo.port);
+
+    await sleep(10000);
+    
+    //Logger.log('services ', Object.keys(this.services));
+    //Logger.log('sockets ', Object.keys( this.sockets));
+    //const thisService = this.services['4be14112-5ead-4848-a07d-b37ca8a7220e'].get('FileTransfer') as Services.FileTransfer;
+    //console.dir(thisService.sources);
+
+    this._databases.downloadDb('4be14112-5ead-4848-a07d-b37ca8a7220e')
   }
 
   /**
@@ -90,21 +119,31 @@ export class StageLinq extends EventEmitter {
   }
 
 
-  async startServiceListener<T extends InstanceType<typeof services.Service>>(ctor: {
+  async startServiceListener<T extends InstanceType<typeof Services.Service>>(ctor: {
     new (parent: InstanceType<typeof StageLinq>): T;
   }): Promise<T> {
     const serviceName = ctor.name;
     const service = new ctor(this);
 
     await service.listen();
+    if (service.name == 'StateMap' ) {
+      this.setupStateMap(service)
+    }
+    if (service.name == 'FileTransfer' ) {
+      this.setupFileTransfer(service)
+    }
+    //service.on('message', message => {
+    //  this.emit('message', message);
+    //})
     this._services.set(serviceName, service);
-    this.services[serviceName] = service;
+    //this.services[serviceName] = service;
+   //this.serviceList.push(serviceName);
     return service;
   }
 
 
-  private async setupFileTransfer() {
-    const fileTransfer = await this.startServiceListener(FileTransfer);
+  private async setupFileTransfer(service: InstanceType<typeof Services.Service>) {
+    const fileTransfer = service as Services.FileTransfer;
 
     fileTransfer.on('dbDownloaded', (sourcename, dbPath) => {
       Logger.debug(`received ${sourcename} ${dbPath}`);
@@ -113,10 +152,11 @@ export class StageLinq extends EventEmitter {
   }
 
   
-  private async setupStateMap() {
+  private async setupStateMap(service: InstanceType<typeof Services.Service>) {
     // Setup StateMap
+    const stateMap = service as Services.StateMap;
 
-    const stateMap = await this.startServiceListener(StateMap);
+    //const stateMap = await this.startServiceListener(StateMap);
 
     stateMap.on('message', (data) => {
       this.emit('message', data)
@@ -159,7 +199,7 @@ export class StageLinq extends EventEmitter {
   
 
   async downloadFile(_deviceId: string, path: string) {
-    const service = this.services["FileTransfer"] as FileTransfer
+    const service = this._services.get("FileTransfer") as FileTransfer
     assert(service);
     const deviceId = new DeviceId(_deviceId);
     

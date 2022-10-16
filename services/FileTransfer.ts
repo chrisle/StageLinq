@@ -2,6 +2,7 @@ import { DOWNLOAD_TIMEOUT, IpAddressPort } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceData } from './Service';
+import * as Services from '../services';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -319,7 +320,7 @@ export class FileTransfer extends Service<FileTransferData> {
               size: fstatMessage.size,
             }
           }
-
+          this.sources.set(source, thisSource);
           result.push(thisSource);
 
           devices[source] = thisSource;
@@ -330,8 +331,9 @@ export class FileTransfer extends Service<FileTransferData> {
     }
 
     await this.deviceSources.set(msgDeviceId.toString(), devices);
-    await sleep(500);
-    this.downloadDb(msgDeviceId.toString(), socket);
+    this.sources
+    //await sleep(500);
+    //this.downloadDb(msgDeviceId.toString(), socket);
 
     return result;
   }
@@ -394,23 +396,23 @@ export class FileTransfer extends Service<FileTransferData> {
     await this.writeWithLength(ctx, socket);
   }
 
-  async downloadDb(deviceId: string, socket: Socket) {
-    //console.info(source);
+  async downloadDb(deviceId: string, _socket: Socket) {
+    
     Logger.debug(`downloadDb request for ${deviceId}`);
-    const deviceSources = await this.deviceSources.get(deviceId);
+    
+    const service = this.parent.services[deviceId].get('FileTransfer') as Services.FileTransfer ;
+    const socket = this.parent.sockets[deviceId].get('FileTransfer');
+    
+    for (const [sourceName, source] of service.sources) {
+      const dbPath = getTempFilePath(`${deviceId}/${sourceName}/m.db`);
 
-   for (const sourceName in deviceSources) {
+      Logger.info(`Reading database ${deviceId}/${source.name}`);
+      this.emit('dbDownloading', deviceId, dbPath);
 
-    const source = deviceSources[sourceName];
-    const dbPath = getTempFilePath(`${deviceId}/${sourceName}/m.db`);
-
-    Logger.info(`Reading database ${deviceId}/${source.name}`);
-    this.emit('dbDownloading', deviceId, dbPath);
-
-    this.on('fileTransferProgress', (progress) => {
-      this.emit('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
-      Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
-    });
+      this.on('fileTransferProgress', (progress) => {
+        this.emit('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
+        Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
+      });
 
     // Save database to a file
     const file = await this.getFile(source.database.location, socket);

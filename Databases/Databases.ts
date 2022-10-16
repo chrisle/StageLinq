@@ -1,10 +1,14 @@
 
-import { ConnectionInfo, Source } from '../types';
+import {  Source } from '../types';
 import { EventEmitter } from 'stream';
-import { FileTransfer } from '../services';
+//import { FileTransfer } from '../services';
 import { getTempFilePath } from '../utils';
 import { Logger } from '../LogEmitter';
 import * as fs from 'fs';
+import { StageLinq } from '../StageLinq';
+import * as Services from '../services';
+
+
 
 export declare interface Databases {
   on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
@@ -13,13 +17,15 @@ export declare interface Databases {
 }
 
 export class Databases extends EventEmitter {
+  parent: InstanceType<typeof StageLinq>;
+  sources: Map<string, Source> = new Map();
 
-  sources: Map<string, string> = new Map();
-
-  constructor() {
+  constructor(_parent: InstanceType<typeof StageLinq>) {
     super();
+    this.parent = _parent;
   }
 
+  /*
   async downloadSourcesFromDevice(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
     const service = await networkDevice.connectToService(FileTransfer);
     const sources = await service.getSources();
@@ -38,11 +44,43 @@ export class Databases extends EventEmitter {
     }
     return output;
   }
+  */
 
   /**
    * Download databases from this network source.
    */
   
+   async downloadDb(deviceId: string) {
+    
+    Logger.debug(`downloadDb request for ${deviceId}`);
+    
+    const service = this.parent.services[deviceId].get('FileTransfer') as Services.FileTransfer ;
+    const socket = this.parent.sockets[deviceId].get('FileTransfer');
+    
+    for (const [sourceName, source] of service.sources) {
+      const dbPath = getTempFilePath(`${deviceId}/${sourceName}/m.db`);
+
+      Logger.info(`Reading database ${deviceId}/${source.name}`);
+      this.emit('dbDownloading', deviceId, dbPath);
+
+      service.on('fileTransferProgress', (progress) => {
+        this.emit('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
+        Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
+      });
+
+    // Save database to a file
+    const file = await service.getFile(source.database.location, socket);
+    Logger.info(`Saving ${deviceId}/${sourceName} to ${dbPath}`);
+    fs.writeFileSync(dbPath, Buffer.from(file));
+
+    Logger.info(`Downloaded ${deviceId}/${sourceName} to ${dbPath}`);
+    this.emit('dbDownloaded', deviceId, dbPath);
+    this.sources.set(sourceName, source)
+  }
+
+}
+
+  /*
   async downloadDb(sourceId: string, service: FileTransfer, source: Source) {
     const dbPath = getTempFilePath(`${sourceId}/m.db`);
 
@@ -63,6 +101,8 @@ export class Databases extends EventEmitter {
     Logger.debug(`Downloaded ${sourceId} to ${dbPath}`);
     this.emit('dbDownloaded', sourceId, dbPath);
   }
+
+  */
 
   getDbPath(dbSourceName?: string) {
     if (!this.sources.size)

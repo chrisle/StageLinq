@@ -6,6 +6,8 @@ import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
+import { FileTransfer } from './FileTransfer';
+import { StateMap } from './StateMap';
 
 export interface DirectoryData {
   deviceId: string;
@@ -67,7 +69,7 @@ export class Directory extends Service<DirectoryData> {
           break;
         case MessageId.ServicesRequest:
           ctx.readRemaining(); //
-          this.sendServiceAnnouncement(socket);
+          this.sendServiceAnnouncement(deviceId, socket);
           break;
         default:
           assert.fail(`NetworkDevice Unhandled message id '${id}'`);
@@ -88,23 +90,61 @@ export class Directory extends Service<DirectoryData> {
     assert(directoryMsg);
   }
 
-  private async sendServiceAnnouncement(socket?: Socket): Promise<void> {
+  private async sendServiceAnnouncement(deviceId: DeviceId, socket?: Socket): Promise<void> {
     // await sleep(250);
     const ctx = new WriteContext();
 
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(Tokens.Listen);
 
+    let services: InstanceType<typeof Service>[] = []
+
+    for (const serviceName of this.parent.serviceList) {
+      switch (serviceName) {
+        case 'FileTransfer': {
+          const fileTransfer = await this.parent.startServiceListener(FileTransfer);
+          services.push(fileTransfer);
+          break;
+        }
+        case 'StateMap': {
+          const stateMap = await this.parent.startServiceListener(StateMap);
+          services.push(stateMap);
+          break;
+        }
+        default:
+          break;
+      }
+    }
+
+    this.parent.services[deviceId.toString()] = new Map();
+    this.parent.sockets[deviceId.toString()] = new Map();
+
+    for (const service of services) {
+      
+      
+      this.parent.services[deviceId.toString()].set(service.name, service)
+
+      ctx.writeUInt32(MessageId.ServicesAnnouncement);
+      ctx.write(Tokens.Listen);
+      ctx.writeNetworkStringUTF16(service.name);
+      ctx.writeUInt16(service.serverInfo.port);
+
+      Logger.debug(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`)
+    }
+
+    /*
     for (const [key, value] of this.parent._services) {
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
       ctx.write(Tokens.Listen);
       ctx.writeNetworkStringUTF16(key);
       ctx.writeUInt16(value.serverInfo.port);
     }
+    */
     const msg = ctx.getBuffer();
 
     await socket.write(msg);
-    Logger.debug(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`);
+    Logger.silly(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`);
+    //Logger.debug(msg.toString('hex'));
   }
 
   private async sendTimeStampReply(token: Uint8Array, socket: Socket) {
