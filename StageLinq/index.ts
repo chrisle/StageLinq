@@ -50,12 +50,7 @@ export declare interface StageLinq {
  * Main StageLinq class.
  */
 export class StageLinq extends EventEmitter {
-  
-  public logger: Logger = Logger.instance;
-  
-  //public directoryPort: number = 0;
- // private _services: Record<string, InstanceType<typeof Services.Service>> = {};
-  //public ipAddressPorts: 
+
   public sockets: DeviceSockets = {};
   public services: DeviceServices = {};
   public serviceList: string[] = [];
@@ -64,6 +59,7 @@ export class StageLinq extends EventEmitter {
 
   public options: StageLinqOptions;
 
+  public logger: Logger = Logger.instance;
   public discovery: Discovery = new Discovery;
 
   constructor(options?: StageLinqOptions) {
@@ -79,21 +75,28 @@ export class StageLinq extends EventEmitter {
     //  Initialize Discovery agent
     await this.discovery.init(this.options.actingAs);
     
-    //  Set up services 
-    //await this.setupFileTransfer();
-    //await this.setupStateMap();
+    //  Select Services to offer
     this.serviceList = [
       FileTransfer.name, 
       StateMap.name,
-    ]
-    const directory = await this.startServiceListener(Directory); // We need the server's port for announcement message.
+    ];
+
+    //  Directory is required
+    const directory = await this.startServiceListener(Directory);
 
     //  Announce myself with Directory port
-    await this.discovery.announce(directory.serverInfo.port);
+    await this.discovery.announce(directory.serverInfo.port);   
 
+    //  Databases Demo 
+    //  Wait 10s then download any connected Databases
     await sleep(10000);
-   
-    this._databases.downloadDb('4be14112-5ead-4848-a07d-b37ca8a7220e')
+    const services = Object.keys(this.services);
+    for (const deviceId of services) {
+      const thisService = this.services[deviceId].get('FileTransfer') as Services.FileTransfer;
+      if (thisService.sources.size > 0) {
+        this._databases.downloadDb(deviceId);
+      }
+    }
   }
 
   /**
@@ -127,12 +130,7 @@ export class StageLinq extends EventEmitter {
     if (service.name == 'FileTransfer' ) {
       this.setupFileTransfer(service)
     }
-    //service.on('message', message => {
-    //  this.emit('message', message);
-    //})
     this._services.set(serviceName, service);
-    //this.services[serviceName] = service;
-   //this.serviceList.push(serviceName);
     return service;
   }
 
@@ -150,8 +148,6 @@ export class StageLinq extends EventEmitter {
   private async setupStateMap(service: InstanceType<typeof Services.Service>) {
     // Setup StateMap
     const stateMap = service as Services.StateMap;
-
-    //const stateMap = await this.startServiceListener(StateMap);
 
     stateMap.on('message', (data) => {
       this.emit('message', data)
@@ -207,12 +203,3 @@ export class StageLinq extends EventEmitter {
     return file;
   } 
 }
-
-/*
-async function testDownloadFile(stageLinq: InstanceType<typeof StageLinq>) {
-  const trackNetworkPath = '/HONUSZ (USB 1)/Contents/Space Food/Stay In/14786650_Dark Force_(Original Mix).mp3'
-  const deviceId = new DeviceId('4be14112-5ead-4848-a07d-b37ca8a7220e')      
-  const fileName = trackNetworkPath.split('/').pop();       
-  const buff = stageLinq.downloadFile(deviceId.toString(), trackNetworkPath)
-}
-*/
