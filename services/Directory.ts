@@ -91,7 +91,7 @@ export class Directory extends Service<DirectoryData> {
   }
 
   private async sendServiceAnnouncement(deviceId: DeviceId, socket?: Socket): Promise<void> {
-    // await sleep(250);
+    
     const ctx = new WriteContext();
 
     ctx.writeUInt32(MessageId.ServicesRequest);
@@ -102,12 +102,12 @@ export class Directory extends Service<DirectoryData> {
     for (const serviceName of this.parent.serviceList) {
       switch (serviceName) {
         case 'FileTransfer': {
-          const fileTransfer = await this.parent.startServiceListener(FileTransfer);
+          const fileTransfer = await this.parent.startServiceListener(FileTransfer, deviceId);
           services.push(fileTransfer);
           break;
         }
         case 'StateMap': {
-          const stateMap = await this.parent.startServiceListener(StateMap);
+          const stateMap = await this.parent.startServiceListener(StateMap, deviceId);
           services.push(stateMap);
           break;
         }
@@ -121,7 +121,6 @@ export class Directory extends Service<DirectoryData> {
 
     for (const service of services) {
       
-      
       this.parent.services[deviceId.toString()].set(service.name, service)
 
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
@@ -129,22 +128,15 @@ export class Directory extends Service<DirectoryData> {
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
 
-      Logger.debug(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`)
+      Logger.debug(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`);
+      
     }
 
-    /*
-    for (const [key, value] of this.parent._services) {
-      ctx.writeUInt32(MessageId.ServicesAnnouncement);
-      ctx.write(Tokens.Listen);
-      ctx.writeNetworkStringUTF16(key);
-      ctx.writeUInt16(value.serverInfo.port);
-    }
-    */
     const msg = ctx.getBuffer();
 
     await socket.write(msg);
     Logger.silly(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`);
-    //Logger.debug(msg.toString('hex'));
+    
   }
 
   private async sendTimeStampReply(token: Uint8Array, socket: Socket) {
@@ -152,7 +144,6 @@ export class Directory extends Service<DirectoryData> {
     ctx.writeUInt32(MessageId.TimeStamp);
     ctx.write(token);
     ctx.write(Tokens.Listen);
-    //ctx.writeUInt64(BigInt(this.timeAlive*10000));
     ctx.writeUInt64(0n);
     const message = ctx.getBuffer();
     assert(message.length === 44);

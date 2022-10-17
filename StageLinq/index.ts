@@ -92,9 +92,13 @@ export class StageLinq extends EventEmitter {
     await sleep(10000);
     const services = Object.keys(this.services);
     for (const deviceId of services) {
-      const thisService = this.services[deviceId].get('FileTransfer') as Services.FileTransfer;
-      if (thisService.sources.size > 0) {
-        this._databases.downloadDb(deviceId);
+      
+      if (this.services[deviceId].has('FileTransfer')) {
+        Logger.debug(`${deviceId} has FileTransfer`);
+        const thisService = this.services[deviceId].get('FileTransfer') as Services.FileTransfer;
+        if (thisService.sources.size > 0) {
+          this._databases.downloadDb(deviceId);
+        }
       }
     }
   }
@@ -118,10 +122,12 @@ export class StageLinq extends EventEmitter {
 
 
   async startServiceListener<T extends InstanceType<typeof Services.Service>>(ctor: {
-    new (parent: InstanceType<typeof StageLinq>): T;
-  }): Promise<T> {
+    new (parent: InstanceType<typeof StageLinq>, _deviceId?: DeviceId): T;
+  }, deviceId?: DeviceId): Promise<T> {
     const serviceName = ctor.name;
-    const service = new ctor(this);
+    const service = new ctor(this, deviceId);
+    
+
 
     await service.listen();
     if (service.name == 'StateMap' ) {

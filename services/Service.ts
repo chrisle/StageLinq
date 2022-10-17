@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { MessageId, MESSAGE_TIMEOUT, ConnectionInfo, DeviceId } from '../types';
-//import { StageLinqDevices } from '../network';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -52,7 +51,7 @@ export abstract class Service<T> extends EventEmitter {
 	protected isBufferedService: boolean = true;
 	protected parent: InstanceType<typeof StageLinq>;
 	
-	protected server: Server = null;
+	public server: Server = null;
 	public serverInfo: AddressInfo;
 	public serverStatus: boolean = false;
 	
@@ -60,12 +59,15 @@ export abstract class Service<T> extends EventEmitter {
 	public peerSockets: Map<DeviceId, Socket> = new Map();
 	public _peerSockets: Record<string, Socket> = {};
 	protected peerBuffers: PeerBuffers = {};
+	protected timeout: NodeJS.Timer;
+	protected expectedDeviceId: DeviceId = null;
 	
 	private msgId: number = 0; //only used fro debugging
 
-	constructor(p_parent:InstanceType<typeof StageLinq>) {
+	constructor(p_parent:InstanceType<typeof StageLinq>, deviceId?: DeviceId) {
 		super();
 		this.parent = p_parent;
+		this.expectedDeviceId = deviceId || null;
 	}
 	
 	async createServer(): Promise<Server> {
@@ -83,8 +85,9 @@ export abstract class Service<T> extends EventEmitter {
 
 				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
 
-				//Initialize fresh buffer queue for this connection
-			
+				clearTimeout(this.timeout);
+				
+				//Initialize fresh buffer queue for this connection			
 				this.peerBuffers[ipAddressPort] = null;
 				
 				//get device id from list of peers. will check if undefined later.
@@ -186,7 +189,12 @@ export abstract class Service<T> extends EventEmitter {
 			}).listen(0, '0.0.0.0', () => {
 				this.serverStatus = true;
 				this.serverInfo = server.address() as net.AddressInfo;
+				this.server = server;
 				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
+				if (this.expectedDeviceId){
+					Logger.silly(`started timer for ${this.name} for ${this.expectedDeviceId}`)
+					this.timeout = setTimeout(this.closeService, 5000, this.expectedDeviceId, this.name, this.server, this.parent);
+				};
 				resolve(server);
 			});
 		});
@@ -194,10 +202,6 @@ export abstract class Service<T> extends EventEmitter {
 
 	async listen(): Promise<AddressInfo> {
 		const server = await this.createServer()
-		this.server = server;
-		
-		//const serverAddress = server.address() as net.AddressInfo;
-		//this.port = serverAddress.port;
 		return server.address() as AddressInfo;
 	}
 	
@@ -268,6 +272,13 @@ export abstract class Service<T> extends EventEmitter {
 		} else {
 			Logger.debug(`[${this.name}] ${deviceId} (${name}) ${length} ${buff}`);
 		}
+	}
+
+	//	callback for timeout timer
+	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>) {
+		Logger.debug(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
+		await server.close();
+		parent.services[deviceId.toString()].delete(serviceName);
 	}
 
 	// FIXME: Cannot use abstract because of async; is there another way to get this?
