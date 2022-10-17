@@ -39,6 +39,13 @@ export interface Source {
 	database: {
 		location: string;
 		size: number;
+		remote?: {
+			location: string,
+			device: string,
+		},
+		local?: {
+			path: string,
+		}
 	};
 }
 

@@ -87,20 +87,6 @@ export class StageLinq extends EventEmitter {
     //  Announce myself with Directory port
     await this.discovery.announce(directory.serverInfo.port);   
 
-    //  Databases Demo 
-    //  Wait 10s then download any connected Databases
-    await sleep(10000);
-    const services = Object.keys(this.services);
-    for (const deviceId of services) {
-      
-      if (this.services[deviceId].has('FileTransfer')) {
-        Logger.debug(`${deviceId} has FileTransfer`);
-        const thisService = this.services[deviceId].get('FileTransfer') as Services.FileTransfer;
-        if (thisService.sources.size > 0) {
-          this._databases.downloadDb(deviceId);
-        }
-      }
-    }
   }
 
   /**
@@ -127,8 +113,6 @@ export class StageLinq extends EventEmitter {
     const serviceName = ctor.name;
     const service = new ctor(this, deviceId);
     
-
-
     await service.listen();
     if (service.name == 'StateMap' ) {
       this.setupStateMap(service)
@@ -196,16 +180,22 @@ export class StageLinq extends EventEmitter {
   
 
   async downloadFile(_deviceId: string, path: string) {
-    const service = this._services.get("FileTransfer") as FileTransfer
-    assert(service);
+    
     const deviceId = new DeviceId(_deviceId);
+    const service = this.services[deviceId.toString()].get('FileTransfer') as Services.FileTransfer;
+    assert(service);
+
+    const socket = this.sockets[deviceId.toString()].get('FileTransfer');
+    assert(socket);
+
+    await service.isAvailable();
     
-    //Logger.debug(service.peerSockets.entries());
-    const socket = service._peerSockets[deviceId.toString()];
-    //Logger.debug(socket);
-    
-    //const file = await service.getFile(`net://${deviceId}${path}`,socket)
-    const file = await service.getFile(path,socket);
-    return file;
+    try {
+      const file = await service.getFile(path,socket);
+      return file;
+    } catch (err) {
+      Logger.error(err);
+      throw new Error(err);
+    }
   } 
 }

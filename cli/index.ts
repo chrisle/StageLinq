@@ -18,10 +18,17 @@ require('console-stamp')(console, {
  * @param status Player to get track info from.
  * @returns Track info
  */
+
+let dbDownloaded: boolean = false;
+
 function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
+  if (!dbDownloaded) {
+    return
+  }
+  
   try {
     const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
-    const connection = new DbConnection(dbPath);
+    const connection = new DbConnection(dbPath.database.local.path);
     const result = connection.getTrackInfo(status.trackPath);
     connection.close();
     console.log('Database entry:', result);
@@ -39,52 +46,19 @@ function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
  * @param dest Path to save file to.
  */
 
-/*
+
 async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: string) {
   try {
-    const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
+    const data = await stageLinq.downloadFile(status.deviceId, status.trackPathAbsolute);
     if (data) {
       fs.writeFileSync(dest, Buffer.from(data));
       console.log(`Downloaded ${status.trackPathAbsolute} to ${dest}`);
     }
   } catch(e) {
     console.error(`Could not download ${status.trackPathAbsolute}`);
+    console.error(e)
   }
 }
-*/
-
-/*
-let fltxBlock = false;
-
-async function downloadFileTest(stageLinq: StageLinq, trackNetworkPath: string, dest: string) {
-  
-  await sleep(2000);
-  
-  while (fltxBlock === true) {
-    await sleep(250);
-  }
-
-  const deviceId = trackNetworkPath.substring(6,42);
-  //const deviceId = '1e6c417a-b674-4c87-b4aa-fb7ad2298976';
-  const trackPath = trackNetworkPath.substring(42);
-  const fileName = trackNetworkPath.split('/').pop();
-  console.log(fileName);
-  dest += fileName
-  console.log(dest);
-  //const dest = '../'
-  try {
-    const data = await stageLinq.devices.downloadFile(deviceId, trackPath);
-    if (data) {
-      fs.writeFileSync(dest, Buffer.from(data));
-      console.log(`Downloaded ${trackPath} from ${deviceId} to ${dest}`);
-      fltxBlock = false;
-    }
-  } catch(e) {
-    console.error(`Could not download ${trackPath} Error: ${e}`);
-  }
-  
-}
-*/
 
 
 async function main() {
@@ -95,7 +69,7 @@ async function main() {
 
     // If set to true, download the source DBs in a temporary location.
     // (default: true)
-    downloadDbSources: false,
+    downloadDbSources: true,
 
     // Max number of attempts to connect to a StageLinq device.
     // (default: 3)
@@ -156,6 +130,7 @@ async function main() {
       // Fires when the database source has been read and saved to a temporary path.
       stageLinq.databases.on('dbDownloaded', (sourceName, dbPath) => {
         console.log(`Database (${sourceName}) has been downloaded to ${dbPath}`);
+        dbDownloaded = true;
       });
     }
 
@@ -176,7 +151,8 @@ async function main() {
     }
 
     // Example of how to download the actual track from the media.
-    //await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), 'media'));
+    const filename = [status.title,'.mp3'].join('');
+    await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
   });
 
   // Fires when a track has started playing.
@@ -194,20 +170,7 @@ async function main() {
     `${data.message.name} => ${msg}`);
   
    }
-   
-    //console.dir(data);
-    
-    //if (data && data.socket && data.message && data.message.json ) { //&& typeof data.message !== "object") {
-      //console.debug(`${data.socket.remoteAddress}:${data.socket.remotePort} ${data.message.name} ${JSON.stringify(data.message.json)}`);
-     // if (data.message.name.substring(data.message.name.length -16,data.message.name.length) === "TrackNetworkPath" && data.message.json.string !== "") {
-        //console.log(data.message.json.string);
-        //console.log(data.message.json.string.substring(6,42),data.message.json.string.substring(42));
-      //  await downloadFileTest(stageLinq, data.message.json.string, path.resolve(os.tmpdir()));
-      //}
-   // }
-
-    //if (data.message.name.substring()) {}
-    
+  
   });
   
 

@@ -2,14 +2,12 @@ import { DOWNLOAD_TIMEOUT, IpAddressPort } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceData } from './Service';
-import * as Services from '../services';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import type { ServiceMessage, Source, DeviceId } from '../types';
 import { Socket } from 'net';
-import { getTempFilePath } from '../utils';
-import * as fs from 'fs';
+
 
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
@@ -53,6 +51,7 @@ export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
   public services: Map<string, FileTransferServiceData> = new Map();
   public sources: Map<string, Source> = new Map();
+  private _isAvailable: boolean = true;
 
   public deviceSources: Map<string, DeviceSources> = new Map();
 
@@ -243,19 +242,20 @@ export class FileTransfer extends Service<FileTransferData> {
    * @returns Contents of the file.
    */
   async getFile(p_location: string, socket: Socket): Promise<Uint8Array> {
-
+    this._isAvailable = false;
     assert(this.receivedFile === null);
     await this.requestFileTransferId(p_location, socket);
     const txinfo = await this.waitForMessage(MessageId.FileTransferId);
-    console.dir(txinfo);
     if (txinfo) {
       this.receivedFile = new WriteContext({ size: txinfo.size });
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
       const total = parseInt(txinfo.size);
-      //Logger.debug(totalChunks, total)
+      Logger.debug(totalChunks, total)
 
       if (total === 0) {
         Logger.warn(`${p_location} doesn't exist or is a streaming file`);
+        this.receivedFile = null
+        this._isAvailable = true;
         return;
       }
       await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1, socket);
@@ -284,16 +284,20 @@ export class FileTransfer extends Service<FileTransferData> {
         });
       } catch (err) {
         const msg = `Could not read database from ${p_location}: ${err.message}`
+        this.receivedFile = null
+        this._isAvailable = true;
         Logger.error(msg);
         throw new Error(msg);
       }
 
       Logger.debug(`Signaling transfer complete.`);
       await this.signalTransferComplete(socket);
+      
     }
 
     const buf = this.receivedFile ? this.receivedFile.getBuffer() : null;
     this.receivedFile = null;
+    this._isAvailable = true;
     return buf;
   }
 
@@ -301,6 +305,7 @@ export class FileTransfer extends Service<FileTransferData> {
     const result: Source[] = [];
     let devices: DeviceSources = {}
 
+    const deviceId = this.getDeviceIdFromSocket(socket);
     const ipAddressPort:IpAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
     const msgDeviceId = this.peerDeviceIds[ipAddressPort];
 
@@ -318,9 +323,15 @@ export class FileTransfer extends Service<FileTransferData> {
             database: {
               location: database,
               size: fstatMessage.size,
-            }
+              remote: {
+                location: database,
+                device: deviceId.toString(),
+              }
+            },
+            
           }
           this.sources.set(source, thisSource);
+          this.parent.databases.sources.set(source, thisSource);
           result.push(thisSource);
 
           devices[source] = thisSource;
@@ -331,9 +342,8 @@ export class FileTransfer extends Service<FileTransferData> {
     }
 
     await this.deviceSources.set(msgDeviceId.toString(), devices);
-    this.sources
-    //await sleep(500);
-    //this.downloadDb(msgDeviceId.toString(), socket);
+    
+    this.parent.databases.downloadDb(msgDeviceId.toString());
 
     return result;
   }
@@ -396,57 +406,10 @@ export class FileTransfer extends Service<FileTransferData> {
     await this.writeWithLength(ctx, socket);
   }
 
-  async downloadDb(deviceId: string, _socket: Socket) {
-    
-    Logger.debug(`downloadDb request for ${deviceId}`);
-    
-    const service = this.parent.services[deviceId].get('FileTransfer') as Services.FileTransfer ;
-    const socket = this.parent.sockets[deviceId].get('FileTransfer');
-    
-    for (const [sourceName, source] of service.sources) {
-      const dbPath = getTempFilePath(`${deviceId}/${sourceName}/m.db`);
-
-      Logger.info(`Reading database ${deviceId}/${source.name}`);
-      this.emit('dbDownloading', deviceId, dbPath);
-
-      this.on('fileTransferProgress', (progress) => {
-        this.emit('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
-        Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
-      });
-
-    // Save database to a file
-    const file = await this.getFile(source.database.location, socket);
-    Logger.info(`Saving ${deviceId}/${sourceName} to ${dbPath}`);
-    fs.writeFileSync(dbPath, Buffer.from(file));
-
-    Logger.info(`Downloaded ${deviceId}/${sourceName} to ${dbPath}`);
-    this.emit('dbDownloaded', deviceId, dbPath);
-  }
-
-}
-
-/*
-  getDbPath(dbSourceName?: string) {
-    if (!this.sources.size)
-      throw new Error(`No data sources have been downloaded`);
-
-    if (!dbSourceName || !this.sources.has(dbSourceName)) {
-
-      // Hack: Denon will save metadata on streaming files but only on an
-      // internal database. So if the source is "(Unknown)streaming://"
-      // return the first internal database we find.
-      for (const entry of Array.from(this.sources.entries())) {
-        if (/\(Internal\)/.test(entry[0])) {
-          Logger.debug(`Returning copy of internal database`);
-          return this.sources.get(entry[0]);
-        }
-      }
-
-      // Else, throw an exception.
-      throw new Error(`Data source "${dbSourceName}" doesn't exist.`);
+  public async isAvailable(): Promise<void> {
+    while (!this._isAvailable) {
+      await sleep(250)
     }
-
-    return this.sources.get(dbSourceName);
   }
-  */
+
 }

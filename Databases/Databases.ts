@@ -1,7 +1,5 @@
-
 import {  Source } from '../types';
 import { EventEmitter } from 'stream';
-//import { FileTransfer } from '../services';
 import { getTempFilePath } from '../utils';
 import { Logger } from '../LogEmitter';
 import * as fs from 'fs';
@@ -68,7 +66,11 @@ export class Databases extends EventEmitter {
         Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
       });
 
-    // Save database to a file
+    source.database.local = {
+      path: dbPath,
+    };
+    
+      // Save database to a file
     const file = await service.getFile(source.database.location, socket);
     Logger.info(`Saving ${deviceId}/${sourceName} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
@@ -76,33 +78,9 @@ export class Databases extends EventEmitter {
     Logger.info(`Downloaded ${deviceId}/${sourceName} to ${dbPath}`);
     this.emit('dbDownloaded', deviceId, dbPath);
     this.sources.set(sourceName, source)
+    Logger.info(sourceName, source);
   }
-
 }
-
-  /*
-  async downloadDb(sourceId: string, service: FileTransfer, source: Source) {
-    const dbPath = getTempFilePath(`${sourceId}/m.db`);
-
-    // Read database from source
-    Logger.debug(`Reading database ${sourceId}`);
-    this.emit('dbDownloading', sourceId, dbPath);
-
-    service.on('fileTransferProgress', (progress) => {
-      this.emit('dbProgress', sourceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
-    });
-
-    // Save database to a file
-    const file = await service.getFile(source.database.location);
-    Logger.debug(`Saving ${sourceId} to ${dbPath}`);
-    fs.writeFileSync(dbPath, Buffer.from(file));
-    this.sources.set(sourceId, dbPath);
-
-    Logger.debug(`Downloaded ${sourceId} to ${dbPath}`);
-    this.emit('dbDownloaded', sourceId, dbPath);
-  }
-
-  */
 
   getDbPath(dbSourceName?: string) {
     if (!this.sources.size)

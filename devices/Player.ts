@@ -187,8 +187,8 @@ export class Player extends EventEmitter {
 
     if (currentState.trackNetworkPath && currentState.trackNetworkPath.startsWith('net:')) {
       const pathParts = currentState.trackNetworkPath.split('net://')[1].split('/', 2);
-      currentState.dbSourceName = `net://${pathParts[0]}/${pathParts[1]}`;
-      currentState.deviceId = `net://${pathParts[0]}`;
+      currentState.dbSourceName = pathParts[1];//`net://${pathParts[0]}/${pathParts[1]}`;
+      currentState.deviceId = pathParts[0];//`net://${pathParts[0]}`;
     } else if (!currentState.source || /Unknown/.test(currentState.source)) {
       // Tracks from streaming sources won't be in the database.
       currentState.dbSourceName = '';
