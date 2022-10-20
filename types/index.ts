@@ -7,6 +7,7 @@ export * from './player';
 export * from './tokens';
 export * from './models';
 export * from './DeviceId';
+export * from './Devices';
 
 export interface DiscoveryMessage {
 	token: Uint8Array;
@@ -59,7 +60,7 @@ export type IpAddress = string;
 export type IpAddressPort = string;
 
 
-export enum Services  {
+export enum ServiceList  {
 	StateMap =  "StateMap",
 	FileTransfer = "FileTransfer",
 	Directory = "DirectoryService",
@@ -70,5 +71,5 @@ export interface StageLinqOptions {
 	maxRetries?: number;
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
-	services?: Services[];
+	services?: ServiceList[];
 }

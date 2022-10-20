@@ -2,15 +2,7 @@ import { Discovery } from '../network';
 import { Player } from '../devices/Player';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus} from '../types';
-import {
-  FileTransfer,
-  StateData,
-  StateMap,
-  //TimeSynchronization,
-  Directory,
-} from '../services';
-
+import { ActingAsDevice, StageLinqOptions, Devices, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus} from '../types';
 import { Databases } from '../Databases';
 import * as Services from '../services';
 import { Socket } from 'net';
@@ -35,14 +27,22 @@ type DeviceSocket = Map<string, Socket>
 export interface DeviceSockets {
   [key: string]: DeviceSocket;
 }
-
+/*
+export interface Devices {
+  [key: string]: {
+    info: ConnectionInfo;
+    service?: DeviceService;
+    socket?: DeviceSocket;
+  }
+}
+*/
 export declare interface StageLinq {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, socket: Socket) => void): this;
-  on(event: 'message', listener: ( message: ServiceMessage<StateData>) => void): this;
+  on(event: 'message', listener: ( message: ServiceMessage<Services.StateData>) => void): this;
   on(event: 'ready', listener: () => void): this;
 }
 
@@ -56,11 +56,12 @@ export class StageLinq extends EventEmitter {
   public serviceList: string[] = [];
   public readonly _services: Map<string, InstanceType<typeof Services.Service>> = new Map();
   private _databases: Databases;
+  public devices = new Devices();
 
   public options: StageLinqOptions;
 
   public logger: Logger = Logger.instance;
-  public discovery: Discovery = new Discovery;
+  public discovery: Discovery = new Discovery(this);
 
   constructor(options?: StageLinqOptions) {
     super();
@@ -68,6 +69,31 @@ export class StageLinq extends EventEmitter {
     this._databases = new Databases(this);
   }
 
+  ////// Getters & Setters /////////
+  get databases() {
+    return this._databases;
+  }
+  /*
+  setInfo(deviceId: DeviceId, info: ConnectionInfo) {
+    this.devices[deviceId.toString()].info = info;
+  } 
+
+  getService(deviceId: DeviceId, serviceName: string) {
+    return this.devices[deviceId.toString()].service.get(serviceName);
+  } 
+
+  setService(deviceId: DeviceId, serviceName: string, service: InstanceType<typeof Services.Service>) {
+    this.devices[deviceId.toString()].service.set(serviceName, service);
+  } 
+
+  getSocket(deviceId: DeviceId, serviceName: string) {
+    return this.devices[deviceId.toString()].socket.get(serviceName);
+  } 
+  
+  setSocket(deviceId: DeviceId, serviceName: string, socket: Socket) {
+    this.devices[deviceId.toString()].socket.set(serviceName, socket);
+  } 
+*/
   /**
    * Connect to the StageLinq network.
    */
@@ -77,12 +103,12 @@ export class StageLinq extends EventEmitter {
     
     //  Select Services to offer
     this.serviceList = [
-      FileTransfer.name, 
-      StateMap.name,
+      Services.FileTransfer.name, 
+      Services.StateMap.name,
     ];
 
     //  Directory is required
-    const directory = await this.startServiceListener(Directory);
+    const directory = await this.startServiceListener(Services.Directory);
 
     //  Announce myself with Directory port
     await this.discovery.announce(directory.serverInfo.port);   
@@ -133,7 +159,7 @@ export class StageLinq extends EventEmitter {
       //testDownloadFile(this);
     });
   }
-
+  
   
   private async setupStateMap(service: InstanceType<typeof Services.Service>) {
     // Setup StateMap
@@ -173,11 +199,6 @@ export class StageLinq extends EventEmitter {
    })
   }
 
-
-  get databases() {
-    return this._databases;
-  }
-  
 
   async downloadFile(_deviceId: string, path: string) {
     

@@ -7,7 +7,9 @@ import { strict as assert } from 'assert';
 import { sleep, WriteContext } from '../utils';
 import { networkInterfaces } from 'os';
 import { subnet, SubnetInfo } from 'ip';
+import * as Services from '../services';
 import { Logger } from '../LogEmitter';
+import { StageLinq } from '../StageLinq';
 
 
 export interface DiscoveryMessageOptions {
@@ -24,20 +26,29 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
  * Continuously listens for devices to announce themselves. When they do,
  * execute a callback.
  */
+
+
+
 export class Discovery {
     private socket: Socket;
     private address: IpAddress;
     private broadcastAddress: IpAddress;   
     private options: DiscoveryMessageOptions = null;
     public peers: Map<string, ConnectionInfo> = new Map(); //FIXME figure out getter/setter methods for this?
+    public parent: InstanceType<typeof StageLinq>;
 
     private announceTimer: NodeJS.Timer;
   
+    constructor(_parent: InstanceType<typeof StageLinq>) {
+        this.parent = _parent;
+    }
+
     async init(options:DiscoveryMessageOptions) {
         this.options = options;
         await this.listenForDevices( (connectionInfo) => {
             const deviceId = new DeviceId(connectionInfo.token)
             this.peers.set(deviceId.toString(), connectionInfo);
+            this.parent.devices.setInfo(deviceId, connectionInfo);
         });
     }
     

@@ -118,10 +118,12 @@ export class Directory extends Service<DirectoryData> {
 
     this.parent.services[deviceId.toString()] = new Map();
     this.parent.sockets[deviceId.toString()] = new Map();
+    //this.parent.devices.
 
     for (const service of services) {
       
-      this.parent.services[deviceId.toString()].set(service.name, service)
+      this.parent.services[deviceId.toString()].set(service.name, service);
+      //this.parent.devices.setService(deviceId, service.name, service);
 
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
       ctx.write(Tokens.Listen);

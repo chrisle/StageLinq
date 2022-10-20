@@ -1,6 +1,6 @@
 import Database = require('better-sqlite3');
 import { Track } from '../types';
-
+import { inflate as Inflate } from 'zlib'
 
 export class DbConnection {
 
@@ -26,13 +26,26 @@ export class DbConnection {
     return result.all(params);
   }
 
+
+  async inflate(data: Buffer): Promise<Buffer> {
+    return new Promise((resolve, reject) =>{
+      Inflate(data.slice(4), (err, buffer) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(buffer);
+        }
+       });
+    });
+  }
+
   /**
    * Return track's DB entry.
    *
    * @param trackPath Path of track on the source's filesystem.
    * @returns
    */
-  getTrackInfo(trackPath: string): Track {
+  async getTrackInfo(trackPath: string): Promise<Track> {
     let result: Track[];
     if (/streaming:\/\//.test(trackPath)) {
       result = this.querySource('SELECT * FROM Track WHERE uri = (?) LIMIT 1', trackPath);
@@ -40,6 +53,10 @@ export class DbConnection {
       result = this.querySource('SELECT * FROM Track WHERE path = (?) LIMIT 1', trackPath);
     }
     if (!result) throw new Error(`Could not find track: ${trackPath} in database.`);
+    result[0].trackData = await this.inflate(result[0].trackData);
+    result[0].overviewWaveFormData = await this.inflate(result[0].overviewWaveFormData);
+    result[0].beatData = await this.inflate(result[0].beatData);
+
     return result[0];
   }
 

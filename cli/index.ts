@@ -1,4 +1,4 @@
-import { ActingAsDevice, PlayerStatus, StageLinqOptions, Services } from '../types';
+import { ActingAsDevice, PlayerStatus, StageLinqOptions, ServiceList } from '../types';
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
@@ -21,17 +21,15 @@ require('console-stamp')(console, {
 
 let dbDownloaded: boolean = false;
 
-function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
-  if (!dbDownloaded) {
-    return
-  }
-  
+async function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
+
   try {
     const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
     const connection = new DbConnection(dbPath.database.local.path);
-    const result = connection.getTrackInfo(status.trackPath);
+    const result = await connection.getTrackInfo(status.trackPath);
     connection.close();
     console.log('Database entry:', result);
+    //console.warn(result.overviewWaveFormData.toString('hex'));
     return result;
   } catch(e) {
     console.error(e);
@@ -65,6 +63,8 @@ async function main() {
 
   console.log('Starting CLI');
 
+  
+
   const stageLinqOptions: StageLinqOptions = {
 
     // If set to true, download the source DBs in a temporary location.
@@ -80,9 +80,9 @@ async function main() {
     actingAs: ActingAsDevice.NowPlaying,
 
     services: [
-      Services.StateMap,
-      Services.FileTransfer,
-      Services.Directory,
+      ServiceList.StateMap,
+      ServiceList.FileTransfer,
+      ServiceList.Directory,
     ],
   }
 
@@ -173,7 +173,6 @@ async function main() {
   
   });
   
-
   // Fires when the state of a device has changed.
   stageLinq.on('stateChanged', (status) => {
     console.log(`Updating state [${status.deck}]`, status)

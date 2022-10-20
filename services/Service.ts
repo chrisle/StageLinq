@@ -73,7 +73,7 @@ export abstract class Service<T> extends EventEmitter {
 	async createServer(): Promise<Server> {
 		return await new Promise((resolve, reject) => {
 			
-			const server = net.createServer((socket) => {
+			const server = net.createServer(async (socket) => {
 				
 				//Handle identification of incoming socket. 
 				const addressInfo:AddressInfo = {
@@ -85,12 +85,24 @@ export abstract class Service<T> extends EventEmitter {
 
 				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
 
+				
+
 				clearTimeout(this.timeout);
 				
 				//Initialize fresh buffer queue for this connection			
 				this.peerBuffers[ipAddressPort] = null;
 				
 				//get device id from list of peers. will check if undefined later.
+				//while (!this.parent.devices.getDeviceIdFromIpAddressPort(ipAddressPort)) {
+				//	await sleep(250);
+				//}
+				//let deviceId = await this.parent.devices.getDeviceIdFromIpAddressPort(ipAddressPort);
+				//Logger.warn(_deviceId);
+				//if (_deviceId) {
+				//	Logger.warn(`deviceIdFromIpAddressPort: ${_deviceId.toString()}`);
+				//}
+				
+				
 				let deviceId = this.peerDeviceIds[ipAddressPort];
 
 				socket.on('error', (err) => {

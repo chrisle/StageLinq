@@ -52,9 +52,13 @@ export class Databases extends EventEmitter {
     
     Logger.debug(`downloadDb request for ${deviceId}`);
     
+    //const service = this.parent.devices.getService(new DeviceId(deviceId), Services.FileTransfer.name) as Services.FileTransfer;
     const service = this.parent.services[deviceId].get('FileTransfer') as Services.FileTransfer ;
+    
+    //const socket = this.parent.devices.getSocket(new DeviceId(deviceId), Services.FileTransfer.name); 
     const socket = this.parent.sockets[deviceId].get('FileTransfer');
     
+
     for (const [sourceName, source] of service.sources) {
       const dbPath = getTempFilePath(`${deviceId}/${sourceName}/m.db`);
 
