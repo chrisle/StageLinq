@@ -29,7 +29,6 @@ async function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
     const result = await connection.getTrackInfo(status.trackPath);
     connection.close();
     console.log('Database entry:', result);
-    //console.warn(result.overviewWaveFormData.toString('hex'));
     return result;
   } catch(e) {
     console.error(e);

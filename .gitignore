@@ -110,3 +110,4 @@ version
 log.txt
 .DS_Store
 package-lock.json
+waveform.bin

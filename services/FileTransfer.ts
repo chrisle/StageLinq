@@ -32,6 +32,7 @@ enum MessageId {
   FileTransferChunk = 0x5,
   Unknown0 = 0x8,
   DeviceShutdown = 0x9,
+  RequestSources = 0x7d2,
 }
 
 interface FileTransferProgress {
@@ -52,6 +53,7 @@ export class FileTransfer extends Service<FileTransferData> {
   public services: Map<string, FileTransferServiceData> = new Map();
   public sources: Map<string, Source> = new Map();
   private _isAvailable: boolean = true;
+  private txId: number = 1;
 
   public deviceSources: Map<string, DeviceSources> = new Map();
 
@@ -73,27 +75,24 @@ export class FileTransfer extends Service<FileTransferData> {
       Logger.error(assert(check === MAGIC_MARKER))
     }
 
-    let code = p_ctx.readUInt32();
+    const txId = p_ctx.readUInt32();
 
-    // If first 4 bytes are non-zero, a timecode is sent
-    if (code > 0) {
-      assert(p_ctx.sizeLeft() === 8);
-      const id = p_ctx.readUInt32();
-      assert(id === 0x07d2);
-      assert(p_ctx.readUInt32() === 0);
-
-      return {
-        id: MessageId.TimeCode,
-        message: {
-          timecode: code,
-        },
-        socket: socket,
-      };
-    }
-
-    // Else
     const messageId: MessageId = p_ctx.readUInt32();
+    
     switch (messageId) {
+      case MessageId.RequestSources: {
+        assert(p_ctx.readUInt32() === 0x0)
+        assert(p_ctx.isEOF());
+        
+        return {
+          id: MessageId.RequestSources,
+          message: {
+            txId: txId,
+          },
+          socket: socket,
+        };
+      }
+
       case MessageId.SourceLocations: {
         const sources: string[] = [];
         const sourceCount = p_ctx.readUInt32();
@@ -226,6 +225,10 @@ export class FileTransfer extends Service<FileTransferData> {
       //assert(this.receivedFile.sizeLeft() >= p_data.message.size);
       this.receivedFile.write(p_data.message.data);
     }
+    if (p_data && p_data.id === MessageId.RequestSources) {
+      Logger.warn(`req source ${p_data.message.txId} from ${this.getDeviceIdFromSocket(p_data.socket)} `)
+      this.sendNoSourcesReply(p_data.socket, p_data);
+    }
   }
 
   /**
@@ -289,10 +292,10 @@ export class FileTransfer extends Service<FileTransferData> {
         Logger.error(msg);
         throw new Error(msg);
       }
-
+      
       Logger.debug(`Signaling transfer complete.`);
       await this.signalTransferComplete(socket);
-      
+      this.txId++
     }
 
     const buf = this.receivedFile ? this.receivedFile.getBuffer() : null;
@@ -355,7 +358,7 @@ export class FileTransfer extends Service<FileTransferData> {
     // 0x7d1: seems to request some sort of fstat on a file
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(0x0);
+    ctx.writeUInt32(this.txId);
     ctx.writeUInt32(0x7d1);
     ctx.writeNetworkStringUTF16(p_filepath);
     await this.writeWithLength(ctx, socket);
@@ -365,7 +368,7 @@ export class FileTransfer extends Service<FileTransferData> {
     // 0x7d2: Request available sources
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(0x0);
+    ctx.writeUInt32(this.txId);
     ctx.writeUInt32(0x7d2); // Database query
     ctx.writeUInt32(0x0);
     await this.writeWithLength(ctx, socket);
@@ -375,7 +378,7 @@ export class FileTransfer extends Service<FileTransferData> {
     // 0x7d4: Request transfer id?
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(0x0);
+    ctx.writeUInt32(this.txId);
     ctx.writeUInt32(0x7d4);
     ctx.writeNetworkStringUTF16(p_filepath);
     ctx.writeUInt32(0x0); // Not sure why we need 0x0 here
@@ -386,7 +389,7 @@ export class FileTransfer extends Service<FileTransferData> {
     // 0x7d5: seems to be the code to request chunk range
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(0x0);
+    ctx.writeUInt32(this.txId);
     ctx.writeUInt32(0x7d5);
     ctx.writeUInt32(0x0);
     ctx.writeUInt32(p_txid); // I assume this is the transferid
@@ -401,8 +404,20 @@ export class FileTransfer extends Service<FileTransferData> {
     // 0x7d6: seems to be the code to signal transfer completed
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(0x0);
+    ctx.writeUInt32(this.txId);
     ctx.writeUInt32(0x7d6);
+    await this.writeWithLength(ctx, socket);
+  }
+
+  // 00000013 666c747 80000009f 00000003 00000000 010100
+  private async sendNoSourcesReply(socket: Socket, p_data: FileTransferData) {
+    const ctx = new WriteContext();
+    ctx.writeFixedSizedString(MAGIC_MARKER);
+    ctx.writeUInt32(p_data.message.txId);
+    ctx.writeUInt32(0x3);
+    ctx.writeUInt32(0x0);
+    ctx.writeUInt16(257);
+    ctx.writeUInt8(0x0);
     await this.writeWithLength(ctx, socket);
   }
 
