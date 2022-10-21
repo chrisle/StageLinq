@@ -19,7 +19,21 @@ require('console-stamp')(console, {
  * @returns Track info
  */
 
-let dbDownloaded: boolean = false;
+//let dbDownloaded: boolean = false;
+
+function progressBar(size: number, bytes: number, total: number): string {
+
+  const progress = Math.ceil((bytes / total) * 10)
+  let progressArrary = new Array<string>(size);
+  progressArrary.fill(' ');
+  if (progress) {
+    
+    for (let i=0; i<progress; i++) {
+      progressArrary[i] = '|'
+    }
+  }
+  return `[${progressArrary.join('')}]`
+}
 
 async function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
 
@@ -102,18 +116,18 @@ async function main() {
     console.log(...args);
     args.push("\n");
   });
-  stageLinq.logger.on('debug', (...args: any) => {
-    console.debug(...args);
-    args.push("\n");
-  });
+  // stageLinq.logger.on('debug', (...args: any) => {
+  //   console.debug(...args);
+  //   args.push("\n");
+  // });
   // Note: Silly is very verbose!
   // stageLinq.logger.on('silly', (...args: any) => {
   //   console.debug(...args);
   // });
 
   // Fires when we connect to any device
-  stageLinq.on('connected', async (connectionInfo) => {
-    console.log(`Successfully connected to ${connectionInfo.software.name}`);
+  //stageLinq.on('connected', async (connectionInfo) => {
+  //  console.log(`Successfully connected to ${connectionInfo.software.name}`);
 
     if (stageLinq.options.downloadDbSources) {
       // Fires when the database source starts downloading.
@@ -122,18 +136,27 @@ async function main() {
       });
 
       // Fires while the database source is being read
-      stageLinq.databases.on('dbProgress', (sourceName, total, bytes, percent) => {
-        console.debug(`Reading ${sourceName}: ${bytes}/${total} (${Math.ceil(percent)}%)`);
+      stageLinq.databases.on('dbProgress', ( sourceName, total, bytes, percent) => {
+        //console.debug(`Reading ${sourceName}: ${bytes}/${total} (${Math.ceil(percent)}%)`);
+        console.debug(`Reading ${sourceName}: ${progressBar(10,bytes,total)} (${Math.ceil(percent)}%)`);
       });
 
       // Fires when the database source has been read and saved to a temporary path.
       stageLinq.databases.on('dbDownloaded', (sourceName, dbPath) => {
         console.log(`Database (${sourceName}) has been downloaded to ${dbPath}`);
-        dbDownloaded = true;
+       // dbDownloaded = true;
+      });
+
+      stageLinq.on('fileProgress', (file, total, bytes, percent) => {
+        //Logger.warn(thisTxid, txid);
+        //if (thisTxid === txid) {
+          //this.emit('fileProgress', path.split('/').pop(), progress.total, progress.bytesDownloaded, progress.percentComplete);
+          console.debug(`Reading ${file}: ${progressBar(10,bytes,total)} (${Math.ceil(percent)}%)`);
+        //}
       });
     }
 
-  });
+  //});
 
   // Fires when StageLinq and all devices are ready to use.
   stageLinq.on('ready', () => {

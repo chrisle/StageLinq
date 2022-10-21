@@ -44,6 +44,10 @@ export declare interface StageLinq {
   on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, socket: Socket) => void): this;
   on(event: 'message', listener: ( message: ServiceMessage<Services.StateData>) => void): this;
   on(event: 'ready', listener: () => void): this;
+
+  //on(event: 'fileDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
+  //on(event: 'fileDownloading', listener: (sourceName: string, dbPath: string) => void): this;
+  on(event: 'fileProgress', listener: (path: string, total: number, bytesDownloaded: number, percentComplete: number) => void): this;
 }
 
 /**
@@ -152,12 +156,13 @@ export class StageLinq extends EventEmitter {
 
 
   private async setupFileTransfer(service: InstanceType<typeof Services.Service>) {
-    const fileTransfer = service as Services.FileTransfer;
+    // const fileTransfer = service as Services.FileTransfer;
 
-    fileTransfer.on('dbDownloaded', (sourcename, dbPath) => {
-      Logger.debug(`received ${sourcename} ${dbPath}`);
-      //testDownloadFile(this);
-    });
+    Logger.silly(`Set up Service ${service.name}`);
+    // fileTransfer.on('dbDownloaded', (sourcename, dbPath) => {
+    //   Logger.debug(`received ${sourcename} ${dbPath}`);
+    //   //testDownloadFile(this);
+    // });
   }
   
   
@@ -209,8 +214,20 @@ export class StageLinq extends EventEmitter {
     const socket = this.sockets[deviceId.toString()].get('FileTransfer');
     assert(socket);
 
+    
+    
     await service.isAvailable();
     
+    let thisTxid = service.txid;
+
+    service.on('fileTransferProgress', (txid, progress) => {
+      //Logger.warn(thisTxid, txid);
+      if (thisTxid === txid) {
+        this.emit('fileProgress', path.split('/').pop(), progress.total, progress.bytesDownloaded, progress.percentComplete);
+        //Logger.debug('fileProgress', path.split('/').pop(), progress.total, progress.bytesDownloaded, progress.percentComplete);
+      }
+    });
+
     try {
       const file = await service.getFile(path,socket);
       return file;

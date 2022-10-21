@@ -58,16 +58,19 @@ export class Databases extends EventEmitter {
     //const socket = this.parent.devices.getSocket(new DeviceId(deviceId), Services.FileTransfer.name); 
     const socket = this.parent.sockets[deviceId].get('FileTransfer');
     
+    let thisTxid: number = 0
 
     for (const [sourceName, source] of service.sources) {
       const dbPath = getTempFilePath(`${deviceId}/${sourceName}/m.db`);
 
       Logger.info(`Reading database ${deviceId}/${source.name}`);
-      this.emit('dbDownloading', deviceId, dbPath);
+      this.emit('dbDownloading', sourceName, dbPath);
 
-      service.on('fileTransferProgress', (progress) => {
-        this.emit('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
-        Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
+      service.on('fileTransferProgress', (txid, progress) => {
+        if (thisTxid === txid) {
+          this.emit('dbProgress', sourceName, progress.total, progress.bytesDownloaded, progress.percentComplete);
+          //Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
+        }
       });
 
     source.database.local = {
@@ -75,6 +78,7 @@ export class Databases extends EventEmitter {
     };
     
       // Save database to a file
+    thisTxid = service.txid;
     const file = await service.getFile(source.database.location, socket);
     Logger.info(`Saving ${deviceId}/${sourceName} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
@@ -82,7 +86,7 @@ export class Databases extends EventEmitter {
     Logger.info(`Downloaded ${deviceId}/${sourceName} to ${dbPath}`);
     this.emit('dbDownloaded', deviceId, dbPath);
     this.sources.set(sourceName, source)
-    Logger.info(sourceName, source);
+    //Logger.info(sourceName, source);
   }
 }
 

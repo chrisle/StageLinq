@@ -43,8 +43,8 @@ interface FileTransferProgress {
 }
 
 export declare interface FileTransfer {
-  on(event: 'fileTransferProgress', listener: (progress: FileTransferProgress) => void): this;
-  on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
+  on(event: 'fileTransferProgress', listener: (txId: number, progress: FileTransferProgress) => void): this;
+  //on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
 }
 
 export class FileTransfer extends Service<FileTransferData> {
@@ -58,6 +58,10 @@ export class FileTransfer extends Service<FileTransferData> {
   public deviceSources: Map<string, DeviceSources> = new Map();
 
   async init() {}
+
+  public get txid() {
+    return this.txId;
+  }
 
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
     assert((socket));
@@ -87,7 +91,7 @@ export class FileTransfer extends Service<FileTransferData> {
         return {
           id: MessageId.RequestSources,
           message: {
-            txId: txId,
+            txid: txId,
           },
           socket: socket,
         };
@@ -115,6 +119,7 @@ export class FileTransfer extends Service<FileTransferData> {
         return {
           id: messageId,
           message: {
+            txid: txId,
             sources: sources,
             socket: socket,
           },
@@ -132,6 +137,7 @@ export class FileTransfer extends Service<FileTransferData> {
           id: messageId,
           message: {
             size: size,
+            txid: txId,
           },
           socket: socket,
         };
@@ -152,14 +158,14 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.readUInt32() === 0x0);
         const filesize = p_ctx.readUInt32();
         const id = p_ctx.readUInt32();
-
+        assert(id === 1)
         //Logger.debug(id, filesize);
         return {
           id: messageId,
           socket: socket,
           message: {
             size: filesize,
-            txid: id,
+            txid: txId,
           },
         };
       }
@@ -176,6 +182,7 @@ export class FileTransfer extends Service<FileTransferData> {
           id: messageId,
           socket: socket,
           message: {
+            txid: txId,
             data: p_ctx.readRemainingAsNewBuffer(),
             offset: offset,
             size: chunksize,
@@ -226,7 +233,7 @@ export class FileTransfer extends Service<FileTransferData> {
       this.receivedFile.write(p_data.message.data);
     }
     if (p_data && p_data.id === MessageId.RequestSources) {
-      Logger.warn(`req source ${p_data.message.txId} from ${this.getDeviceIdFromSocket(p_data.socket)} `)
+      //Logger.warn(`req source ${p_data.message.txId} from ${this.getDeviceIdFromSocket(p_data.socket)} `)
       this.sendNoSourcesReply(p_data.socket, p_data);
     }
   }
@@ -253,7 +260,6 @@ export class FileTransfer extends Service<FileTransferData> {
       this.receivedFile = new WriteContext({ size: txinfo.size });
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
       const total = parseInt(txinfo.size);
-      Logger.debug(totalChunks, total)
 
       if (total === 0) {
         Logger.warn(`${p_location} doesn't exist or is a streaming file`);
@@ -261,7 +267,7 @@ export class FileTransfer extends Service<FileTransferData> {
         this._isAvailable = true;
         return;
       }
-      await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1, socket);
+      await this.requestChunkRange(1, 0, totalChunks - 1, socket);
 
       try {
         await new Promise(async (resolve, reject) => {
@@ -272,14 +278,14 @@ export class FileTransfer extends Service<FileTransferData> {
           while (this.receivedFile.isEOF() === false) {
             const bytesDownloaded = total - this.receivedFile.sizeLeft();
             const percentComplete = (bytesDownloaded / total) * 100;
-            this.emit('fileTransferProgress', {
+            this.emit('fileTransferProgress', this.txId,{
               sizeLeft: this.receivedFile.sizeLeft(),
               total: txinfo.size,
               bytesDownloaded: bytesDownloaded,
               percentComplete: percentComplete
             })
             //Logger.info(`sizeleft ${this.receivedFile.sizeLeft()} total ${txinfo.size} total ${total}`);
-            Logger.info(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
+            //Logger.info(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
             await sleep(200);
           }
           Logger.info(`Download complete.`);
@@ -413,7 +419,7 @@ export class FileTransfer extends Service<FileTransferData> {
   private async sendNoSourcesReply(socket: Socket, p_data: FileTransferData) {
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(p_data.message.txId);
+    ctx.writeUInt32(p_data.message.txid);
     ctx.writeUInt32(0x3);
     ctx.writeUInt32(0x0);
     ctx.writeUInt16(257);

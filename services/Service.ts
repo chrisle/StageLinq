@@ -9,14 +9,14 @@ import * as net from 'net';
 import type { ServiceMessage, IpAddressPort } from '../types';
 import { StageLinq } from '../StageLinq';
 
-export declare interface ServiceDevice {
-	on(event: 'listening', listener: (address: AddressInfo) => void): this;
-	on(event: 'connected', listener: (socket: Socket) => void): this;
-	//on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
-	//on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
-	//on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
-	//on(event: 'ready', listener: () => void): this;
-  }
+// export declare interface ServiceDevice {
+// 	on(event: 'listening', listener: (address: AddressInfo) => void): this;
+// 	on(event: 'connected', listener: (socket: Socket) => void): this;
+// 	//on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
+// 	//on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
+// 	//on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
+// 	//on(event: 'ready', listener: () => void): this;
+//   }
 
 export declare type ServiceData = {
 	socket?: Socket;
