@@ -17,7 +17,8 @@ export class StageLinqListener {
    * @param callback Callback when new device is discovered.
    */
   listenForDevices(callback: DeviceDiscoveryCallback) {
-    const client = createSocket('udp4');
+    
+    const client = createSocket({type: 'udp4', reuseAddr: true});
     client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
       const ctx = new ReadContext(p_announcement.buffer, false);
       const result = this.readConnectionInfo(ctx, p_remote.address);
