@@ -47,7 +47,7 @@ function writeDiscoveryMessage(p_ctx: WriteContext, p_message: DiscoveryMessage)
 async function initUdpSocket(): Promise<UDPSocket> {
   return new Promise<UDPSocket>((resolve, reject) => {
     try {
-      const client = createSocket('udp4');
+      const client = createSocket({type: 'udp4', reuseAddr: true});
       client.bind(); // we need to bind to a random port in order to enable broadcasting
       client.on('listening', () => {
         client.setBroadcast(true); // needs to be true in order to UDP multicast on MacOS
