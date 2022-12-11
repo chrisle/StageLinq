@@ -50,4 +50,5 @@ export interface StageLinqOptions {
 	maxRetries?: number;
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
+	enableFileTranfer?: boolean;
 }

@@ -7,7 +7,8 @@ import { Action, ActingAsDevice, StageLinqOptions } from '../types';
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
   actingAs: ActingAsDevice.NowPlaying,
-  downloadDbSources: true
+  downloadDbSources: true,
+  enableFileTranfer: true
 };
 
 /**

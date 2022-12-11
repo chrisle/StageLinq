@@ -11,7 +11,7 @@ enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
 
 interface StageLinqDevice {
   networkDevice: NetworkDevice;
-  fileTransferService: FileTransfer;
+  fileTransferService: FileTransfer | null;
 };
 
 // This time needs to be just long enough for discovery messages from all to
@@ -83,11 +83,17 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   async downloadFile(deviceId: string, path: string) {
-    const device = this.devices.get(deviceId);
-    //Wait until FileTransfer.getFile is free
-    await device.fileTransferService.waitTillAvailable();
-    const file = await device.fileTransferService.getFile(path);
-    return file;
+    if (this.options.enableFileTranfer) {
+      const device = this.devices.get(deviceId);
+      // Wait until FileTransfer.getFile is free
+      await device.fileTransferService.waitTillAvailable();
+      const file = await device.fileTransferService.getFile(path);
+      return file;
+    } else {
+      const err = `File transfer service is not enabled. Cannot download ${path}`
+      Logger.error(err);
+      throw new Error(err);
+    }
   }
 
   ////////////////////////////////////////////////////////////////////////////
@@ -164,7 +170,7 @@ export class StageLinqDevices extends EventEmitter {
         await this.setupFileTransferService(networkDevice, connectionInfo);
 
         // Download the database
-        if (this.options.downloadDbSources) {
+        if (this.options.enableFileTranfer && this.options.downloadDbSources) {
           await this.downloadDatabase(networkDevice, connectionInfo);
         }
 
@@ -199,13 +205,22 @@ export class StageLinqDevices extends EventEmitter {
 
   private async setupFileTransferService(networkDevice: NetworkDevice, connectionInfo: ConnectionInfo) {
     const sourceId = this.sourceId(connectionInfo);
-    Logger.info(`Starting file transfer for ${this.deviceId(connectionInfo)}`);
-    const fileTransfer = await networkDevice.connectToService(FileTransfer);
 
-    this.devices.set(`net://${sourceId}`, {
-      networkDevice: networkDevice,
-      fileTransferService: fileTransfer
-    });
+    if (this.options.enableFileTranfer) {
+      Logger.info(`Starting file transfer for ${this.deviceId(connectionInfo)}`);
+      const fileTransferService = await networkDevice.connectToService(FileTransfer);
+      this.devices.set(`net://${sourceId}`, {
+        networkDevice: networkDevice,
+        fileTransferService: fileTransferService
+      });
+    } else {
+      this.devices.set(`net://${sourceId}`, {
+        networkDevice: networkDevice,
+        fileTransferService: null
+      });
+    }
+
+
   }
 
   /**
