@@ -82,6 +82,10 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
 }
 
 export async function unannounce(message: DiscoveryMessage): Promise<void> {
+  if (!announceTimer) {
+    Logger.warn('Announce timer has not started.');
+    return;
+  }
   assert(announceTimer);
   clearInterval(announceTimer);
   announceTimer = null;
