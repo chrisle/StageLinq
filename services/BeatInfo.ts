@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
-//import { Logger } from '../LogEmitter';
+import { Logger } from '../LogEmitter';
 import type { ServiceMessage, DeviceId } from '../types';
 import { Socket } from 'net';
 
@@ -112,11 +112,8 @@ export class BeatInfo extends Service<BeatData> {
 	
 
     protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<BeatData> {
-       // assert(( messageId ));
-       // assert(( socket ));
-       // assert(( deviceId ));
-      //  assert(( serviceName ));
-        
-        return
+		assert((socket));
+		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.toString()}`)
+		return
       }
 }
