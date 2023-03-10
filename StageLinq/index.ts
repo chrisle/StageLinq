@@ -8,6 +8,7 @@ import * as Services from '../services';
 import { Socket } from 'net';
 import { assert } from 'console';
 import { sleep } from '../utils';
+import { BeatData } from '../services/BeatInfo';
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
@@ -109,6 +110,7 @@ export class StageLinq extends EventEmitter {
     this.serviceList = [
       Services.FileTransfer.name, 
       Services.StateMap.name,
+      Services.BeatInfo.name,
     ];
 
     //  Directory is required
@@ -149,6 +151,9 @@ export class StageLinq extends EventEmitter {
     }
     if (service.name == 'FileTransfer' ) {
       this.setupFileTransfer(service)
+    }
+    if (service.name == 'BeatInfo' ) {
+      this.setupBeatInfo(service)
     }
     this._services.set(serviceName, service);
     return service;
@@ -204,6 +209,43 @@ export class StageLinq extends EventEmitter {
    })
   }
 
+
+  private async setupBeatInfo(service: InstanceType<typeof Services.Service>) {
+    // const fileTransfer = service as Services.FileTransfer;
+
+    Logger.silly(`Set up Service ${service.name}`);
+   
+    const beatInfo = service as Services.BeatInfo;
+    
+     // Just a counter to test resolution
+     let beatCalls: number = 0; 
+        
+     //  User callback function. 
+     //  Will be triggered everytime a player's beat counter crosses the resolution threshold
+     function beatCallback(bd: BeatData) {
+       let playerBeatString = ""
+       for (let i=0; i<bd.playerCount; i++) {
+         playerBeatString += `Player: ${i+1} Beat: ${bd.player[i].beat.toFixed(3)} `
+       }
+       console.warn(`Total Calls ${beatCalls} ${playerBeatString}`);
+       beatCalls++
+     }
+
+     //  User Options
+     const beatOptions = {
+       everyNBeats: 1, // 1 = every beat, 4 = every 4 beats, .25 = every 1/4 beat
+     }
+     
+     //  Start BeatInfo, pass user callback
+     
+     beatInfo.server.on("connection", (socket) =>{
+      beatInfo.startBeatInfo(beatCallback, beatOptions, socket);
+     }); 
+     
+     
+     
+
+  }
 
   async downloadFile(_deviceId: string, path: string) {
     

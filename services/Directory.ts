@@ -8,6 +8,7 @@ import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import { FileTransfer } from './FileTransfer';
 import { StateMap } from './StateMap';
+import { BeatInfo } from './BeatInfo';
 
 export interface DirectoryData {
   deviceId: string;
@@ -109,6 +110,11 @@ export class Directory extends Service<DirectoryData> {
         case 'StateMap': {
           const stateMap = await this.parent.startServiceListener(StateMap, deviceId);
           services.push(stateMap);
+          break;
+        }
+        case 'BeatInfo': {
+          const beatInfo = await this.parent.startServiceListener(BeatInfo, deviceId);
+          services.push(beatInfo);
           break;
         }
         default:
