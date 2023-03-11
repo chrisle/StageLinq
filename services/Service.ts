@@ -62,7 +62,7 @@ export abstract class Service<T> extends EventEmitter {
 	protected timeout: NodeJS.Timer;
 	protected expectedDeviceId: DeviceId = null;
 	
-	private msgId: number = 0; //only used fro debugging
+	private msgId: number = 0; //only used for debugging
 
 	constructor(p_parent:InstanceType<typeof StageLinq>, deviceId?: DeviceId) {
 		super();

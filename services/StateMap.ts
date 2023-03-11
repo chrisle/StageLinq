@@ -127,7 +127,6 @@ export class StateMap extends Service<StateData> {
     
     const deviceId = this.getDeviceIdFromSocket(socket);
 
-    //Logger.debug('checking stateMap', this.parent.discovery.peers.keys());
     while (!this.parent.discovery.peers.has(deviceId.toString())) {
       await sleep(200);
     }
@@ -135,8 +134,8 @@ export class StateMap extends Service<StateData> {
     Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
 
     const thisPeer = this.parent.discovery.peers.get(deviceId.toString());
-    //assert(thisPeer);
 
+    //TODO Better test for mixer
     if (thisPeer && thisPeer.software.name === 'JM08') {
       for (const state of StatesMixer) {
         await this.subscribeState(state, 0, socket);
@@ -144,22 +143,14 @@ export class StateMap extends Service<StateData> {
     } else {
       for (const state of States) {
         await this.subscribeState(state, 0, socket);
-      }
-      //const keys = Object.keys(StageLinqValueObj);
-      //const values = keys.map(key => Reflect.get(StageLinqValueObj,key))
-      //for (const value of values) {
-      //  await this.subscribeState(value, 0, socket);
-      //}    
+      }  
     }
   }
 
-  
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
     sleep(500)
     
-    
-    //this.subscribe(socket);
     this.emit('newStateMapDevice', deviceId, socket)
     return
   }
