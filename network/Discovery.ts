@@ -1,4 +1,4 @@
-import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, DeviceId, } from '../types';
+import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, DeviceId, deviceIdFromBuff } from '../types';
 import { Socket, RemoteInfo } from 'dgram';
 import * as UDPSocket from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from '../types/common';
@@ -38,6 +38,7 @@ export class Discovery {
     public parent: InstanceType<typeof StageLinq>;
 
     private announceTimer: NodeJS.Timer;
+    private hasLooped: boolean = false;
   
     constructor(_parent: InstanceType<typeof StageLinq>) {
         this.parent = _parent;
@@ -46,9 +47,25 @@ export class Discovery {
     async init(options:DiscoveryMessageOptions) {
         this.options = options;
         await this.listenForDevices( (connectionInfo) => {
-            const deviceId = new DeviceId(connectionInfo.token)
-            this.peers.set(deviceId.toString(), connectionInfo);
-            this.parent.devices.setInfo(deviceId, connectionInfo);
+            
+            
+            if (!this.parent.devices.hasDeviceIdString(deviceIdFromBuff(connectionInfo.token)) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
+                const deviceId = new DeviceId(connectionInfo.token)
+                this.peers.set(deviceId.toString(), connectionInfo);
+                this.parent.devices.setInfo(deviceId, connectionInfo);
+                Logger.debug(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${deviceId.toString()}`)
+            } else {
+                this.hasLooped = true;
+            }
+
+            if (this.parent.devices.hasDeviceIdString(deviceIdFromBuff(connectionInfo.token)) && this.parent.devices.getDeviceInfoFromString(deviceIdFromBuff(connectionInfo.token)).port !== connectionInfo.port) {
+                const deviceId = new DeviceId(connectionInfo.token)
+                this.peers.set(deviceId.toString(), connectionInfo);
+                this.parent.devices.setInfo(deviceId, connectionInfo);
+                Logger.debug(`Updated port for From ${deviceId.toString()}`)
+            } 
+
+
         });
     }
     
@@ -61,7 +78,10 @@ export class Discovery {
         
         //  wait for a recieved UDP message to determine the correct interface
         //  no need to rush this as we want the list of peers to be close to complete
-        while (!this.address) {
+        // while (!this.address) {
+        //     await sleep(250);
+        // }
+        while (!this.hasLooped) {
             await sleep(250);
         }
 
@@ -110,13 +130,13 @@ export class Discovery {
     private async listenForDevices(callback: DeviceDiscoveryCallback) {
         this.socket = UDPSocket.createSocket('udp4');
         this.socket.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
-        const ctx = new ReadContext(p_announcement.buffer, false);
-        const result = this.readConnectionInfo(ctx, p_remote.address);
-        if (!this.address) {
-            this.address = p_remote.address
-        }
-        assert(ctx.tell() === p_remote.size);
-        callback(result);
+            const ctx = new ReadContext(p_announcement.buffer, false);
+            const result = this.readConnectionInfo(ctx, p_remote.address);
+            if (!this.address) {
+                this.address = p_remote.address
+            }
+            assert(ctx.tell() === p_remote.size);
+            callback(result);
         });
         this.socket.bind({
             port: LISTEN_PORT,
