@@ -73,3 +73,22 @@ export interface StageLinqOptions {
 	downloadDbSources?: boolean;
 	services?: ServiceList[];
 }
+
+
+export const deviceIds = {
+	JC11: { name: 'PRIME4', type: 'CONTROLLER' },
+	JC16: { name: 'PRIME2', type: 'CONTROLLER' },
+	JC20: { name: 'LC6000', type: 'OTHER' },
+	JP07: { name: 'SC5000', type: 'PLAYER' },
+	JP08: { name: 'SC5000M', type: 'PLAYER' },
+	JP11: { name: 'PRIMEGO', type: 'CONTROLLER' },
+	JP13: { name: 'SC6000', type: 'PLAYER' },
+	JP14: { name: 'SC6000M', type: 'PLAYER' },
+	JP20: { name: 'SCLIVE2', type: 'CONTROLLER' },
+	JP21: { name: 'SCLIVE4', type: 'CONTROLLER' },
+	NH08: { name: 'MIXSTREAMPRO', type: 'CONTROLLER' },
+	NH09: { name: 'MIXSTREAMPROPLUS', type: 'CONTROLLER' },
+	NH10: { name: 'MIXSTREAMPROGO', type: 'CONTROLLER' },
+	JM08: { name: 'DN-X1800Prime', type: 'MIXER' },
+	JM10: { name: 'DN-X1850Prime', type: 'MIXER' }
+  }

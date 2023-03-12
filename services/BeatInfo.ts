@@ -107,7 +107,6 @@ export class BeatInfo extends Service<BeatData> {
                 this._userBeatCallback(p_data.message);
             }
         }
-		
 	}
 	
 

@@ -73,10 +73,8 @@ async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: st
 
 
 async function main() {
-
-  console.log('Starting CLI');
-
   
+  console.log('Starting CLI');
 
   const stageLinqOptions: StageLinqOptions = {
 
@@ -183,7 +181,7 @@ async function main() {
   });
 
   // Fires when StageLinq receives messages from a device.
-  stageLinq.on('message',  (data) => { 
+  stageLinq.on('stateMessage',  (data) => { 
    if (data.message.json) {
     const msg = data.message.json
     ? JSON.stringify(data.message.json)

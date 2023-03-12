@@ -41,12 +41,12 @@ export class Directory extends Service<DirectoryData> {
     while (ctx.isEOF() === false) {
       const id = ctx.readUInt32();
       const token = ctx.read(16);
-      const deviceId = new DeviceId(token);
-      const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-      const peer = this.parent.discovery.peers.get(deviceId.toString());
+      this.deviceId = new DeviceId(token);
+      //const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
+      const peer = this.parent.discovery.peers.get(this.deviceId.toString());
 
-      this.peerDeviceIds[ipAddressPort] = deviceId;
-      this.peerSockets.set(deviceId, socket);
+      //this.peerDeviceIds[ipAddressPort] = deviceId;
+      //this.peerSockets.set(deviceId, socket);
 
       switch (id) {
         case MessageId.TimeStamp:
@@ -70,7 +70,7 @@ export class Directory extends Service<DirectoryData> {
           break;
         case MessageId.ServicesRequest:
           ctx.readRemaining(); //
-          this.sendServiceAnnouncement(deviceId, socket);
+          this.sendServiceAnnouncement(this.deviceId, socket);
           break;
         default:
           assert.fail(`NetworkDevice Unhandled message id '${id}'`);

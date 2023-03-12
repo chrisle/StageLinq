@@ -9,14 +9,6 @@ import * as net from 'net';
 import type { ServiceMessage, IpAddressPort } from '../types';
 import { StageLinq } from '../StageLinq';
 
-// export declare interface ServiceDevice {
-// 	on(event: 'listening', listener: (address: AddressInfo) => void): this;
-// 	on(event: 'connected', listener: (socket: Socket) => void): this;
-// 	//on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
-// 	//on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
-// 	//on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
-// 	//on(event: 'ready', listener: () => void): this;
-//   }
 
 export declare type ServiceData = {
 	socket?: Socket;
@@ -24,30 +16,14 @@ export declare type ServiceData = {
 	service?: InstanceType<typeof Service>;
 }
 
-
-//Just a handy debugging feature. I'll expand on this later.
-class MsgId {
-	public id: number = 0;
-	public loopId: number = 1;
-
-	constructor(p_id?: number) {
-		this.id = p_id;
-	}
-
-	incrementId() {this.id++};
-	incrementLoopId() {this.loopId++};
-	reset() {this.loopId = 1}
-	toString(): string { return `[${this.id}]:[${this.loopId}]`	}
-}
-
 type PeerBuffers = {
 	[key: IpAddressPort]: Buffer;
 }
 
 export abstract class Service<T> extends EventEmitter {
-	//public port: number;
-	
 	public readonly name: string = "Service";
+	public deviceId: DeviceId = null;
+
 	protected isBufferedService: boolean = true;
 	protected parent: InstanceType<typeof StageLinq>;
 	
@@ -56,18 +32,18 @@ export abstract class Service<T> extends EventEmitter {
 	public serverStatus: boolean = false;
 	
 	protected peerDeviceIds: Record<IpAddressPort, DeviceId> = {}
-	public peerSockets: Map<DeviceId, Socket> = new Map();
-	public _peerSockets: Record<string, Socket> = {};
+	//public peerSockets: Map<DeviceId, Socket> = new Map();
+	//public _peerSockets: Record<string, Socket> = {};
 	protected peerBuffers: PeerBuffers = {};
 	protected timeout: NodeJS.Timer;
 	protected expectedDeviceId: DeviceId = null;
-	
-	private msgId: number = 0; //only used for debugging
 
+	
 	constructor(p_parent:InstanceType<typeof StageLinq>, deviceId?: DeviceId) {
 		super();
 		this.parent = p_parent;
 		this.expectedDeviceId = deviceId || null;
+		this.deviceId = deviceId || null;
 	}
 	
 	async createServer(): Promise<Server> {
@@ -85,23 +61,10 @@ export abstract class Service<T> extends EventEmitter {
 
 				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
 
-				
-
 				clearTimeout(this.timeout);
 				
 				//Initialize fresh buffer queue for this connection			
 				this.peerBuffers[ipAddressPort] = null;
-				
-				//get device id from list of peers. will check if undefined later.
-				//while (!this.parent.devices.getDeviceIdFromIpAddressPort(ipAddressPort)) {
-				//	await sleep(250);
-				//}
-				//let deviceId = await this.parent.devices.getDeviceIdFromIpAddressPort(ipAddressPort);
-				//Logger.warn(_deviceId);
-				//if (_deviceId) {
-				//	Logger.warn(`deviceIdFromIpAddressPort: ${_deviceId.toString()}`);
-				//}
-				
 				
 				let deviceId = this.peerDeviceIds[ipAddressPort];
 
@@ -110,10 +73,6 @@ export abstract class Service<T> extends EventEmitter {
 				});
 				
 				socket.on('data', async p_data => {
-					
-					//Only used for debugging. 
-					this.msgId++
-					const msgId = new MsgId(this.msgId);
 
 					//append queue to current data
 					let buffer: Buffer = null;
@@ -135,7 +94,6 @@ export abstract class Service<T> extends EventEmitter {
 					if (!this.isBufferedService) {
 						const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(),false), socket);
 						this.messageHandler(parsedData);
-						this.emit('message', parsedData);
 					};
 					
 					//	Check if device has announced itself to this service yet
@@ -158,41 +116,33 @@ export abstract class Service<T> extends EventEmitter {
 						this.parent.sockets[deviceId.toString()].set(this.name, socket);
 						this.peerDeviceIds[ipAddressPort] = deviceId;
 						//this.peerSockets.set(deviceId,socket);
-						this._peerSockets[deviceId.toString()] = socket;
+						//this._peerSockets[deviceId.toString()] = socket;
 						
 						Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`);
 						
 						const parsedData = this.parseServiceData(messageId, deviceId, serviceName, socket);
 						this.messageHandler(parsedData);
-						//this.emit('message', parsedData);
 					} 
 					
 					try {
 						while (ctx.isEOF() === false) {
-							
 							if (ctx.sizeLeft() < 4) {
 								this.peerBuffers[ipAddressPort] = ctx.readRemainingAsNewBuffer();
 								break;
 							}
-
 							const length = ctx.readUInt32();
-							if ( length <= ctx.sizeLeft()) {
-								
+							if ( length <= ctx.sizeLeft()) {	
 								const message = ctx.read(length);
 								// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 								const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-								
-								this.msgId++
 								const parsedData = this.parseData(new ReadContext(data,false), socket);
-								
 								this.messageHandler(parsedData);
-								this.emit('message', parsedData);
+								
 							} else {
 								ctx.seek(-4); // Rewind 4 bytes to include the length again
 								this.peerBuffers[ipAddressPort] = ctx.readRemainingAsNewBuffer();
 								break;
 							}
-							msgId.incrementLoopId();
 						}
 					} catch (err) {
 						Logger.error(this.name, deviceId.toString(), err);
@@ -230,15 +180,15 @@ export abstract class Service<T> extends EventEmitter {
 		return this.peerDeviceIds[[socket.remoteAddress, socket.remotePort].join(':')]
 	}
 
-	async waitForMessage(p_messageId: number): Promise<T> {
+	async waitForMessage(message: string, p_messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
 			const listener = (p_message: ServiceMessage<T>) => {
 				if (p_message.id === p_messageId) {
-					this.removeListener('message', listener);
+					this.removeListener(message, listener);
 					resolve(p_message.message);
 				}
 			};
-			this.addListener('message', listener);
+			this.addListener(message, listener);
 			setTimeout(() => {
 				reject(new Error(`Failed to receive message '${p_messageId}' on time`));
 			}, MESSAGE_TIMEOUT);
@@ -264,26 +214,6 @@ export abstract class Service<T> extends EventEmitter {
 	public getIdFromIp(map:Map<string, ConnectionInfo>, val:string) {
 		const thisEntry = [...map.values()].filter((item: ConnectionInfo) => item.addressPort === val);
 		return thisEntry.keys.toString();
-	}
-
-	protected testPoint(_ctx: ReadContext, deviceId: string, name: string, silent?:boolean) {
-		const ctx = _ctx.readRemainingAsNewCtx();
-		const length = ctx.sizeLeft();
-		let buff = ""
-		if (!ctx.isEOF()) {
-			buff = ctx.readRemainingAsNewBuffer().toString('hex');
-		}
-		
-		ctx.seek(0- length);
-		if (buff.length > 1000) {
-			buff = buff.substring(0,40);
-			buff += "...";
-		} 
-		if (silent) {
-			Logger.silent(`[${this.name}] ${deviceId} (${name}) ${length} ${buff}`);
-		} else {
-			Logger.debug(`[${this.name}] ${deviceId} (${name}) ${length} ${buff}`);
-		}
 	}
 
 	//	callback for timeout timer

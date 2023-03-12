@@ -1,4 +1,4 @@
-import { DOWNLOAD_TIMEOUT, IpAddressPort } from '../types';
+import { DOWNLOAD_TIMEOUT } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceData } from './Service';
@@ -71,8 +71,8 @@ export class FileTransfer extends Service<FileTransferData> {
 
   protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<FileTransferData> {
 
-    const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-    const deviceId = this.peerDeviceIds[ipAddressPort];
+    //const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
+    //const deviceId = this.peerDeviceIds[ipAddressPort];
 
     const check = p_ctx.getString(4);
     if (check !== MAGIC_MARKER) {
@@ -112,7 +112,7 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.isEOF());
 
         if (sources.length) {
-          Logger.debug(`getting sources for `, deviceId.toString());
+          //Logger.debug(`getting sources for `, deviceId.toString());
           this.getSources(sources, socket);
         }
 
@@ -194,7 +194,7 @@ export class FileTransfer extends Service<FileTransferData> {
         //sizeLeft() of 6 means its not an offline analyzer
         //FIXME actually parse these messages
         //if (p_ctx.sizeLeft() >= 5) {
-          Logger.debug(`requesting sources from `, deviceId.toString());
+          //Logger.debug(`requesting sources from `, deviceId.toString());
           this.requestSources(socket);
         //}
 
@@ -228,6 +228,8 @@ export class FileTransfer extends Service<FileTransferData> {
   }
 
   protected messageHandler(p_data: ServiceMessage<FileTransferData>): void {
+    this.emit('fileMessage', p_data);
+    
     if (p_data && p_data.id === MessageId.FileTransferChunk && this.receivedFile) {
       //assert(this.receivedFile.sizeLeft() >= p_data.message.size);
       this.receivedFile.write(p_data.message.data);
@@ -255,7 +257,7 @@ export class FileTransfer extends Service<FileTransferData> {
     this._isAvailable = false;
     assert(this.receivedFile === null);
     await this.requestFileTransferId(p_location, socket);
-    const txinfo = await this.waitForMessage(MessageId.FileTransferId);
+    const txinfo = await this.waitForMessage('fileMessage', MessageId.FileTransferId);
     if (txinfo) {
       this.receivedFile = new WriteContext({ size: txinfo.size });
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
@@ -314,16 +316,16 @@ export class FileTransfer extends Service<FileTransferData> {
     const result: Source[] = [];
     let devices: DeviceSources = {}
 
-    const deviceId = this.getDeviceIdFromSocket(socket);
-    const ipAddressPort:IpAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-    const msgDeviceId = this.peerDeviceIds[ipAddressPort];
+    //const deviceId = this.getDeviceIdFromSocket(socket);
+    //const ipAddressPort:IpAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
+    //const msgDeviceId = this.peerDeviceIds[ipAddressPort];
 
     for (const source of sources) {
       //try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
       const databases = [`/${source}/Engine Library/Database2/m.db`, `/${source}/Engine Library/m.db`];
       for (const database of databases) {
         await this.requestStat(database, socket);
-        const fstatMessage = await this.waitForMessage(MessageId.FileStat);
+        const fstatMessage = await this.waitForMessage('fileMessage', MessageId.FileStat);
 
         if (fstatMessage.size > 0) {
 
@@ -334,7 +336,7 @@ export class FileTransfer extends Service<FileTransferData> {
               size: fstatMessage.size,
               remote: {
                 location: database,
-                device: deviceId.toString(),
+                device: this.deviceId.toString(),
               }
             },
             
@@ -350,9 +352,9 @@ export class FileTransfer extends Service<FileTransferData> {
       }
     }
 
-    await this.deviceSources.set(msgDeviceId.toString(), devices);
+    await this.deviceSources.set(this.deviceId.toString(), devices);
     
-    this.parent.databases.downloadDb(msgDeviceId.toString());
+    this.parent.databases.downloadDb(this.deviceId.toString());
 
     return result;
   }

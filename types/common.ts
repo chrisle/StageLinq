@@ -237,6 +237,9 @@ export enum StageLinqValue {
   MixerChannelAssignment2 = '/Mixer/ChannelAssignment2',
   MixerChannelAssignment3 = '/Mixer/ChannelAssignment3',
   MixerChannelAssignment4 = '/Mixer/ChannelAssignment4',
+  PrivateDeck1MidiSamplePosition = '/Private/Deck1/MidiSamplePosition',
+  PrivateDeck2MidiSamplePosition = '/Private/Deck2/MidiSamplePosition',
+  EngineDeck1PFL = '/Engine/Deck1/PFL',
 }
 
 export const StageLinqValueObj = {

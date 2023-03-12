@@ -98,6 +98,9 @@ export const States = [
   StageLinqValue.EngineDeck4TrackTrackName,
   StageLinqValue.EngineDeck4CurrentBPM,
   StageLinqValue.EngineDeck4ExternalMixerVolume,
+  //StageLinqValue.PrivateDeck1MidiSamplePosition,
+  //StageLinqValue.PrivateDeck2MidiSamplePosition, 
+  //StageLinqValue.EngineDeck1PFL,
 ];
 
 const MAGIC_MARKER = 'smaa';
@@ -206,6 +209,8 @@ export class StateMap extends Service<StateData> {
   }
 
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
+    
+    this.emit('stateMessage', p_data);
     if (p_data && p_data.message.json) { 
       Logger.silly(
        `${p_data.message.deviceId.toString()} ${p_data.message.name} => ${
