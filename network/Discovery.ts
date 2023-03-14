@@ -60,6 +60,13 @@ export class Discovery {
         return this.peers.has(deviceId.toString());
     }
 
+    public getDeviceList(): string[] {
+        return [...this.peers.keys()]
+    }
+
+    public getDevices(): ConnectionInfo[] {
+        return [...this.peers.values()]
+    }
 
 
     async init(options:DiscoveryMessageOptions) {

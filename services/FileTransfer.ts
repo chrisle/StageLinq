@@ -71,9 +71,6 @@ export class FileTransfer extends Service<FileTransferData> {
 
   protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<FileTransferData> {
 
-    //const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-    //const deviceId = this.peerDeviceIds[ipAddressPort];
-
     const check = p_ctx.getString(4);
     if (check !== MAGIC_MARKER) {
       Logger.error(assert(check === MAGIC_MARKER))
@@ -112,7 +109,7 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.isEOF());
 
         if (sources.length) {
-          //Logger.debug(`getting sources for `, deviceId.toString());
+          Logger.silly(`getting sources for `, this.deviceId.toString());
           this.getSources(sources, socket);
         }
 
@@ -132,7 +129,6 @@ export class FileTransfer extends Service<FileTransferData> {
         p_ctx.seek(49);
         const size = p_ctx.readUInt32();
 
-        //Logger.debug(size);
         return {
           id: messageId,
           message: {
@@ -159,7 +155,6 @@ export class FileTransfer extends Service<FileTransferData> {
         const filesize = p_ctx.readUInt32();
         const id = p_ctx.readUInt32();
         assert(id === 1)
-        //Logger.debug(id, filesize);
         return {
           id: messageId,
           socket: socket,
@@ -177,7 +172,6 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(chunksize === p_ctx.sizeLeft());
         assert(p_ctx.sizeLeft() <= CHUNK_SIZE);
         
-        //Logger.debug(offset, chunksize);
         return {
           id: messageId,
           socket: socket,
@@ -235,7 +229,6 @@ export class FileTransfer extends Service<FileTransferData> {
       this.receivedFile.write(p_data.message.data);
     }
     if (p_data && p_data.id === MessageId.RequestSources) {
-      //Logger.warn(`req source ${p_data.message.txId} from ${this.getDeviceIdFromSocket(p_data.socket)} `)
       this.sendNoSourcesReply(p_data.socket, p_data);
     }
   }
@@ -315,10 +308,6 @@ export class FileTransfer extends Service<FileTransferData> {
   async getSources(sources: string[], socket: Socket): Promise<Source[]> {
     const result: Source[] = [];
     let devices: DeviceSources = {}
-
-    //const deviceId = this.getDeviceIdFromSocket(socket);
-    //const ipAddressPort:IpAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-    //const msgDeviceId = this.peerDeviceIds[ipAddressPort];
 
     for (const source of sources) {
       //try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db

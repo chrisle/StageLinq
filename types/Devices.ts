@@ -1,5 +1,5 @@
 import * as Services from '../services';
-import { Socket } from 'net';
+//import { Socket } from 'net';
 import { ConnectionInfo, DeviceId, IpAddressPort, } from '../types';
 //import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';

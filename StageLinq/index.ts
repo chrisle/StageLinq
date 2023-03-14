@@ -92,8 +92,8 @@ export class StageLinq extends EventEmitter {
     
     //  Select Services to offer
     this.serviceList = [
-      //Services.FileTransfer.name, 
-      //Services.StateMap.name,
+      Services.FileTransfer.name, 
+      Services.StateMap.name,
       Services.BeatInfo.name,
     ];
 

@@ -33,8 +33,7 @@ export class BeatInfo extends Service<BeatData> {
 
 	private _userBeatCallback: beatCallback = null;
 	private _userBeatOptions: BeatOptions = null;
-	private _currentBeatData: BeatData = null;
-    
+	private _currentBeatData: BeatData = null;    
 	
 	async init() {}
 
@@ -42,7 +41,6 @@ export class BeatInfo extends Service<BeatData> {
 		this._userBeatCallback = beatCB;
 		this._userBeatOptions = options;
 		
-    
         this.sendBeatInfoRequest(socket);
 	}
 
@@ -109,7 +107,6 @@ export class BeatInfo extends Service<BeatData> {
         }
 	}
 	
-
     protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<BeatData> {
 		assert((socket));
 		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.toString()}`)

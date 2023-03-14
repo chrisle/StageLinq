@@ -2,7 +2,6 @@ import { strict as assert } from 'assert';
 import { 
   MessageId, 
   StageLinqValue, 
-  //StageLinqValueObj, 
 } from '../types';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
@@ -128,17 +127,16 @@ export class StateMap extends Service<StateData> {
 
   public async subscribe(socket: Socket) {
     
-    const deviceId = this.getDeviceIdFromSocket(socket);
-
-    while (!this.parent.discovery.hasConnectionInfo(deviceId)) {
+    while (!this.parent.discovery.hasConnectionInfo(this.deviceId)) {
       await sleep(200);
     }
 
-    Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
+    Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.toString()}`);
 
-    const thisPeer = this.parent.discovery.getConnectionInfo(deviceId);
+    const thisPeer = this.parent.discovery.getConnectionInfo(this.deviceId);
 
     //TODO Better test for mixer
+    //TODO states from deviceType
     if (thisPeer && thisPeer.software.name === 'JM08') {
       for (const state of StatesMixer) {
         await this.subscribeState(state, 0, socket);
@@ -159,7 +157,7 @@ export class StateMap extends Service<StateData> {
   }
 
   protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
-    const deviceId = this.getDeviceIdFromSocket(socket);
+    assert(this.deviceId);
     const marker = p_ctx.getString(4);
     if (marker !== MAGIC_MARKER) {
       Logger.error(assert(marker !== MAGIC_MARKER));
@@ -177,7 +175,7 @@ export class StateMap extends Service<StateData> {
             id: MAGIC_MARKER_JSON,
             message: {
               name: name,
-              deviceId: deviceId,
+              deviceId: this.deviceId,
               json: json,
               socket: socket,
             },
@@ -194,7 +192,7 @@ export class StateMap extends Service<StateData> {
           id: MAGIC_MARKER_INTERVAL,
           message: {
             name: name,
-            deviceId: deviceId,
+            deviceId: this.deviceId,
             interval: interval,
             socket: socket,
           },

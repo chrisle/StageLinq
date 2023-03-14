@@ -42,11 +42,8 @@ export class Directory extends Service<DirectoryData> {
       const id = ctx.readUInt32();
       const token = ctx.read(16);
       this.deviceId = new DeviceId(token);
-      //const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-      const peer = this.parent.discovery.getConnectionInfo(this.deviceId);
-
-      //this.peerDeviceIds[ipAddressPort] = deviceId;
-      //this.peerSockets.set(deviceId, socket);
+      
+      const deviceInfo = this.parent.discovery.getConnectionInfo(this.deviceId);
 
       switch (id) {
         case MessageId.TimeStamp:
@@ -56,7 +53,7 @@ export class Directory extends Service<DirectoryData> {
           if (ctx.isEOF() === false) {
             ctx.readRemaining();
           }
-          if (peer && peer.software.name === 'JM08') {
+          if (deviceInfo && deviceInfo.device && deviceInfo.device.type === 'MIXER') {
             this.sendTimeStampReply(token, socket);
           }
 
@@ -124,13 +121,11 @@ export class Directory extends Service<DirectoryData> {
 
     this.parent.services[deviceId.toString()] = new Map();
     this.parent.sockets[deviceId.toString()] = new Map();
-    //this.parent.devices.
 
     for (const service of services) {
       
       this.parent.services[deviceId.toString()].set(service.name, service);
-      //this.parent.devices.setService(deviceId, service.name, service);
-
+     
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
       ctx.write(Tokens.Listen);
       ctx.writeNetworkStringUTF16(service.name);
