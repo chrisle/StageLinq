@@ -16,19 +16,11 @@ export interface DiscoveryMessageOptions {
     name: string;
     version: string;
     source: string;
-    token: Uint8Array; //FIXME make this DeviceId
+    token: Uint8Array; //TODO make this DeviceId?
     port?: number
 };
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
-
-
-
-/**
- * Continuously listens for devices to announce themselves. When they do,
- * execute a callback.
- */
-
 
 
 export class Discovery {
@@ -68,11 +60,9 @@ export class Discovery {
         return [...this.peers.values()]
     }
 
-
     async init(options:DiscoveryMessageOptions) {
         this.options = options;
         await this.listenForDevices( (connectionInfo) => {
-            
             
             if (!this.parent.devices.hasDeviceIdString(deviceIdFromBuff(connectionInfo.token)) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
                 const deviceId = new DeviceId(connectionInfo.token)
@@ -89,12 +79,9 @@ export class Discovery {
                 this.parent.devices.setInfo(deviceId, connectionInfo);
                 Logger.debug(`Updated port for From ${deviceId.toString()}`)
             } 
-
-
         });
     }
     
-
     async announce(port: number) {
         assert(this.socket);
         this.socket.setBroadcast(true);
@@ -119,7 +106,6 @@ export class Discovery {
         this.announceTimer = setInterval(this.broadcastMessage, ANNOUNCEMENT_INTERVAL, this.socket, msg, LISTEN_PORT, this.broadcastAddress);
     }
 
-
     async unannounce(): Promise<void> {
         assert(this.announceTimer);
         clearInterval(this.announceTimer);
@@ -134,13 +120,12 @@ export class Discovery {
         Logger.debug("Unannounced myself");
     }
     
+    
     //////////// PRIVATE METHODS ///////////////
-
 
     private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress) {  
         socket.send(msg, port, address);
     }
-
 
     /**
    * Listen for new devices on the network and callback when a new one is found.
@@ -201,7 +186,7 @@ export class Discovery {
             version: discoveryMessageOptions.version
         },
         source: discoveryMessageOptions.source,
-        token: discoveryMessageOptions.token //FIXME make this DeviceId
+        token: discoveryMessageOptions.token //TODO make this DeviceId
         };
         return msg;
     }

@@ -21,8 +21,12 @@ export enum StageLinqValue {
   ClientLibrarianDevicesControllerCurrentDevice = '/Client/Librarian/DevicesController/CurrentDevice',
   ClientLibrarianDevicesControllerHasSDCardConnected = '/Client/Librarian/DevicesController/HasSDCardConnected',
   ClientLibrarianDevicesControllerHasUsbDeviceConnected = '/Client/Librarian/DevicesController/HasUsbDeviceConnected',
-  ClientPreferencesLayerB = '/Client/Preferences/LayerB',
+  
   ClientPreferencesPlayer = '/Client/Preferences/Player',
+  ClientPreferencesLayerB = '/Client/Preferences/LayerB',
+  
+  ClientPreferencesPlayerJogColorA = '/Client/Preferences/PlayerJogColorA',
+  ClientPreferencesPlayerJogColorB = '/Client/Preferences/PlayerJogColorB',
   ClientPreferencesProfileApplicationPlayerColor1 = '/Client/Preferences/Profile/Application/PlayerColor1',
   ClientPreferencesProfileApplicationPlayerColor1A = '/Client/Preferences/Profile/Application/PlayerColor1A',
   ClientPreferencesProfileApplicationPlayerColor1B = '/Client/Preferences/Profile/Application/PlayerColor1B',
@@ -35,7 +39,21 @@ export enum StageLinqValue {
   ClientPreferencesProfileApplicationPlayerColor4 = '/Client/Preferences/Profile/Application/PlayerColor4',
   ClientPreferencesProfileApplicationPlayerColor4A = '/Client/Preferences/Profile/Application/PlayerColor4A',
   ClientPreferencesProfileApplicationPlayerColor4B = '/Client/Preferences/Profile/Application/PlayerColor4B',
+  
   ClientPreferencesProfileApplicationSyncMode = '/Client/Preferences/Profile/Application/SyncMode',
+ 
+  GUIDecksDeckActiveDeck = '/GUI/Decks/Deck/ActiveDeck',
+  GUIViewLayerLayerB = '/GUI/ViewLayer/LayerB',
+
+  EngineDeckCount = '/Engine/DeckCount',
+ 
+
+  EngineDeck1DeckIsMaster = '/Engine/Deck1/DeckIsMaster',
+
+  ClientPreferencesLayerA = '/Client/Preferences/LayerA',
+  EngineSyncNetworkMasterStatus = '/Engine/Sync/Network/MasterStatus',
+  EngineMasterMasterTempo = '/Engine/Master/MasterTempo',
+
   EngineDeck1CurrentBPM = '/Engine/Deck1/CurrentBPM',
   EngineDeck1ExternalMixerVolume = '/Engine/Deck1/ExternalMixerVolume',
   EngineDeck1ExternalScratchWheelTouch = '/Engine/Deck1/ExternalScratchWheelTouch',
@@ -216,38 +234,42 @@ export enum StageLinqValue {
   EngineDeck4TrackTrackNetworkPath = '/Engine/Deck4/Track/TrackNetworkPath',
   EngineDeck4TrackTrackURI = '/Engine/Deck4/Track/TrackUri',
   EngineDeck4TrackTrackWasPlayed = '/Engine/Deck4/Track/TrackWasPlayed',
-  EngineDeckCount = '/Engine/DeckCount',
-  GUIDecksDeckActiveDeck = '/GUI/Decks/Deck/ActiveDeck',
-  GUIViewLayerLayerB = '/GUI/ViewLayer/LayerB',
+  
+ 
+  ClientDeck1DeckIsMaster = '/Client/Deck1/DeckIsMaster',
+  ClientDeck2DeckIsMaster = '/Client/Deck2/DeckIsMaster',
+
+  MixerNumberOfChannels = '/Mixer/NumberOfChannels',
+  
+  MixerChannelAssignment1 = '/Mixer/ChannelAssignment1',
+  MixerChannelAssignment2 = '/Mixer/ChannelAssignment2',
+  MixerChannelAssignment3 = '/Mixer/ChannelAssignment3',
+  MixerChannelAssignment4 = '/Mixer/ChannelAssignment4',
+
   MixerCH1faderPosition = '/Mixer/CH1faderPosition',
   MixerCH2faderPosition = '/Mixer/CH2faderPosition',
   MixerCH3faderPosition = '/Mixer/CH3faderPosition',
   MixerCH4faderPosition = '/Mixer/CH4faderPosition',
   MixerCrossfaderPosition = '/Mixer/CrossfaderPosition',
 
-  MixerNumberOfChannels = '/Mixer/NumberOfChannels',
-  ClientPreferencesPlayerJogColorA = '/Client/Preferences/PlayerJogColorA',
-  ClientPreferencesPlayerJogColorB = '/Client/Preferences/PlayerJogColorB',
-  EngineDeck1DeckIsMaster = '/Client/Deck1/DeckIsMaster',
-  EngineDeck2DeckIsMaster = '/Client/Deck2/DeckIsMaster',
-  ClientPreferencesLayerA = '/Client/Preferences/LayerA',
-  EngineSyncNetworkMasterStatus = '/Engine/Sync/Network/MasterStatus',
-  EngineMasterMasterTempo = '/Engine/Master/MasterTempo',
-  MixerChannelAssignment1 = '/Mixer/ChannelAssignment1',
-  MixerChannelAssignment2 = '/Mixer/ChannelAssignment2',
-  MixerChannelAssignment3 = '/Mixer/ChannelAssignment3',
-  MixerChannelAssignment4 = '/Mixer/ChannelAssignment4',
-  PrivateDeck1MidiSamplePosition = '/Private/Deck1/MidiSamplePosition',
-  PrivateDeck2MidiSamplePosition = '/Private/Deck2/MidiSamplePosition',
-  EngineDeck1PFL = '/Engine/Deck1/PFL',
+  
+  // PrivateDeck1MidiSamplePosition = '/Private/Deck1/MidiSamplePosition',
+  // PrivateDeck2MidiSamplePosition = '/Private/Deck2/MidiSamplePosition',
+  // EngineDeck1PFL = '/Engine/Deck1/PFL',
 }
 
 export const StageLinqValueObj = {
   ClientLibrarianDevicesControllerCurrentDevice: '/Client/Librarian/DevicesController/CurrentDevice',
   ClientLibrarianDevicesControllerHasSDCardConnected: '/Client/Librarian/DevicesController/HasSDCardConnected',
   ClientLibrarianDevicesControllerHasUsbDeviceConnected: '/Client/Librarian/DevicesController/HasUsbDeviceConnected',
+ 
+
+  ClientPreferencesLayerA: '/Client/Preferences/LayerA',
   ClientPreferencesLayerB: '/Client/Preferences/LayerB',
   ClientPreferencesPlayer: '/Client/Preferences/Player',
+  ClientPreferencesPlayerJogColorA: '/Client/Preferences/PlayerJogColorA',
+  ClientPreferencesPlayerJogColorB: '/Client/Preferences/PlayerJogColorB',
+
   ClientPreferencesProfileApplicationPlayerColor1: '/Client/Preferences/Profile/Application/PlayerColor1',
   ClientPreferencesProfileApplicationPlayerColor1A: '/Client/Preferences/Profile/Application/PlayerColor1A',
   ClientPreferencesProfileApplicationPlayerColor1B: '/Client/Preferences/Profile/Application/PlayerColor1B',
@@ -260,7 +282,35 @@ export const StageLinqValueObj = {
   ClientPreferencesProfileApplicationPlayerColor4: '/Client/Preferences/Profile/Application/PlayerColor4',
   ClientPreferencesProfileApplicationPlayerColor4A: '/Client/Preferences/Profile/Application/PlayerColor4A',
   ClientPreferencesProfileApplicationPlayerColor4B: '/Client/Preferences/Profile/Application/PlayerColor4B',
+  
   ClientPreferencesProfileApplicationSyncMode: '/Client/Preferences/Profile/Application/SyncMode',
+  
+  
+  
+  GUIDecksDeckActiveDeck: '/GUI/Decks/Deck/ActiveDeck',
+  GUIViewLayerLayerB: '/GUI/ViewLayer/LayerB',
+  
+  MixerCH1faderPosition: '/Mixer/CH1faderPosition',
+  MixerCH2faderPosition: '/Mixer/CH2faderPosition',
+  MixerCH3faderPosition: '/Mixer/CH3faderPosition',
+  MixerCH4faderPosition: '/Mixer/CH4faderPosition',
+  MixerCrossfaderPosition: '/Mixer/CrossfaderPosition',
+  MixerNumberOfChannels: '/Mixer/NumberOfChannels',
+  MixerChannelAssignment1: '/Mixer/ChannelAssignment1',
+  MixerChannelAssignment2: '/Mixer/ChannelAssignment2',
+  MixerChannelAssignment3: '/Mixer/ChannelAssignment3',
+  MixerChannelAssignment4: '/Mixer/ChannelAssignment4',
+
+  
+  //ClientDeck1DeckIsMaster: '/Client/Deck1/DeckIsMaster',
+  //ClientDeck2DeckIsMaster: '/Client/Deck2/DeckIsMaster',
+  
+  
+  EngineSyncNetworkMasterStatus: '/Engine/Sync/Network/MasterStatus',
+  EngineMasterMasterTempo: '/Engine/Master/MasterTempo',
+ 
+  EngineDeckCount: '/Engine/DeckCount',
+  
   EngineDeck1CurrentBPM: '/Engine/Deck1/CurrentBPM',
   EngineDeck1ExternalMixerVolume: '/Engine/Deck1/ExternalMixerVolume',
   EngineDeck1ExternalScratchWheelTouch: '/Engine/Deck1/ExternalScratchWheelTouch',
@@ -441,26 +491,6 @@ export const StageLinqValueObj = {
   EngineDeck4TrackTrackNetworkPath: '/Engine/Deck4/Track/TrackNetworkPath',
   EngineDeck4TrackTrackURI: '/Engine/Deck4/Track/TrackUri',
   EngineDeck4TrackTrackWasPlayed: '/Engine/Deck4/Track/TrackWasPlayed',
-  EngineDeckCount: '/Engine/DeckCount',
-  GUIDecksDeckActiveDeck: '/GUI/Decks/Deck/ActiveDeck',
-  GUIViewLayerLayerB: '/GUI/ViewLayer/LayerB',
-  MixerCH1faderPosition: '/Mixer/CH1faderPosition',
-  MixerCH2faderPosition: '/Mixer/CH2faderPosition',
-  MixerCH3faderPosition: '/Mixer/CH3faderPosition',
-  MixerCH4faderPosition: '/Mixer/CH4faderPosition',
-  MixerCrossfaderPosition: '/Mixer/CrossfaderPosition',
-
-  MixerNumberOfChannels: '/Mixer/NumberOfChannels',
-  ClientPreferencesPlayerJogColorA: '/Client/Preferences/PlayerJogColorA',
-  ClientPreferencesPlayerJogColorB: '/Client/Preferences/PlayerJogColorB',
-  EngineDeck1DeckIsMaster: '/Client/Deck1/DeckIsMaster',
-  EngineDeck2DeckIsMaster: '/Client/Deck2/DeckIsMaster',
-  ClientPreferencesLayerA: '/Client/Preferences/LayerA',
-  EngineSyncNetworkMasterStatus: '/Engine/Sync/Network/MasterStatus',
-  EngineMasterMasterTempo: '/Engine/Master/MasterTempo',
-  MixerChannelAssignment1: '/Mixer/ChannelAssignment1',
-  MixerChannelAssignment2: '/Mixer/ChannelAssignment2',
-  MixerChannelAssignment3: '/Mixer/ChannelAssignment3',
-  MixerChannelAssignment4: '/Mixer/ChannelAssignment4',
+  
 }
 

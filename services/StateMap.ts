@@ -1,111 +1,34 @@
 import { strict as assert } from 'assert';
 import { 
-  MessageId, 
-  StageLinqValue, 
+  MessageId,  
 } from '../types';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
-import type { ServiceMessage, DeviceId } from '../types';
+import { ServiceMessage, DeviceId, PlayerStates, MixerStates, PlayerDeckStates } from '../types';
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';
 
 
-export const StatesMixer = [ 
-  StageLinqValue.MixerCH1faderPosition,
-  StageLinqValue.MixerCH2faderPosition,
-  StageLinqValue.MixerCH3faderPosition,
-  StageLinqValue.MixerCH4faderPosition,
-  StageLinqValue.MixerCrossfaderPosition,
-  StageLinqValue.MixerChannelAssignment1,
-  StageLinqValue.MixerChannelAssignment2,
-  StageLinqValue.MixerChannelAssignment3,
-  StageLinqValue.MixerChannelAssignment4,
-  StageLinqValue.MixerNumberOfChannels,
-]
-
-export const States = [
-  // Mixer
-  
-  StageLinqValue.MixerCH1faderPosition,
-  StageLinqValue.MixerCH2faderPosition,
-  StageLinqValue.MixerCH3faderPosition,
-  StageLinqValue.MixerCH4faderPosition,
-  StageLinqValue.MixerCrossfaderPosition,
-  StageLinqValue.MixerChannelAssignment1,
-  StageLinqValue.MixerChannelAssignment2,
-  StageLinqValue.MixerChannelAssignment3,
-  StageLinqValue.MixerChannelAssignment4,
-  StageLinqValue.MixerNumberOfChannels,
-  StageLinqValue.ClientPreferencesLayerA,
-  StageLinqValue.ClientPreferencesPlayer,
-  StageLinqValue.ClientPreferencesPlayerJogColorA,
-  StageLinqValue.ClientPreferencesPlayerJogColorB,
-  StageLinqValue.EngineDeck1DeckIsMaster,
-  StageLinqValue.EngineDeck2DeckIsMaster,
-  
-  StageLinqValue.EngineMasterMasterTempo,
-  
-  StageLinqValue.EngineSyncNetworkMasterStatus,
- 
-  // Decks
-  StageLinqValue.EngineDeck1Play,
-  StageLinqValue.EngineDeck1PlayState,
-  StageLinqValue.EngineDeck1PlayStatePath,
-  StageLinqValue.EngineDeck1TrackArtistName,
-  StageLinqValue.EngineDeck1TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck1TrackSongLoaded,
-  StageLinqValue.EngineDeck1TrackSongName,
-  StageLinqValue.EngineDeck1TrackTrackData,
-  StageLinqValue.EngineDeck1TrackTrackName,
-  StageLinqValue.EngineDeck1CurrentBPM,
-  StageLinqValue.EngineDeck1ExternalMixerVolume,
-
-  StageLinqValue.EngineDeck2Play,
-  StageLinqValue.EngineDeck2PlayState,
-  StageLinqValue.EngineDeck2PlayStatePath,
-  StageLinqValue.EngineDeck2TrackArtistName,
-  StageLinqValue.EngineDeck2TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck2TrackSongLoaded,
-  StageLinqValue.EngineDeck2TrackSongName,
-  StageLinqValue.EngineDeck2TrackTrackData,
-  StageLinqValue.EngineDeck2TrackTrackName,
-  StageLinqValue.EngineDeck2CurrentBPM,
-  StageLinqValue.EngineDeck2ExternalMixerVolume,
-
-  StageLinqValue.EngineDeck3Play,
-  StageLinqValue.EngineDeck3PlayState,
-  StageLinqValue.EngineDeck3PlayStatePath,
-  StageLinqValue.EngineDeck3TrackArtistName,
-  StageLinqValue.EngineDeck3TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck3TrackSongLoaded,
-  StageLinqValue.EngineDeck3TrackSongName,
-  StageLinqValue.EngineDeck3TrackTrackData,
-  StageLinqValue.EngineDeck3TrackTrackName,
-  StageLinqValue.EngineDeck3CurrentBPM,
-  StageLinqValue.EngineDeck3ExternalMixerVolume,
-
-  StageLinqValue.EngineDeck4Play,
-  StageLinqValue.EngineDeck4PlayState,
-  StageLinqValue.EngineDeck4PlayStatePath,
-  StageLinqValue.EngineDeck4TrackArtistName,
-  StageLinqValue.EngineDeck4TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck4TrackSongLoaded,
-  StageLinqValue.EngineDeck4TrackSongName,
-  StageLinqValue.EngineDeck4TrackTrackData,
-  StageLinqValue.EngineDeck4TrackTrackName,
-  StageLinqValue.EngineDeck4CurrentBPM,
-  StageLinqValue.EngineDeck4ExternalMixerVolume,
-  //StageLinqValue.PrivateDeck1MidiSamplePosition,
-  //StageLinqValue.PrivateDeck2MidiSamplePosition, 
-  //StageLinqValue.EngineDeck1PFL,
-];
-
 const MAGIC_MARKER = 'smaa';
-// FIXME: Is this thing really an interval?
+// TODO: Is this thing really an interval?
 const MAGIC_MARKER_INTERVAL = 0x000007d2;
 const MAGIC_MARKER_JSON = 0x00000000;
+
+
+function stateReducer(obj: any, prefix: string): string[] {
+  const entries = Object.entries(obj)
+  const retArr = entries.map(([key, value]) => {
+    return (typeof value === 'object' ? [...stateReducer(value, `${prefix}${key}/`)] : `${prefix}${key}`)
+  })
+  return retArr.flat()
+}
+
+const playerStateValues = stateReducer(PlayerStates, '/');
+const mixerStateValues = stateReducer(MixerStates, '/');
+const controllerStateValues = [...playerStateValues,  ...mixerStateValues];
+
 
 export interface StateData {
   name?: string;
@@ -135,16 +58,45 @@ export class StateMap extends Service<StateData> {
 
     const thisPeer = this.parent.discovery.getConnectionInfo(this.deviceId);
 
-    //TODO Better test for mixer
-    //TODO states from deviceType
-    if (thisPeer && thisPeer.software.name === 'JM08') {
-      for (const state of StatesMixer) {
-        await this.subscribeState(state, 0, socket);
+    switch (thisPeer?.device?.type) {
+      case "PLAYER": {
+        for (let state of playerStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+        let playerDeckStateValues: string[] = [];
+        for (let i=0; i< thisPeer.device.decks; i++) {
+          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(PlayerDeckStates, `/Engine/Deck${i+1}/`)];
+        } 
+        
+        for (let state of playerDeckStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+        
+        break;
       }
-    } else {
-      for (const state of States) {
-        await this.subscribeState(state, 0, socket);
-      }  
+      case "CONTROLLER": {
+        for (let state of controllerStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+        let playerDeckStateValues: string[] = [];
+        for (let i=0; i< thisPeer.device.decks; i++) {
+          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(PlayerDeckStates, `/Engine/Deck${i+1}/`)];
+        } 
+        
+        for (let state of playerDeckStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+
+        break;
+      }
+      case "MIXER": {
+        for (let state of mixerStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+        break;
+      }
+      default: 
+      break;
     }
   }
 

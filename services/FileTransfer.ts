@@ -12,7 +12,7 @@ import { Socket } from 'net';
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
-// FIXME: Strongly type this for all possible messages?
+// TODO: Strongly type this for all possible messages?
 type FileTransferData = any;
 
 interface FileTransferServiceData extends ServiceData {
@@ -52,6 +52,7 @@ export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
   public services: Map<string, FileTransferServiceData> = new Map();
   public sources: Map<string, Source> = new Map();
+  
   private _isAvailable: boolean = true;
   private txId: number = 1;
 
@@ -59,9 +60,11 @@ export class FileTransfer extends Service<FileTransferData> {
 
   async init() {}
 
+  // TODO need better txId to handle consurrent transfers
   public get txid() {
     return this.txId;
   }
+  
 
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
     assert((socket));
@@ -186,7 +189,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
       case MessageId.Unknown0: {
         //sizeLeft() of 6 means its not an offline analyzer
-        //FIXME actually parse these messages
+        //TODO actually parse these messages
         //if (p_ctx.sizeLeft() >= 5) {
           //Logger.debug(`requesting sources from `, deviceId.toString());
           this.requestSources(socket);

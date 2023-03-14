@@ -94,7 +94,7 @@ export abstract class Service<T> extends EventEmitter {
 		}
 		this.messageBuffer = null
 
-		// FIXME: Clean up this arraybuffer confusion mess
+		// TODO: Clean up this arraybuffer confusion mess
 		const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 		let ctx = new ReadContext(arrayBuffer, false);
 
@@ -124,8 +124,7 @@ export abstract class Service<T> extends EventEmitter {
 			//make sure reading port won't overrun buffer
 			(assert (ctx.sizeLeft() >= 2));
 			ctx.readUInt16(); //read port, though we don't need it
-			//todo fix sockets
-			this.parent.sockets[this.deviceId.toString()].set(this.name, socket);
+			this.parent.sockets[this.deviceId.toString()].set(this.name, socket); //TODO fix sockets
 			
 			Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${this.deviceId.toString()}`);
 			
@@ -201,7 +200,7 @@ export abstract class Service<T> extends EventEmitter {
 		parent.services[deviceId.toString()].delete(serviceName);
 	}
 
-	// FIXME: Cannot use abstract because of async; is there another way to get this?
+	// TODO: Cannot use abstract because of async; is there another way to get this?
 	protected async init() {
 		assert.fail('Implement this');
 	}
