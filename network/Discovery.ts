@@ -1,4 +1,4 @@
-import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, DeviceId, deviceIdFromBuff } from '../types';
+import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, DeviceId, deviceIdFromBuff, deviceTypes,  } from '../types';
 import { Socket, RemoteInfo } from 'dgram';
 import * as UDPSocket from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from '../types/common';
@@ -22,6 +22,8 @@ export interface DiscoveryMessageOptions {
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
+
+
 /**
  * Continuously listens for devices to announce themselves. When they do,
  * execute a callback.
@@ -30,12 +32,14 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
 
 export class Discovery {
+    public parent: InstanceType<typeof StageLinq>;
+    
     private socket: Socket;
     private address: IpAddress;
     private broadcastAddress: IpAddress;   
     private options: DiscoveryMessageOptions = null;
-    public peers: Map<string, ConnectionInfo> = new Map(); //FIXME figure out getter/setter methods for this?
-    public parent: InstanceType<typeof StageLinq>;
+    private peers: Map<string, ConnectionInfo> = new Map(); 
+    
 
     private announceTimer: NodeJS.Timer;
     private hasLooped: boolean = false;
@@ -43,6 +47,20 @@ export class Discovery {
     constructor(_parent: InstanceType<typeof StageLinq>) {
         this.parent = _parent;
     }
+
+    public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {
+        return this.peers.get(deviceId.toString());
+    }
+    
+    public async setConnectionInfo(deviceId: DeviceId, connectionInfo: ConnectionInfo) {
+        this.peers.set(deviceId.toString(), connectionInfo);
+    }
+
+    public hasConnectionInfo(deviceId: DeviceId): Boolean {
+        return this.peers.has(deviceId.toString());
+    }
+
+
 
     async init(options:DiscoveryMessageOptions) {
         this.options = options;
@@ -76,11 +94,6 @@ export class Discovery {
     
         const discoveryMessage =  this.createDiscoveryMessage(Action.Login, this.options, port);
         
-        //  wait for a recieved UDP message to determine the correct interface
-        //  no need to rush this as we want the list of peers to be close to complete
-        // while (!this.address) {
-        //     await sleep(250);
-        // }
         while (!this.hasLooped) {
             await sleep(250);
         }
@@ -151,7 +164,7 @@ export class Discovery {
             return null;
         }
 
-        const result: ConnectionInfo = {
+        const connectionInfo: ConnectionInfo = {
         token: p_ctx.read(16),
         source: p_ctx.readNetworkStringUTF16(),
         action: p_ctx.readNetworkStringUTF16(),
@@ -162,9 +175,13 @@ export class Discovery {
         port: p_ctx.readUInt16(),
         address: p_address,
         };
-        result.addressPort = [result.address, result.port].join(":");
+        connectionInfo.addressPort = [connectionInfo.address, connectionInfo.port].join(":");
+        if (deviceTypes[connectionInfo.software.name]) {
+            connectionInfo.device = deviceTypes[connectionInfo.software.name];
+        } 
+        
         assert(p_ctx.isEOF());
-        return result;
+        return connectionInfo;
     }
 
     

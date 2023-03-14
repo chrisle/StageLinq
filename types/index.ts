@@ -20,10 +20,30 @@ export interface DiscoveryMessage {
 	port: number;
 }
 
+export enum DeviceType  {
+	Player =  "PLAYER",
+	Mixer = "MIXER",
+	Controller = "CONTROLLER",
+}
+
+
 export interface ConnectionInfo extends DiscoveryMessage {
 	address: IpAddress;
+	device?: {
+		name: string,
+		type: string,
+		decks: number
+	};
 	addressPort?: string;
 }
+
+// export interface DiscoveryDevice {
+//     [key: string]: {
+//       info: ConnectionInfo;
+      
+//   }
+// }
+
 
 export interface ServicePorts {
 	[key: string]: number;
@@ -74,21 +94,29 @@ export interface StageLinqOptions {
 	services?: ServiceList[];
 }
 
+type deviceType = {
+	[key: string] : {
+		name: string,
+		type: string,
+		decks: number
+	}
+}
 
-export const deviceIds = {
-	JC11: { name: 'PRIME4', type: 'CONTROLLER' },
-	JC16: { name: 'PRIME2', type: 'CONTROLLER' },
-	JC20: { name: 'LC6000', type: 'OTHER' },
-	JP07: { name: 'SC5000', type: 'PLAYER' },
-	JP08: { name: 'SC5000M', type: 'PLAYER' },
-	JP11: { name: 'PRIMEGO', type: 'CONTROLLER' },
-	JP13: { name: 'SC6000', type: 'PLAYER' },
-	JP14: { name: 'SC6000M', type: 'PLAYER' },
-	JP20: { name: 'SCLIVE2', type: 'CONTROLLER' },
-	JP21: { name: 'SCLIVE4', type: 'CONTROLLER' },
-	NH08: { name: 'MIXSTREAMPRO', type: 'CONTROLLER' },
-	NH09: { name: 'MIXSTREAMPROPLUS', type: 'CONTROLLER' },
-	NH10: { name: 'MIXSTREAMPROGO', type: 'CONTROLLER' },
-	JM08: { name: 'DN-X1800Prime', type: 'MIXER' },
-	JM10: { name: 'DN-X1850Prime', type: 'MIXER' }
+export const deviceTypes:deviceType = {
+	JC11: { name: 'PRIME4', type: 'CONTROLLER', decks: 4 },
+	JC16: { name: 'PRIME2', type: 'CONTROLLER', decks: 2 },
+	JC20: { name: 'LC6000', type: 'OTHER' , decks: 0 },
+	JP07: { name: 'SC5000', type: 'PLAYER' , decks: 2 },
+	JP08: { name: 'SC5000M', type: 'PLAYER', decks: 2 },
+	JP11: { name: 'PRIMEGO', type: 'CONTROLLER', decks: 2 },
+	JP13: { name: 'SC6000', type: 'PLAYER', decks: 2 },
+	JP14: { name: 'SC6000M', type: 'PLAYER', decks: 2 },
+	JP20: { name: 'SCLIVE2', type: 'CONTROLLER', decks: 2 },
+	JP21: { name: 'SCLIVE4', type: 'CONTROLLER', decks: 4 },
+	NH08: { name: 'MIXSTREAMPRO', type: 'CONTROLLER', decks: 2 },
+	NH09: { name: 'MIXSTREAMPROPLUS', type: 'CONTROLLER', decks: 2 },
+	NH10: { name: 'MIXSTREAMPROGO', type: 'CONTROLLER', decks: 2 },
+	JM08: { name: 'DN-X1800Prime', type: 'MIXER', decks: 0 },
+	JM10: { name: 'DN-X1850Prime', type: 'MIXER' , decks: 0 },
+	//OfflineAnalyzer: { name: 'OfflineAnalyzer', type: 'OTHER' }
   }

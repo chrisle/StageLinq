@@ -130,13 +130,13 @@ export class StateMap extends Service<StateData> {
     
     const deviceId = this.getDeviceIdFromSocket(socket);
 
-    while (!this.parent.discovery.peers.has(deviceId.toString())) {
+    while (!this.parent.discovery.hasConnectionInfo(deviceId)) {
       await sleep(200);
     }
 
     Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.getDeviceIdFromSocket(socket).toString()}`);
 
-    const thisPeer = this.parent.discovery.peers.get(deviceId.toString());
+    const thisPeer = this.parent.discovery.getConnectionInfo(deviceId);
 
     //TODO Better test for mixer
     if (thisPeer && thisPeer.software.name === 'JM08') {

@@ -43,7 +43,7 @@ export class Directory extends Service<DirectoryData> {
       const token = ctx.read(16);
       this.deviceId = new DeviceId(token);
       //const ipAddressPort = [socket.remoteAddress, socket.remotePort].join(':');
-      const peer = this.parent.discovery.peers.get(this.deviceId.toString());
+      const peer = this.parent.discovery.getConnectionInfo(this.deviceId);
 
       //this.peerDeviceIds[ipAddressPort] = deviceId;
       //this.peerSockets.set(deviceId, socket);
@@ -136,7 +136,7 @@ export class Directory extends Service<DirectoryData> {
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
 
-      Logger.debug(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`);
+      Logger.silly(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`);
       
     }
 
