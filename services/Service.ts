@@ -218,7 +218,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	//	callback for timeout timer
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>) {
-		Logger.debug(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
+		Logger.silly(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
 		await server.close();
 		parent.services[deviceId.toString()].delete(serviceName);
 	}

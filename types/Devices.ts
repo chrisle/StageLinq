@@ -4,57 +4,30 @@ import { ConnectionInfo, DeviceId, IpAddressPort, } from '../types';
 //import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';
 
-// const deviceTypes = {
-  
-//     player: [
-//       'JP13',
-//       'JP14',
-//     ],
-//     mixer: [
-//       'JM08',
-//     ],
-//     allInOne: [
-//       'JP04',
-//     ], 
-//   }
-  
-//   function mapTypes() {
-//     let devices = new Map();
-//     for (let player of deviceTypes.player) {
-//       devices.set(player, "player" )
-//     }
-//     for (let mixer of deviceTypes.mixer) {
-//       devices.set(mixer, "mixer" )
-//     }
-//     for (let allInOne of deviceTypes.allInOne) {
-//       devices.set(allInOne, "all-in-one" )
-//     }
-//     return devices
-//   } 
 
 
-// const deviceTypeMap = mapTypes();
-// //console.log(deviceTypeMap.get('JP13'));
+//type DeviceService = Map<string, InstanceType<typeof Services.Service>>;
 
-// //console.log(deviceTypeMap)
+interface ServicesList {
+  [key: string]: InstanceType<typeof Services.Service>;
+}
 
-type DeviceService = Map<string, InstanceType<typeof Services.Service>>;
-
-type DeviceSocket = Map<string, Socket>;
+//type DeviceSocket = Map<string, Socket>;
 
 type IpAddressPortDeviceId = Map<IpAddressPort, DeviceId>;
 
 export interface IDevice {
   [key: string]: {
     info: ConnectionInfo;
-    service?: DeviceService;
-    socket?: DeviceSocket;
+    services?: ServicesList;
+   
   }
 }
 
 
 export class Devices {
   private _devices: IDevice = {};
+  public devices: IDevice = {};
   //private devices: Map<DeviceId, Device> = new Map(); 
 
   getInfo(deviceId: DeviceId) {
@@ -78,21 +51,25 @@ export class Devices {
     
   } 
 
+  createDevice(deviceId: DeviceId, info: ConnectionInfo) {
+    this.devices[deviceId.toString()].info = info;
+  } 
+
   getService(deviceId: DeviceId, serviceName: string) {
-    return this._devices[deviceId.toString()].service.get(serviceName);
+    return this._devices[deviceId.toString()].services[serviceName];
   } 
 
   setService(deviceId: DeviceId, serviceName: string, service: InstanceType<typeof Services.Service>) {
-    this._devices[deviceId.toString()].service.set(serviceName, service);
+    this._devices[deviceId.toString()].services[serviceName] = service;
   } 
 
-  getSocket(deviceId: DeviceId, serviceName: string) {
-    return this._devices[deviceId.toString()].socket.get(serviceName);
-  } 
+  // getSocket(deviceId: DeviceId, serviceName: string) {
+  //   return this._devices[deviceId.toString()].socket.get(serviceName);
+  // } 
   
-  setSocket(deviceId: DeviceId, serviceName: string, socket: Socket) {
-    this._devices[deviceId.toString()].socket.set(serviceName, socket);
-  } 
+  // setSocket(deviceId: DeviceId, serviceName: string, socket: Socket) {
+  //   this._devices[deviceId.toString()].socket.set(serviceName, socket);
+  // } 
 
   hasDeviceId(deviceId: DeviceId) {
     return !!this._devices[deviceId.toString()]

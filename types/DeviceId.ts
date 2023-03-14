@@ -1,3 +1,10 @@
+//import { ConnectionInfo } from "./index";
+
+// export interface DiscoveryDevice extends ConnectionInfo {
+//   deviceId: DeviceId;
+// }
+
+
 class InvalidDeviceIdError extends Error {
   constructor(m?: string) {
     super(m || 'Error: invalid DeviceId !');
