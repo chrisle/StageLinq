@@ -12,7 +12,7 @@ type BeatOptions = {
 	everyNBeats: number,
 }
 
-interface playerBeatData {
+interface deckBeatData {
 	beat: number;
 	totalBeats: number; 
 	BPM: number; 
@@ -20,8 +20,8 @@ interface playerBeatData {
 }
 export interface BeatData {
 	clock: bigint;
-	playerCount: number;
-	player: playerBeatData[];
+	deckCount: number;
+	deck: deckBeatData[];
 }
 
 export declare interface BeatInfo {
@@ -56,24 +56,24 @@ export class BeatInfo extends Service<BeatData> {
 		assert(p_ctx.sizeLeft() > 72);
 		let id = p_ctx.readUInt32()
 		const clock = p_ctx.readUInt64();
-		const playerCount = p_ctx.readUInt32();
-		let player: playerBeatData[] = [];
-		for (let i=0; i<playerCount; i++) {
-			let playerData:playerBeatData = {
+		const deckCount = p_ctx.readUInt32();
+		let deck: deckBeatData[] = [];
+		for (let i=0; i<deckCount; i++) {
+			let deckData:deckBeatData = {
 				beat: p_ctx.readFloat64(),
 				totalBeats: p_ctx.readFloat64(),
 				BPM: p_ctx.readFloat64(),
 			}
-			player.push(playerData);
+			deck.push(deckData);
 		}
-		for (let i=0; i<playerCount; i++) {
-			player[i].samples = p_ctx.readFloat64();
+		for (let i=0; i<deckCount; i++) {
+			deck[i].samples = p_ctx.readFloat64();
 		}
 		assert(p_ctx.isEOF())
 		const beatMsg = {
 			clock: clock,
-			playerCount: playerCount,
-			player: player,
+			deckCount: deckCount,
+			deck: deck,
 		}
 		return {
 			id: id,
@@ -94,11 +94,11 @@ export class BeatInfo extends Service<BeatData> {
             } 
     
             let hasUpdated = false;
-            for (let i = 0; i<p_data.message.playerCount; i++) {
+            for (let i = 0; i<p_data.message.deckCount; i++) {
                 if (resCheck(
                         this._userBeatOptions.everyNBeats, 
-                        this._currentBeatData.player[i].beat, 
-                        p_data.message.player[i].beat)) {
+                        this._currentBeatData.deck[i].beat, 
+                        p_data.message.deck[i].beat)) {
                     hasUpdated = true;
                 }
             }

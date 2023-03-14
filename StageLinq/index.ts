@@ -23,9 +23,9 @@ export interface DeviceServices {
   [key: string]: DeviceService;
 }
 
-export interface ServiceList {
-  [key: string]: InstanceType<typeof Services.Service>;
-}
+// export interface ServiceList {
+//   [key: string]: InstanceType<typeof Services.Service>;
+// }
 
 type DeviceSocket = Map<string, Socket>
 
@@ -82,27 +82,7 @@ export class StageLinq extends EventEmitter {
   get databases() {
     return this._databases;
   }
-  /*
-  setInfo(deviceId: DeviceId, info: ConnectionInfo) {
-    this.devices[deviceId.toString()].info = info;
-  } 
-
-  getService(deviceId: DeviceId, serviceName: string) {
-    return this.devices[deviceId.toString()].service.get(serviceName);
-  } 
-
-  setService(deviceId: DeviceId, serviceName: string, service: InstanceType<typeof Services.Service>) {
-    this.devices[deviceId.toString()].service.set(serviceName, service);
-  } 
-
-  getSocket(deviceId: DeviceId, serviceName: string) {
-    return this.devices[deviceId.toString()].socket.get(serviceName);
-  } 
-  
-  setSocket(deviceId: DeviceId, serviceName: string, socket: Socket) {
-    this.devices[deviceId.toString()].socket.set(serviceName, socket);
-  } 
-*/
+ 
   /**
    * Connect to the StageLinq network.
    */
@@ -112,8 +92,8 @@ export class StageLinq extends EventEmitter {
     
     //  Select Services to offer
     this.serviceList = [
-      Services.FileTransfer.name, 
-      Services.StateMap.name,
+      //Services.FileTransfer.name, 
+      //Services.StateMap.name,
       Services.BeatInfo.name,
     ];
 
@@ -196,11 +176,11 @@ export class StageLinq extends EventEmitter {
      //  User callback function. 
      //  Will be triggered everytime a player's beat counter crosses the resolution threshold
      function beatCallback(bd: BeatData) {
-       let playerBeatString = ""
-       for (let i=0; i<bd.playerCount; i++) {
-         playerBeatString += `Player: ${i+1} Beat: ${bd.player[i].beat.toFixed(3)} `
+       let deckBeatString = ""
+       for (let i=0; i<bd.deckCount; i++) {
+         deckBeatString += `Player: ${i+1} Beat: ${bd.deck[i].beat.toFixed(3)} `
        }
-       console.warn(`Total Calls ${beatCalls} ${playerBeatString}`);
+       console.warn(`Total Calls ${beatCalls} ${deckBeatString}`);
        beatCalls++
      }
      //  User Options
