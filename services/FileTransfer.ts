@@ -1,7 +1,7 @@
 import { DOWNLOAD_TIMEOUT } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
-import { Service, ServiceData } from './Service';
+import { Service } from './Service';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -14,14 +14,6 @@ export const CHUNK_SIZE = 4096;
 
 // TODO: Strongly type this for all possible messages?
 type FileTransferData = any;
-
-interface FileTransferServiceData extends ServiceData {
-  source?: Source
-}
-
-type DeviceSources = {
-  [key: string]: Source;
-}
 
 enum MessageId {
   TimeCode = 0x0,
@@ -50,13 +42,9 @@ export declare interface FileTransfer {
 export class FileTransfer extends Service<FileTransferData> {
   private receivedFile: WriteContext = null;
   public name: string = "FileTransfer";
-  public services: Map<string, FileTransferServiceData> = new Map();
-  public sources: Map<string, Source> = new Map();
   
   private _isAvailable: boolean = true;
   private txId: number = 1;
-
-  public deviceSources: Map<string, DeviceSources> = new Map();
 
   async init() {}
 
@@ -144,7 +132,6 @@ export class FileTransfer extends Service<FileTransferData> {
 
       case MessageId.EndOfMessage: {
         // End of result indication?
-
         return {
           id: messageId,
           message: null,
@@ -192,7 +179,7 @@ export class FileTransfer extends Service<FileTransferData> {
         //TODO actually parse these messages
         //if (p_ctx.sizeLeft() >= 5) {
           //Logger.debug(`requesting sources from `, deviceId.toString());
-          this.requestSources(socket);
+        this.requestSources(socket);
         //}
 
         return {
@@ -310,7 +297,6 @@ export class FileTransfer extends Service<FileTransferData> {
 
   async getSources(sources: string[], socket: Socket): Promise<Source[]> {
     const result: Source[] = [];
-    let devices: DeviceSources = {}
 
     for (const source of sources) {
       //try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
@@ -335,22 +321,15 @@ export class FileTransfer extends Service<FileTransferData> {
             },
             
           }
-          this.sources.set(source, thisSource);
-          //this.parent.databases.sources.set(source, thisSource);
+          
           this.parent.setSource(thisSource);
           result.push(thisSource);
           this.parent.databases.downloadDb(thisSource.name);
-          devices[source] = thisSource;
 
           break;
         }
       }
     }
-
-    await this.deviceSources.set(this.deviceId.toString(), devices);
-    
-    //this.parent.databases.downloadDb(this.deviceId.toString());
-
     return result;
   }
 

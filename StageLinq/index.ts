@@ -21,29 +21,12 @@ export interface DeviceServices {
   [key: string]: DeviceService;
 }
 
-// export interface ServiceList {
-//   [key: string]: InstanceType<typeof Services.Service>;
-// }
-
 type DeviceSocket = Map<string, Socket>
 
 export interface DeviceSockets {
   [key: string]: DeviceSocket;
 }
 
-// export interface Source {
-//   db: DbConnection;
-//   service: InstanceType<typeof Services.Service>;
-// }
-/*
-export interface Devices {
-  [key: string]: {
-    info: ConnectionInfo;
-    service?: DeviceService;
-    socket?: DeviceSocket;
-  }
-}
-*/
 export declare interface StageLinq {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
