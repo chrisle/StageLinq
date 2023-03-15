@@ -1,21 +1,22 @@
 import { strict as assert } from 'assert';
-import { 
-  MessageId,  
-} from '../types';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
-import { ServiceMessage, DeviceId, PlayerStates, MixerStates, PlayerDeckStates } from '../types';
+import { ServiceMessage, DeviceId, MessageId } from '../types';
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';
 
+import * as stagelinqConfig from '../stagelinqConfig.json';
+
+export type Player = typeof stagelinqConfig.player;
+export type PlayerDeck = typeof stagelinqConfig.playerDeck;
+export type Mixer = typeof stagelinqConfig.mixer;
 
 const MAGIC_MARKER = 'smaa';
 // TODO: Is this thing really an interval?
 const MAGIC_MARKER_INTERVAL = 0x000007d2;
 const MAGIC_MARKER_JSON = 0x00000000;
-
 
 function stateReducer(obj: any, prefix: string): string[] {
   const entries = Object.entries(obj)
@@ -25,8 +26,8 @@ function stateReducer(obj: any, prefix: string): string[] {
   return retArr.flat()
 }
 
-const playerStateValues = stateReducer(PlayerStates, '/');
-const mixerStateValues = stateReducer(MixerStates, '/');
+const playerStateValues = stateReducer(stagelinqConfig.player, '/');
+const mixerStateValues = stateReducer(stagelinqConfig.mixer, '/');
 const controllerStateValues = [...playerStateValues,  ...mixerStateValues];
 
 
@@ -65,7 +66,7 @@ export class StateMap extends Service<StateData> {
         }
         let playerDeckStateValues: string[] = [];
         for (let i=0; i< thisPeer.device.decks; i++) {
-          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(PlayerDeckStates, `/Engine/Deck${i+1}/`)];
+          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i+1}/`)];
         } 
         
         for (let state of playerDeckStateValues) {
@@ -80,7 +81,7 @@ export class StateMap extends Service<StateData> {
         }
         let playerDeckStateValues: string[] = [];
         for (let i=0; i< thisPeer.device.decks; i++) {
-          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(PlayerDeckStates, `/Engine/Deck${i+1}/`)];
+          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i+1}/`)];
         } 
         
         for (let state of playerDeckStateValues) {
