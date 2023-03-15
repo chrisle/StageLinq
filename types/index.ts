@@ -1,5 +1,8 @@
 import { Socket } from 'net';
+import { DbConnection } from '../Databases';
 import { DiscoveryMessageOptions } from '../network';
+import * as Services from '../services';
+import { DeviceId } from './DeviceId';
 
 
 export * from './common';
@@ -57,9 +60,12 @@ export interface ServiceMessage<T> {
 
 export interface Source {
 	name: string;
+	deviceId: DeviceId;
+	service: InstanceType<typeof Services.FileTransfer>
 	database: {
 		location: string;
 		size: number;
+		connection?: DbConnection; 
 		remote?: {
 			location: string,
 			device: string,

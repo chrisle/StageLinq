@@ -323,6 +323,8 @@ export class FileTransfer extends Service<FileTransferData> {
 
           const thisSource: Source = {
             name: source,
+            deviceId: this.deviceId,
+            service: this,
             database: {
               location: database,
               size: fstatMessage.size,
@@ -334,9 +336,10 @@ export class FileTransfer extends Service<FileTransferData> {
             
           }
           this.sources.set(source, thisSource);
-          this.parent.databases.sources.set(source, thisSource);
+          //this.parent.databases.sources.set(source, thisSource);
+          this.parent.setSource(thisSource);
           result.push(thisSource);
-
+          this.parent.databases.downloadDb(thisSource.name);
           devices[source] = thisSource;
 
           break;
@@ -346,7 +349,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
     await this.deviceSources.set(this.deviceId.toString(), devices);
     
-    this.parent.databases.downloadDb(this.deviceId.toString());
+    //this.parent.databases.downloadDb(this.deviceId.toString());
 
     return result;
   }

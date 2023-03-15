@@ -46,6 +46,7 @@ export abstract class Service<T> extends EventEmitter {
 				
 				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
 				clearTimeout(this.timeout);
+				this.socket = socket;
 				
 				socket.on('error', (err) => {
 					reject(err);

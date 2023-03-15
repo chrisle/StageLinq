@@ -1,13 +1,11 @@
 import { Discovery } from '../network';
-//import { Player } from '../devices/Player';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions, Devices, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus} from '../types';
+import { ActingAsDevice, StageLinqOptions, Devices, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus, Source} from '../types';
 import { Databases } from '../Databases';
 import * as Services from '../services';
 import { Socket } from 'net';
 import { assert } from 'console';
-// import { sleep } from '../utils';
 import { BeatData } from '../services/BeatInfo';
 
 
@@ -32,6 +30,11 @@ type DeviceSocket = Map<string, Socket>
 export interface DeviceSockets {
   [key: string]: DeviceSocket;
 }
+
+// export interface Source {
+//   db: DbConnection;
+//   service: InstanceType<typeof Services.Service>;
+// }
 /*
 export interface Devices {
   [key: string]: {
@@ -66,6 +69,8 @@ export class StageLinq extends EventEmitter {
   public readonly _services: Map<string, InstanceType<typeof Services.Service>> = new Map();
   private _databases: Databases;
   public devices = new Devices();
+  private _sources: Map<string, Source> = new Map();
+
 
   public options: StageLinqOptions;
 
@@ -82,7 +87,31 @@ export class StageLinq extends EventEmitter {
   get databases() {
     return this._databases;
   }
- 
+
+  hasSource(sourceName: string): boolean {
+    return this._sources.has(sourceName);
+  }
+
+  getSource(sourceName: string): Source {
+    return this._sources.get(sourceName);
+  }
+  
+  setSource(source: Source) {
+    this._sources.set(source.name, source);
+  }
+  
+  getSourceList(): string[] {
+    return [...this._sources.keys()]
+  } 
+
+  getSources(): Source[] {
+    return [...this._sources.values()]
+  }
+
+  getSourcesArray()  {
+    return this._sources.entries()
+  }
+
   /**
    * Connect to the StageLinq network.
    */
