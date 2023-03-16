@@ -39,6 +39,7 @@ export interface StateData {
     type: number;
     string?: string;
     value?: number;
+    state?: boolean;
   };
   interval?: number;
 }
@@ -164,8 +165,14 @@ export class StateMap extends Service<StateData> {
   }
 
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
-    
-    this.emit('stateMessage', p_data);
+    //TODO do we need to emit intervals?
+    if (p_data?.message?.interval) {
+      //console.warn(p_data.deviceId.toString(), p_data.socket.localPort, p_data.message.interval, p_data.message.name)
+      //this.emit('stateMessage', p_data);
+    } else {
+      this.emit('stateMessage', p_data);
+    }
+
     if (p_data && p_data.message.json) { 
       Logger.silly(
        `${p_data.deviceId.toString()} ${p_data.message.name} => ${
