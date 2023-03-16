@@ -89,7 +89,7 @@ export class Player extends EventEmitter {
     const json = message.json as any;
 
     //check if message is for this Player
-    if(message.deviceId.toString() !== this.deviceId.toString()) return;
+    if(data.deviceId.toString() !== this.deviceId.toString()) return;
 
     if (/Client\/Preferences\/Player$/.test(name)) {
       this.player = parseInt(json.string);

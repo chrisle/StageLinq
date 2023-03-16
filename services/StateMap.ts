@@ -6,6 +6,7 @@ import { ServiceMessage, DeviceId, MessageId } from '../types';
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';
+import * as Services from '../services';
 
 import * as stagelinqConfig from '../stagelinqConfig.json';
 
@@ -32,9 +33,8 @@ const controllerStateValues = [...playerStateValues,  ...mixerStateValues];
 
 
 export interface StateData {
+  service: InstanceType<typeof Services.StateMap> 
   name?: string;
-  deviceId?: DeviceId;
-  socket?: Socket;
   json?: {
     type: number;
     string?: string;
@@ -126,11 +126,14 @@ export class StateMap extends Service<StateData> {
           const json = JSON.parse(jsonString);
           return {
             id: MAGIC_MARKER_JSON,
+            deviceId: this.deviceId,
+            socket: socket,
             message: {
               name: name,
-              deviceId: this.deviceId,
+              
+              service: this,
               json: json,
-              socket: socket,
+              
             },
           };
         } catch(err) {
@@ -143,11 +146,12 @@ export class StateMap extends Service<StateData> {
         const interval = p_ctx.readInt32();
         return {
           id: MAGIC_MARKER_INTERVAL,
+          socket: socket,
+          deviceId: this.deviceId,
           message: {
             name: name,
-            deviceId: this.deviceId,
+            service: this,
             interval: interval,
-            socket: socket,
           },
         };
       }
@@ -164,7 +168,7 @@ export class StateMap extends Service<StateData> {
     this.emit('stateMessage', p_data);
     if (p_data && p_data.message.json) { 
       Logger.silly(
-       `${p_data.message.deviceId.toString()} ${p_data.message.name} => ${
+       `${p_data.deviceId.toString()} ${p_data.message.name} => ${
          p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
        }`
      );

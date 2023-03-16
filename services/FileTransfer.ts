@@ -78,6 +78,7 @@ export class FileTransfer extends Service<FileTransferData> {
         
         return {
           id: MessageId.RequestSources,
+          deviceId: this.deviceId,
           message: {
             txid: txId,
           },
@@ -106,10 +107,11 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
+          deviceId: this.deviceId,
+          socket: socket,
           message: {
             txid: txId,
             sources: sources,
-            socket: socket,
           },
         };
       }
@@ -122,6 +124,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
+          deviceId: this.deviceId,
           message: {
             size: size,
             txid: txId,
@@ -134,6 +137,7 @@ export class FileTransfer extends Service<FileTransferData> {
         // End of result indication?
         return {
           id: messageId,
+          deviceId: this.deviceId,
           message: null,
           socket: socket,
         };
@@ -147,6 +151,7 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(id === 1)
         return {
           id: messageId,
+          deviceId: this.deviceId,
           socket: socket,
           message: {
             size: filesize,
@@ -164,6 +169,7 @@ export class FileTransfer extends Service<FileTransferData> {
         
         return {
           id: messageId,
+          deviceId: this.deviceId,
           socket: socket,
           message: {
             txid: txId,
@@ -184,6 +190,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
+          deviceId: this.deviceId,
           socket: socket,
           message: null,
         };
@@ -198,6 +205,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
+          deviceId: this.deviceId,
           socket: socket,
           message: null,
         };

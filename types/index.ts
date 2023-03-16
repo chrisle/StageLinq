@@ -55,7 +55,8 @@ export interface ServicePorts {
 export interface ServiceMessage<T> {
 	id: number;
 	message: T;
-	socket?: Socket;
+	socket: Socket;
+	deviceId: DeviceId;
 }
 
 export interface Source {

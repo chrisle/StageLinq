@@ -79,6 +79,8 @@ export class Directory extends Service<DirectoryData> {
     };
     const directoryData = {
       id: 69,
+      socket: socket,
+      deviceId: this.deviceId,
       message: directoryMessage,
     };
     return directoryData;

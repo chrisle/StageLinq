@@ -186,7 +186,7 @@ async function main() {
     const msg = data.message.json
     ? JSON.stringify(data.message.json)
     : data.message.interval;
-    console.debug(`${data.message.deviceId.toString()} ` +
+    console.debug(`${data.deviceId.toString()} ` +
     `${data.message.name} => ${msg}`);
   
    }

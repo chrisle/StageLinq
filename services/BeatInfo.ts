@@ -75,6 +75,8 @@ export class BeatInfo extends Service<BeatData> {
 		}
 		return {
 			id: id,
+			deviceId: this.deviceId,
+			socket: this.socket,
 			message: beatMsg
 		}
 	}
