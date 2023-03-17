@@ -1,4 +1,4 @@
-import { ActingAsDevice, PlayerStatus, StageLinqOptions, ServiceList } from '../types';
+import { ActingAsDevice, PlayerStatus, StageLinqOptions, ServiceList, DeviceId } from '../types';
 //import * as Services from '../services'
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
@@ -99,6 +99,11 @@ async function main() {
   }
 
   const stageLinq = new StageLinq(stageLinqOptions);  
+
+  stageLinq.on('connection', (name: string, deviceId: DeviceId) => {
+    console.warn(`Connection ${name} ${deviceId}`);
+  });
+
 
   stageLinq.logger.on('error', (...args: any) => {
     console.error(...args);

@@ -21,6 +21,7 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 	public name: string;
 	protected parent: InstanceType<typeof StageLinq>;
 	private _devices: Map<string, Service<T>> = new Map();
+	
 
 	constructor(p_parent:InstanceType<typeof StageLinq>, serviceName: string) {
 		super();
@@ -50,10 +51,10 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 	}
 
 	async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
-		new (_parent: InstanceType<typeof StageLinq>, _deviceId?: DeviceId): T;
+		new (_parent: InstanceType<typeof StageLinq>, _serviceHandler?: InstanceType<typeof ServiceHandler>, _deviceId?: DeviceId): T;
 	  }, parent?: InstanceType<typeof StageLinq>, deviceId?: DeviceId): Promise<T> {
 		
-		const service = new ctor(parent, deviceId);
+		const service = new ctor(parent, this, deviceId);
 		await service.listen();
 		this.setupService(service, deviceId)
 
@@ -79,6 +80,8 @@ export abstract class Service<T> extends EventEmitter {
 
 	protected isBufferedService: boolean = true;
 	protected parent: InstanceType<typeof StageLinq>;
+	protected _handler: ServiceHandler<T> = null;
+
 	
 	public server: Server = null;
 	public serverInfo: AddressInfo;
@@ -89,9 +92,10 @@ export abstract class Service<T> extends EventEmitter {
 
 	private messageBuffer: Buffer = null;
 	
-	constructor(p_parent:InstanceType<typeof StageLinq>, deviceId?: DeviceId) {
+	constructor(p_parent:InstanceType<typeof StageLinq>, serviceHandler: InstanceType <typeof ServiceHandler>, deviceId?: DeviceId) {
 		super();
 		this.parent = p_parent;
+		this._handler = serviceHandler as ServiceHandler<T>;
 		this.deviceId = deviceId || null;
 	}
 	
@@ -104,6 +108,14 @@ export abstract class Service<T> extends EventEmitter {
 				clearTimeout(this.timeout);
 				this.socket = socket;
 				
+				if (this.name !== "Directory") {
+					const handler = this._handler as ServiceHandler<T>;
+					this.parent.emit('connection', this.name, this.deviceId)
+					if (this.deviceId) {
+						handler.addDevice(this.deviceId, this)
+					}
+				}
+
 				socket.on('error', (err) => {
 					reject(err);
 				});
@@ -119,7 +131,7 @@ export abstract class Service<T> extends EventEmitter {
 				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
 				if (this.deviceId){
 					Logger.silly(`started timer for ${this.name} for ${this.deviceId}`)
-					this.timeout = setTimeout(this.closeService, 5000, this.deviceId, this.name, this.server, this.parent);
+					this.timeout = setTimeout(this.closeService, 5000, this.deviceId, this.name, this.server, this.parent, this._handler);
 				};
 				resolve(server);
 			});
@@ -250,13 +262,16 @@ export abstract class Service<T> extends EventEmitter {
 	}
 
 	//	callback for timeout timer
-	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>) {
+	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>, handler: ServiceHandler<T>) {
 		Logger.debug(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
 		
 		await server.close();
 		let serverName = serviceName;
 		serverName += deviceId.toString();
 		parent.deleteServer(serverName);
+		
+		await handler.deleteDevice(deviceId);
+		assert(!handler.hasDevice(deviceId));
 		
 		const service = parent.services[serviceName]
 		await service.deleteDevice(deviceId);

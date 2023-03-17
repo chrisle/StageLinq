@@ -25,6 +25,7 @@ export declare interface StageLinq {
   on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, socket: Socket) => void): this;
   on(event: 'stateMessage', listener: ( message: ServiceMessage<Services.StateData>) => void): this;
   on(event: 'ready', listener: () => void): this;
+  on(event: 'connection', listener: (serviceName: string, deviceId: DeviceId) => void): this;
 
   //on(event: 'fileDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
   //on(event: 'fileDownloading', listener: (sourceName: string, dbPath: string) => void): this;
@@ -107,6 +108,9 @@ export class StageLinq extends EventEmitter {
       switch (service) {
         case "StateMap": {
           this.services[service] = new Services.StateMapHandler(this, service);
+          // this.services[service].on('connection', (name: string, deviceId: DeviceId) => {
+          //   Logger.warn(`Connection ${name} ${deviceId}`);
+          // });
           break;
         }
         case "FileTransfer": {
