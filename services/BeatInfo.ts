@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
-import { Service } from './Service';
+import { Service, ServiceHandler } from './Service';
 import { Logger } from '../LogEmitter';
 import type { ServiceMessage, DeviceId } from '../types';
 import { Socket } from 'net';
@@ -23,6 +23,36 @@ export interface BeatData {
 	deckCount: number;
 	deck: deckBeatData[];
 }
+export class BeatInfoHandler extends ServiceHandler<BeatData> {
+	public name: string = 'BeatInfo'
+  
+	public setupService(service: Service<BeatData>, deviceId: DeviceId) {
+		Logger.debug(`Setting up ${service.name} for ${deviceId.toString()}`);
+		const beatInfo = service as BeatInfo;
+		this.addDevice(deviceId, service);
+		
+		// Just a counter to test resolution
+		let beatCalls: number = 0;  
+		//  User callback function. 
+		//  Will be triggered everytime a player's beat counter crosses the resolution threshold
+		function beatCallback(bd: BeatData) {
+		let deckBeatString = ""
+		for (let i=0; i<bd.deckCount; i++) {
+			deckBeatString += `Player: ${i+1} Beat: ${bd.deck[i].beat.toFixed(3)} `
+		}
+		console.warn(`Total Calls ${beatCalls} ${deckBeatString}`);
+		beatCalls++
+		}
+		//  User Options
+		const beatOptions = {
+		everyNBeats: 1, // 1 = every beat, 4 = every 4 beats, .25 = every 1/4 beat
+		}
+		//  Start BeatInfo, pass user callback
+		beatInfo.server.on("connection", (socket) =>{ 
+			beatInfo.startBeatInfo(beatCallback, beatOptions, socket);
+		}); 
+	}
+  }
 
 export declare interface BeatInfo {
     on(event: 'message', listener: (message: BeatData) => void): this;

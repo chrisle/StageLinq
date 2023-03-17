@@ -1,6 +1,6 @@
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
-import { Service } from './Service';
+import { Service, ServiceHandler } from './Service';
 import { ServiceMessage, ServicePorts, MessageId, Tokens, DeviceId } from '../types';
 import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
@@ -15,10 +15,19 @@ export interface DirectoryData {
   servicePorts: ServicePorts;
 }
 
+export class DirectoryHandler extends ServiceHandler<Directory> {
+  public name: string = "Directory"
+  
+  public setupService(service: Service<DirectoryData>) {
+    Logger.debug(`Setting up ${service.name}`);
+  }
+}
+
 export class Directory extends Service<DirectoryData> {
   public name: string = 'Directory';
   public timeAlive: number;
   public servicePorts: ServicePorts;
+  
 
   protected readonly isBufferedService = false;
 
@@ -98,21 +107,23 @@ export class Directory extends Service<DirectoryData> {
     ctx.write(Tokens.Listen);
 
     let services: InstanceType<typeof Service>[] = []
-
-    for (const serviceName of this.parent.serviceList) {
+    for (const serviceName of Object.keys(this.parent.services)) {
+    //for (const serviceName of this.parent.serviceList) {
       switch (serviceName) {
         case 'FileTransfer': {
-          const fileTransfer = await this.parent.startServiceListener(FileTransfer, deviceId);
+          //const fileTransfer = await this.parent.startServiceListener(FileTransfer, deviceId);
+          const fileTransfer = await this.parent.services[serviceName].startServiceListener(FileTransfer, this.parent, deviceId);
           services.push(fileTransfer);
           break;
         }
         case 'StateMap': {
-          const stateMap = await this.parent.startServiceListener(StateMap, deviceId);
+          const stateMap = await this.parent.services[serviceName].startServiceListener(StateMap, this.parent, deviceId);
           services.push(stateMap);
           break;
         }
         case 'BeatInfo': {
-          const beatInfo = await this.parent.startServiceListener(BeatInfo, deviceId);
+          //const beatInfo = await this.parent.startServiceListener(BeatInfo, deviceId);
+          const beatInfo = await this.parent.services[serviceName].startServiceListener(BeatInfo, this.parent, deviceId);
           services.push(beatInfo);
           break;
         }
@@ -121,12 +132,12 @@ export class Directory extends Service<DirectoryData> {
       }
     }
 
-    this.parent.services[deviceId.toString()] = new Map();
-    this.parent.sockets[deviceId.toString()] = new Map();
+    //this.parent.services[deviceId.toString()] = new Map();
+    //this.parent.sockets[deviceId.toString()] = new Map();
 
     for (const service of services) {
       
-      this.parent.services[deviceId.toString()].set(service.name, service);
+      //this.parent.services[deviceId.toString()].set(service.name, service);
      
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
       ctx.write(Tokens.Listen);

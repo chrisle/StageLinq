@@ -1,7 +1,7 @@
 import { DOWNLOAD_TIMEOUT } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
-import { Service } from './Service';
+import { Service, ServiceHandler } from './Service';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -37,6 +37,16 @@ interface FileTransferProgress {
 export declare interface FileTransfer {
   on(event: 'fileTransferProgress', listener: (txId: number, progress: FileTransferProgress) => void): this;
   //on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
+}
+
+export class FileTransferHandler extends ServiceHandler<FileTransfer> {
+  public name: string = "FileTransfer"
+  
+  public setupService(service: Service<FileTransferData>, deviceId: DeviceId) {
+    const fileTransfer = service as FileTransfer;
+    Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.toString()}`);
+    this.addDevice(deviceId, service);
+  }
 }
 
 export class FileTransfer extends Service<FileTransferData> {

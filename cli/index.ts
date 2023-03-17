@@ -1,4 +1,5 @@
 import { ActingAsDevice, PlayerStatus, StageLinqOptions, ServiceList } from '../types';
+//import * as Services from '../services'
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
@@ -92,8 +93,8 @@ async function main() {
 
     services: [
       ServiceList.StateMap,
+      ServiceList.BeatInfo,
       ServiceList.FileTransfer,
-      ServiceList.Directory,
     ],
   }
 

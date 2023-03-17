@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
-import { Service } from './Service';
+import { Service, ServiceHandler } from './Service';
 import { ServiceMessage, DeviceId, MessageId } from '../types';
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
@@ -42,6 +42,30 @@ export interface StateData {
     state?: boolean;
   };
   interval?: number;
+}
+
+export class StateMapHandler extends ServiceHandler<StateData> {
+  public name: string = 'StateMap'
+
+  public setupService(service: Service<StateData>, deviceId: DeviceId) {
+    Logger.debug(`Setting up ${service.name} for ${deviceId.toString()}`);
+    const stateMap = service as Services.StateMap;
+    this.addDevice(deviceId, service);
+
+    const listener = (data: ServiceMessage<Services.StateData>) => {
+      if (data && data.message && data.message.json) {
+        console.log(data.message.name,">>", data.message.json);
+        this.emit('stateMessage', data);
+      }
+    };
+
+    stateMap.addListener('stateMessage', listener)
+
+    stateMap.on('newStateMapDevice',  (deviceId: DeviceId, socket: Socket) => {
+      Logger.debug(`New StateMap Device ${deviceId.toString()}`)
+      stateMap.subscribe(socket);
+    })
+  }
 }
 
 export class StateMap extends Service<StateData> {

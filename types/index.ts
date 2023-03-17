@@ -90,7 +90,8 @@ export type IpAddressPort = string;
 export enum ServiceList  {
 	StateMap =  "StateMap",
 	FileTransfer = "FileTransfer",
-	Directory = "DirectoryService",
+	BeatInfo = "BeatInfo",
+	Directory = "Directory",
 }
 
 
@@ -99,13 +100,14 @@ export interface StageLinqOptions {
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
 	services?: ServiceList[];
+	//services?: typeof Services[]
 }
 
 type deviceType = {
 	[key: string] : {
 		name: string,
 		type: string,
-		decks: number
+		decks: number,
 	}
 }
 

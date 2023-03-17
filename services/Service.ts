@@ -11,10 +11,66 @@ import { StageLinq } from '../StageLinq';
 
 
 export declare type ServiceData = {
+	name?: string;
 	socket?: Socket;
 	deviceId?: DeviceId;
 	service?: InstanceType<typeof Service>;
 }
+
+export abstract class ServiceHandler<T> extends EventEmitter {
+	public name: string;
+	protected parent: InstanceType<typeof StageLinq>;
+	private _devices: Map<string, Service<T>> = new Map();
+
+	constructor(p_parent:InstanceType<typeof StageLinq>, serviceName: string) {
+		super();
+		this.parent = p_parent;
+		this.name = serviceName;
+		this.parent.services[serviceName] = this;
+	}
+
+	hasDevice(deviceId: DeviceId): boolean {
+		return this._devices.has(deviceId.toString())
+	}
+
+	getDevice(deviceId: DeviceId): Service<T>  {
+		return this._devices.get(deviceId.toString());
+	}
+
+	getDevices(): Service<T>[] {
+		return [...this._devices.values()]
+	}
+
+	addDevice(deviceId: DeviceId, service: Service<T>) {
+		this._devices.set(deviceId.toString(), service)
+	}
+
+	async deleteDevice(deviceId: DeviceId) {
+		this._devices.delete(deviceId.toString())
+	}
+
+	async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
+		new (_parent: InstanceType<typeof StageLinq>, _deviceId?: DeviceId): T;
+	  }, parent?: InstanceType<typeof StageLinq>, deviceId?: DeviceId): Promise<T> {
+		
+		const service = new ctor(parent, deviceId);
+		await service.listen();
+		this.setupService(service, deviceId)
+
+		let serverName = `${ctor.name}`;
+
+		if (deviceId) {
+			serverName += deviceId.toString();
+		}
+
+		this.parent.addServer(serverName, service.server);
+
+		return service;
+	}
+
+	protected abstract setupService(service: InstanceType<typeof Service>, deviceId?: DeviceId): void;
+}
+
 
 export abstract class Service<T> extends EventEmitter {
 	public readonly name: string = "Service";
@@ -125,7 +181,6 @@ export abstract class Service<T> extends EventEmitter {
 			//make sure reading port won't overrun buffer
 			(assert (ctx.sizeLeft() >= 2));
 			ctx.readUInt16(); //read port, though we don't need it
-			this.parent.sockets[this.deviceId.toString()].set(this.name, socket); //TODO fix sockets
 			
 			Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${this.deviceId.toString()}`);
 			
@@ -196,9 +251,16 @@ export abstract class Service<T> extends EventEmitter {
 
 	//	callback for timeout timer
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>) {
-		Logger.silly(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
+		Logger.debug(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
+		
 		await server.close();
-		parent.services[deviceId.toString()].delete(serviceName);
+		let serverName = serviceName;
+		serverName += deviceId.toString();
+		parent.deleteServer(serverName);
+		
+		const service = parent.services[serviceName]
+		await service.deleteDevice(deviceId);
+		assert(!service.hasDevice(deviceId));
 	}
 
 	// TODO: Cannot use abstract because of async; is there another way to get this?
