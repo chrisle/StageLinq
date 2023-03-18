@@ -44,7 +44,7 @@ export class Databases extends EventEmitter {
         this.emit('dbProgress', source.name, progress.total, progress.bytesDownloaded, progress.percentComplete);
         //Logger.debug('dbProgress', deviceId, progress.total, progress.bytesDownloaded, progress.percentComplete);
       } else {
-        console.warn(txid, thisTxid)
+        //console.warn(txid, thisTxid)
       }
     });
 

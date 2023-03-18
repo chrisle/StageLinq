@@ -109,156 +109,201 @@
 
 
 
+export const configStates = {
+    Mixer: {
+        Mixer: {
+            ChannelAssignment1: '', 
+            ChannelAssignment2: '',
+            ChannelAssignment3: '',
+            ChannelAssignment4: '',
+        },
+    },
+    Player: {
+        Client: {
+            Librarian: {
+                DevicesController: {
+                    CurrentDevice: '', //type 8 can be URI net://[DEVICEID]/[SOURCENAME] ([LOCATION?]) or /media/[SOURCENAME]
+                    HasSDCardConnected: false,
+                    HasUsbDeviceConnected: false,
+                },
+            },
+            Preferences: {
+                LayerB: false,
+                Player: '', //type 4 ENUM? 
+                PlayerJogColorA: '#FFFFFF', //type 16 Colour string
+                PlayerJogColorB: '#FFFFFF',
+                Profile: {
+                    Application: {
+                        SyncMode: '', 
+                    },
+                },
+            },
+        },   
+    }
+}
 
-// export const PlayerStates = {
-//     Gui: {
-//         ViewLayer: {
-//             LayerB: 'LayerB',
-//         },
-//         Decks: {
-//             Deck: {
-//                 ActiveDeck: 'ActiveDeck',
-//             },
-//         },
-//     },
-//     Engine: {
-//         DeckCount: 2, //type 10
-//         Sync: {
-//             Network: {
-//                 MasterStatus: false,
-//             },
-//         },
-//         Master: {
-//             MasterTempo: 120.0, //type 0
-//         },
-//     },
-//     Client: {
-//         Librarian: {
-//             DevicesController: {
-//                 CurrentDevice: '', //type 8 can be URI net://[DEVICEID]/[SOURCENAME] ([LOCATION?]) or /media/[SOURCENAME]
-//                 HasSDCardConnected: false,
-//                 HasUsbDeviceConnected: false,
-//             },
-//         },
-//         Preferences: {
-//             LayerB: false,
-//             Player: '', //type 4 ENUM? 
-//             PlayerJogColorA: '#FFFFFF', //type 16 Colour string
-//             PlayerJogColorB: '#FFFFFF',
-//             Profile: {
-//                 Application: {
-//                     PlayerColor1: '#FFFFFF',
-//                     PlayerColor1A: '#FFFFFF',
-//                     PlayerColor1B: '#FFFFFF',
-//                     PlayerColor2: '#FFFFFF',
-//                     PlayerColor2A: '#FFFFFF',
-//                     PlayerColor2B: '#FFFFFF',
-//                     PlayerColor3: '#FFFFFF',
-//                     PlayerColor3A: '#FFFFFF',
-//                     PlayerColor3B: '#FFFFFF',
-//                     PlayerColor4: '#FFFFFF',
-//                     PlayerColor4A: '#FFFFFF',
-//                     PlayerColor4B: '#FFFFFF',
-//                     SyncMode: '', 
-//                 },
-//             },
-//         },
-//     },   
-// }
 
-// export const PlayerDeckStates = {
-//     CurrentBPM: 120.00, //type 0 
-//     ExternalMixerVolume: 1, //type 0
-//     ExternalScratchWheelTouch: false, //type 2 false?
-//     Pads: {
-//         View: '', //type 4 ENUM? 'CUES'
-//     },
-//     Play: false,
-//     PlayState: false,
-//     //PlayStatePath: 'PlayStatePath', //NG
-//     Speed: 1.0, //0.44444535
-//     SpeedNeutral: false,
-//     SpeedOffsetDown: false,
-//     SpeedOffsetUp: false,
-//     SpeedRange: '8', //enum
-//     SpeedState: 1.0, //type 0 signed -0.39999
-//     SyncMode: 'Off', //enum: Off, Tempo, TempoSync
-//     DeckIsMaster: false,
-//     Track: {
-//         ArtistName: '',
-//         Bleep: false, //type 2 
-//         CuePosition: 156.0, //type 14?
-//         CurrentBPM: 120.0, 
-//         CurrentKeyIndex: 0, //type 10?
-//         CurrentLoopInPosition: 156.0, //type 14
-//         CurrentLoopOutPosition: 156.0, //type 14
-//         CurrentLoopSizeInBeats: 0, // type 14
-//         KeyLock: false,
-//         LoopEnableState: false, //type 1
-//         Loop: {
-//             QuickLoop1: false, //type 2
-//             QuickLoop2: false,
-//             QuickLoop3: false,
-//             QuickLoop4: false,
-//             QuickLoop5: false,
-//             QuickLoop6: false,
-//             QuickLoop7: false,
-//             QuickLoop8: false,
-//         },
-//         PlayPauseLEDState: false,
-//         SampleRate: 44100, //type 14
-//         SongAnalyzed: false,
-//         SongLoaded: false,
-//         SongName: '', 
-//         SoundSwitchGUID: '', //NG must be Analyzed?
-//         TrackBytes: 1, //type 10
-//         TrackData: false, //type 3???
-//         TrackLength: 1, //type 10
-//         TrackName: '', // type 8 can be /media/[SOURCE]/FILEPATH....
-//         TrackNetworkPath: '',
-//         TrackURI: '', //NG Only streaming?
-//         TrackWasPlayed: false,
-//     }   
-// }
+export const PlayerStates = {
+    // Gui: {
+    //     ViewLayer: {
+    //         LayerB: 'LayerB',
+    //     },
+    //     Decks: {
+    //         Deck: {
+    //             ActiveDeck: 'ActiveDeck',
+    //         },
+    //     },
+    // },
+    Mixer: {
+        //NumberOfChannels: 'NumberOfChannels', //NG 
+        ChannelAssignment1: '', // type 8 format '{DEVICEID},1' or '{DEVICEID},2'
+        ChannelAssignment2: '',
+        ChannelAssignment3: '',
+        ChannelAssignment4: '',
+    },
+    Engine: {
+        DeckCount: 2, //type 10
+        Sync: {
+            Network: {
+                MasterStatus: false,
+            },
+        },
+        Master: {
+            MasterTempo: 120.0, //type 0
+        },
+    },
+    Client: {
+        Librarian: {
+            DevicesController: {
+                CurrentDevice: '', //type 8 can be URI net://[DEVICEID]/[SOURCENAME] ([LOCATION?]) or /media/[SOURCENAME]
+                HasSDCardConnected: false,
+                HasUsbDeviceConnected: false,
+            },
+        },
+        Preferences: {
+            LayerB: false,
+            Player: '', //type 4 ENUM? 
+            PlayerJogColorA: '#FFFFFF', //type 16 Colour string
+            PlayerJogColorB: '#FFFFFF',
+            Profile: {
+                Application: {
+                    PlayerColor1: '#FFFFFF',
+                    PlayerColor1A: '#FFFFFF',
+                    PlayerColor1B: '#FFFFFF',
+                    PlayerColor2: '#FFFFFF',
+                    PlayerColor2A: '#FFFFFF',
+                    PlayerColor2B: '#FFFFFF',
+                    PlayerColor3: '#FFFFFF',
+                    PlayerColor3A: '#FFFFFF',
+                    PlayerColor3B: '#FFFFFF',
+                    PlayerColor4: '#FFFFFF',
+                    PlayerColor4A: '#FFFFFF',
+                    PlayerColor4B: '#FFFFFF',
+                    SyncMode: '', 
+                },
+            },
+        },
+    },   
+}
 
-// export const MixerStates = {
-//     Mixer: {
-//         CH1faderPosition: 1.27, //type 0
-//         CH2faderPosition: 0.0,
-//         CH3faderPosition: 0.0,
-//         CH4faderPosition: 0.0,
-//         CrossfaderPosition: 0.5, //type 0
-//         //NumberOfChannels: 'NumberOfChannels', //NG 
-//         ChannelAssignment1: '', // type 8 format '{DEVICEID},1' or '{DEVICEID},2'
-//         ChannelAssignment2: '',
-//         ChannelAssignment3: '',
-//         ChannelAssignment4: '',
-//     },
-//     // Gui: {
-//     //     ViewLayer: {
-//     //         LayerB: 'LayerB',
-//     //     },
-//     //     Decks: {
-//     //         Deck: {
-//     //             ActiveDeck: 'ActiveDeck',
-//     //         },
-//     //     },
-//     // },
-// }
+export const PlayerDeckStates = {
+    CurrentBPM: 120.00, //type 0 
+    ExternalMixerVolume: 1, //type 0
+    // ExternalScratchWheelTouch: false, //type 2 false?
+    // Pads: {
+    //     View: '', //type 4 ENUM? 'CUES'
+    // },
+    // Play: false,
+    PlayState: false,
+    //PlayStatePath: 'PlayStatePath', //NG
+    Speed: 1.0, //0.44444535
+    // SpeedNeutral: false,
+    // SpeedOffsetDown: false,
+    // SpeedOffsetUp: false,
+    // SpeedRange: '8', //enum
+    // SpeedState: 1.0, //type 0 signed -0.39999
+    SyncMode: 'Off', //enum: Off, Tempo, TempoSync
+    DeckIsMaster: false,
+    Track: {
+        ArtistName: '',
+        Bleep: false, //type 2 
+        CuePosition: 156.0, //type 14?
+        CurrentBPM: 120.0, 
+        CurrentKeyIndex: 0, //type 10?
+        CurrentLoopInPosition: 156.0, //type 14
+        CurrentLoopOutPosition: 156.0, //type 14
+        CurrentLoopSizeInBeats: 0, // type 14
+        // KeyLock: false,
+        // LoopEnableState: false, //type 1
+        // Loop: {
+        //     QuickLoop1: false, //type 2
+        //     QuickLoop2: false,
+        //     QuickLoop3: false,
+        //     QuickLoop4: false,
+        //     QuickLoop5: false,
+        //     QuickLoop6: false,
+        //     QuickLoop7: false,
+        //     QuickLoop8: false,
+        // },
+        // PlayPauseLEDState: false,
+        SampleRate: 44100, //type 14
+        SongAnalyzed: false,
+        SongLoaded: false,
+        SongName: '', 
+        SoundSwitchGUID: '', //NG must be Analyzed?
+        TrackBytes: 1, //type 10
+        TrackData: false, //type 3???
+        TrackLength: 1, //type 10
+        TrackName: '', // type 8 can be /media/[SOURCE]/FILEPATH....
+        TrackNetworkPath: '',
+        TrackURI: '', //NG Only streaming?
+        TrackWasPlayed: false,
+    }   
+}
 
-// //const test = new MixerStates()
+export const MixerStates = {
+    Mixer: {
+        CH1faderPosition: 1.27, //type 0
+        CH2faderPosition: 0.0,
+        CH3faderPosition: 0.0,
+        CH4faderPosition: 0.0,
+        CrossfaderPosition: 0.5, //type 0
+        //NumberOfChannels: 'NumberOfChannels', //NG 
+        // ChannelAssignment1: '', // type 8 format '{DEVICEID},1' or '{DEVICEID},2'
+        // ChannelAssignment2: '',
+        // ChannelAssignment3: '',
+        // ChannelAssignment4: '',
+    },
+    // Gui: {
+    //     ViewLayer: {
+    //         LayerB: 'LayerB',
+    //     },
+    //     Decks: {
+    //         Deck: {
+    //             ActiveDeck: 'ActiveDeck',
+    //         },
+    //     },
+    // },
+}
 
-// let exportObj = {
-//     player: {
-//         ...PlayerStates,
-//     },
-//     playerDeck: {
-//         ...PlayerDeckStates
-//     },
-//     mixer: {
-//         ...MixerStates,
-//     }
-// }
+//const test = new MixerStates()
+
+
+
+export const exportObj = {
+    config: {
+
+    },
+    player: {
+        ...PlayerStates,
+    },
+    playerDeck: {
+        ...PlayerDeckStates
+    },
+    mixer: {
+        ...MixerStates,
+    }
+}
 
 
 // console.log(JSON.stringify(exportObj));

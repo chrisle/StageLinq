@@ -6,7 +6,7 @@ import { Databases } from '../Databases';
 import * as Services from '../services';
 import { Server } from 'net';
 import { assert } from 'console';
-import { sleep } from '../utils/sleep';
+//import { sleep } from '../utils/sleep';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -161,23 +161,12 @@ export class StageLinq extends EventEmitter {
     }
   }
 
-  async downloadFile(sourceName: string, path: string): Promise<Uint8Array> {
+  async downloadFile(source: Source, path: string): Promise<Uint8Array> {
    
-    let service: InstanceType<typeof Services.FileTransfer> = null 
-    while (!service) {
-      await sleep(250);
-      const source = this.getSource(path);
-      if (source.service) {
-        service = source.service;
-      }
-      
-    }
-    console.log(sourceName, this.getSourceList());
-
-    const _sourceName = path.split('/').slice(1,2).shift();
-    console.log(_sourceName);
-    //const source = this.getSource(_sourceName);
-    //const service = source.service;
+    
+    
+    
+    const service = source.service;
     assert(service);
     await service.isAvailable();
     

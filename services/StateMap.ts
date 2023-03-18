@@ -31,6 +31,7 @@ const playerStateValues = stateReducer(stagelinqConfig.player, '/');
 const mixerStateValues = stateReducer(stagelinqConfig.mixer, '/');
 const controllerStateValues = [...playerStateValues,  ...mixerStateValues];
 
+export type StateMapDevice = InstanceType<typeof Services.StateMap> 
 
 export interface StateData {
   service: InstanceType<typeof Services.StateMap> 
@@ -46,6 +47,7 @@ export interface StateData {
 
 export class StateMapHandler extends ServiceHandler<StateData> {
   public name: string = 'StateMap'
+  public deviceTrackRegister: Map<string, string> = new Map();
 
   public setupService(service: Service<StateData>, deviceId: DeviceId) {
     Logger.debug(`Setting up ${service.name} for ${deviceId.toString()}`);
@@ -61,9 +63,9 @@ export class StateMapHandler extends ServiceHandler<StateData> {
 
     stateMap.addListener('stateMessage', listener)
 
-    stateMap.on('newStateMapDevice',  (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => {
-      Logger.debug(`New StateMap Device ${deviceId.toString()}`)
-      this.emit('newStateMapDevice',  deviceId, service);
+    stateMap.on('newDevice',  ( service: InstanceType<typeof Services.StateMap>) => {
+      Logger.debug(`New StateMap Device ${service.deviceId.toString()}`)
+      this.emit('newDevice',  service);
       //stateMap.subscribe();
       assert(service);
     })
@@ -96,8 +98,11 @@ export class StateMap extends Service<StateData> {
         for (let i=0; i< thisPeer.device.decks; i++) {
           playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i+1}/`)];
         } 
-        
+        const handler = this._handler as Services.StateMapHandler
         for (let state of playerDeckStateValues) {
+          const stateValue = `${this.deviceId.toString()},/${state.split('/').slice(1,3).join("/")}`
+          const newValue = `{${this.deviceId}},${state.split('/').slice(2,3).shift().substring(4,5)}`
+          handler.deviceTrackRegister.set(stateValue, newValue);
           await this.subscribeState(state, 0, socket);
         }
         
@@ -134,7 +139,7 @@ export class StateMap extends Service<StateData> {
     sleep(500)
     assert(socket);
     
-    this.emit('newStateMapDevice', deviceId, this)
+    this.emit('newDevice', this)
     return
   }
 
@@ -192,13 +197,44 @@ export class StateMap extends Service<StateData> {
     return null;
   }
 
+  private deckMessageAdapter(data: ServiceMessage<StateData>): ServiceMessage<StateData> {
+    const handler = this._handler as Services.StateMapHandler
+    const deckHandlerMsgs = handler.deviceTrackRegister.entries();
+    let returnMsg: ServiceMessage<StateData> = {...data}
+    
+    for (let [oldValue, newValue] of deckHandlerMsgs) {
+      const oldValueArr = oldValue.split(',')
+      //const testString = `${this.deviceId.toString()}${data?.message?.name.substring(0,oldValue.length)}`
+      //console.warn(testString, oldValue)
+      if (oldValueArr[0] == this.deviceId.toString() && data?.message?.name.substring(0,oldValueArr[1].length) == oldValueArr[1]) {
+      //if (testString == oldValue) {
+        returnMsg.message.name = `${newValue},${data.message.name.substring(oldValueArr[1].length, data.message.name.length)}`
+      }
+    }
+  
+    return returnMsg
+  }
+
+  private mixerAssignmentAdapter(data: ServiceMessage<StateData>) {
+    const handler = this._handler as Services.StateMapHandler 
+    const keyString = `${this.deviceId.toString()},/Mixer/CH${data.message.name.substring(data.message.name.length-1,data.message.name.length)}faderPosition`
+    const valueString = `${data.message.json.string},/Mixer/ChannelFaderPosition`;
+    handler.deviceTrackRegister.set(keyString, valueString);
+  }
+
+
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
     //TODO do we need to emit intervals?
+    
+    if (p_data?.message?.name.substring(0,p_data?.message?.name?.length-1) == "/Mixer/ChannelAssignment") {
+      this.mixerAssignmentAdapter(p_data);
+    }
+    
     if (p_data?.message?.interval) {
       //console.warn(p_data.deviceId.toString(), p_data.socket.localPort, p_data.message.interval, p_data.message.name)
-      //this.emit('stateMessage', p_data);
+      //this.emit('stateMessage', this.deckMessageAdapter(p_data));
     } else {
-      this.emit('stateMessage', p_data);
+      this.emit('stateMessage', this.deckMessageAdapter(p_data));
     }
 
     if (p_data && p_data.message.json) { 
