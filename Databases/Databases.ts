@@ -4,9 +4,11 @@ import { Logger } from '../LogEmitter';
 import * as fs from 'fs';
 import { StageLinq } from '../StageLinq';
 import { DbConnection } from './DbConnection';
+import { Source } from '../types';
 
 
 export declare interface Databases {
+  on(event: 'dbNewSource', listener: ( source: Source) => void): this;
   on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
   on(event: 'dbDownloading', listener: (sourceName: string, dbPath: string) => void): this;
   on(event: 'dbProgress', listener: (sourceName: string, total: number, bytesDownloaded: number, percentComplete: number) => void): this;
@@ -60,7 +62,7 @@ export class Databases extends EventEmitter {
   this.parent.setSource(source);
   Logger.info(`Downloaded ${source.deviceId.toString()}/${sourceName} to ${dbPath}`);
   this.emit('dbDownloaded', source.deviceId.toString(), dbPath);
-
+  this.emit('dbNewSource', source)
 }
 
   getDbPath(dbSourceName?: string) {

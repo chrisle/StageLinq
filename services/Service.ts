@@ -110,7 +110,8 @@ export abstract class Service<T> extends EventEmitter {
 				
 				if (this.name !== "Directory") {
 					const handler = this._handler as ServiceHandler<T>;
-					this.parent.emit('connection', this.name, this.deviceId)
+	
+					handler.emit('connection', this.name, this.deviceId)
 					if (this.deviceId) {
 						handler.addDevice(this.deviceId, this)
 					}

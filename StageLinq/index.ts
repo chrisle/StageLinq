@@ -4,8 +4,9 @@ import { Logger } from '../LogEmitter';
 import { ActingAsDevice, StageLinqOptions, Devices, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus, Source} from '../types';
 import { Databases } from '../Databases';
 import * as Services from '../services';
-import { Socket, Server } from 'net';
+import { Server } from 'net';
 import { assert } from 'console';
+import { sleep } from '../utils/sleep';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -22,10 +23,12 @@ export declare interface StageLinq {
   on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
-  on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, socket: Socket) => void): this;
+  on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => void): this;
   on(event: 'stateMessage', listener: ( message: ServiceMessage<Services.StateData>) => void): this;
   on(event: 'ready', listener: () => void): this;
   on(event: 'connection', listener: (serviceName: string, deviceId: DeviceId) => void): this;
+  //on(event: 'StateMap', listener: (service: InstanceType<typeof Services.StateMapHandler> ) => void): this;
+  //on(event: 'stateMap', listener: (service: InstanceType<typeof Services.StateMap> ) => void): this;
 
   //on(event: 'fileDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
   //on(event: 'fileDownloading', listener: (sourceName: string, dbPath: string) => void): this;
@@ -46,6 +49,9 @@ export class StageLinq extends EventEmitter {
   private servers: Map<string, Server> = new Map();
 
   public options: StageLinqOptions;
+  public stateMap: InstanceType<typeof Services.StateMapHandler> = null;
+  public fileTransfer: InstanceType<typeof Services.FileTransferHandler> = null;
+  public beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
 
   public logger: Logger = Logger.instance;
   public discovery: Discovery = new Discovery(this);
@@ -54,6 +60,31 @@ export class StageLinq extends EventEmitter {
     super();
     this.options = options || DEFAULT_OPTIONS;
     this._databases = new Databases(this);
+    for (let service of this.options.services) {  
+      switch (service) {
+        case "StateMap": {
+          const stateMap = new Services.StateMapHandler(this, service);
+          this.services[service] = stateMap
+          this.stateMap = stateMap
+          break;
+        }
+        case "FileTransfer": {
+          const fileTransfer = new Services.FileTransferHandler(this, service);
+          this.services[service] = fileTransfer;
+          this.fileTransfer = fileTransfer;
+          break;
+        }
+        case "BeatInfo": {
+          const beatInfo = new Services.BeatInfoHandler(this, service);
+          this.services[service] = beatInfo;
+          this.beatInfo = beatInfo;
+          break;
+        }
+        default:
+        break;
+      }
+    }
+    
   }
 
   ////// Getters & Setters /////////
@@ -103,29 +134,7 @@ export class StageLinq extends EventEmitter {
   async connect() {
     //  Initialize Discovery agent
     await this.discovery.init(this.options.actingAs);
-    
-    for (let service of this.options.services) {  
-      switch (service) {
-        case "StateMap": {
-          this.services[service] = new Services.StateMapHandler(this, service);
-          // this.services[service].on('connection', (name: string, deviceId: DeviceId) => {
-          //   Logger.warn(`Connection ${name} ${deviceId}`);
-          // });
-          break;
-        }
-        case "FileTransfer": {
-          this.services[service] = new Services.FileTransferHandler(this, service)
-          break;
-        }
-        case "BeatInfo": {
-          this.services[service] = new Services.BeatInfoHandler(this, service);
-          break;
-        }
-        default:
-        break;
-      }
-    }
-
+  
     //Directory is required
     const directory = new Services.DirectoryHandler(this, Services.Directory.name)
     this.services[Services.Directory.name] = directory;
@@ -154,8 +163,21 @@ export class StageLinq extends EventEmitter {
 
   async downloadFile(sourceName: string, path: string): Promise<Uint8Array> {
    
-    const source = this.getSource(sourceName);
-    const service = source.service;
+    let service: InstanceType<typeof Services.FileTransfer> = null 
+    while (!service) {
+      await sleep(250);
+      const source = this.getSource(path);
+      if (source.service) {
+        service = source.service;
+      }
+      
+    }
+    console.log(sourceName, this.getSourceList());
+
+    const _sourceName = path.split('/').slice(1,2).shift();
+    console.log(_sourceName);
+    //const source = this.getSource(_sourceName);
+    //const service = source.service;
     assert(service);
     await service.isAvailable();
     

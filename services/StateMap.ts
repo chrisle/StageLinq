@@ -54,16 +54,18 @@ export class StateMapHandler extends ServiceHandler<StateData> {
 
     const listener = (data: ServiceMessage<Services.StateData>) => {
       if (data && data.message && data.message.json) {
-        console.log(data.message.name,">>", data.message.json);
+       // console.log(data.message.name,">>", data.message.json);
         this.emit('stateMessage', data);
       }
     };
 
     stateMap.addListener('stateMessage', listener)
 
-    stateMap.on('newStateMapDevice',  (deviceId: DeviceId, socket: Socket) => {
+    stateMap.on('newStateMapDevice',  (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => {
       Logger.debug(`New StateMap Device ${deviceId.toString()}`)
-      stateMap.subscribe(socket);
+      this.emit('newStateMapDevice',  deviceId, service);
+      //stateMap.subscribe();
+      assert(service);
     })
   }
 }
@@ -74,13 +76,14 @@ export class StateMap extends Service<StateData> {
   async init() {
   }
 
-  public async subscribe(socket: Socket) {
+  public async subscribe() {
     
+    const socket = this.socket;
     while (!this.parent.discovery.hasConnectionInfo(this.deviceId)) {
       await sleep(200);
     }
 
-    Logger.debug(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.toString()}`);
+    Logger.silly(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.toString()}`);
 
     const thisPeer = this.parent.discovery.getConnectionInfo(this.deviceId);
 
@@ -129,8 +132,9 @@ export class StateMap extends Service<StateData> {
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
     sleep(500)
+    assert(socket);
     
-    this.emit('newStateMapDevice', deviceId, socket)
+    this.emit('newStateMapDevice', deviceId, this)
     return
   }
 

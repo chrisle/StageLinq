@@ -1,11 +1,12 @@
-import { ActingAsDevice, PlayerStatus, StageLinqOptions, ServiceList, DeviceId } from '../types';
-//import * as Services from '../services'
+import { ActingAsDevice, PlayerStatus, StageLinqOptions, ServiceList, DeviceId, Source } from '../types';
+import * as Services from '../services'
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { Player } from '../devices/Player';
 
 
 require('console-stamp')(console, {
@@ -60,8 +61,9 @@ async function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
 
 
 async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: string) {
+  //
   try {
-    const data = await stageLinq.downloadFile(status.deviceId, status.trackPathAbsolute);
+    const data = await stageLinq.downloadFile(status.deviceId, status.dbSourceName);
     if (data) {
       fs.writeFileSync(dest, Buffer.from(data));
       console.log(`Downloaded ${status.trackPathAbsolute} to ${dest}`);
@@ -98,12 +100,11 @@ async function main() {
     ],
   }
 
+  const downloadFlag = false;
+
   const stageLinq = new StageLinq(stageLinqOptions);  
 
-  stageLinq.on('connection', (name: string, deviceId: DeviceId) => {
-    console.warn(`Connection ${name} ${deviceId}`);
-  });
-
+  
 
   stageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
@@ -151,6 +152,12 @@ async function main() {
        // dbDownloaded = true;
       });
 
+      stageLinq.databases.on('dbNewSource', (source: Source) => {
+        console.log(`New Source Available (${source.name})`);
+       // dbDownloaded = true;
+      });
+
+
       stageLinq.on('fileProgress', (file, total, bytes, percent) => {
         //Logger.warn(thisTxid, txid);
         //if (thisTxid === txid) {
@@ -163,46 +170,90 @@ async function main() {
   //});
 
   // Fires when StageLinq and all devices are ready to use.
-  stageLinq.on('ready', () => {
-    console.log(`StageLinq is ready!`);
-  });
+  // stageLinq.on('ready', () => {
+  //   console.log(`StageLinq is ready!`);
+  // });
 
   // Fires when a new track is loaded on to a player.
-  stageLinq.on('trackLoaded', async (status) => {
+  // stageLinq.on('trackLoaded', async (status) => {
 
-    // Example of how to connect to the database using this library's
-    // implementation of BetterSqlite3 to get additional information.
-    if (stageLinq.options.downloadDbSources) {
-      getTrackInfo(stageLinq, status);
-    }
+  //   // Example of how to connect to the database using this library's
+  //   // implementation of BetterSqlite3 to get additional information.
+  //   if (stageLinq.options.downloadDbSources) {
+  //     getTrackInfo(stageLinq, status);
+  //   }
 
-    // Example of how to download the actual track from the media.
-    const filename = [status.title,'.mp3'].join('');
-    await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
-  });
+  //   // Example of how to download the actual track from the media.
+  //   const filename = [status.title,'.mp3'].join('');
+  //   await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
+  // });
 
-  // Fires when a track has started playing.
-  stageLinq.on('nowPlaying', (status) => {
-    console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
-  });
+  // // Fires when a track has started playing.
+  // stageLinq.on('nowPlaying', (status) => {
+  //   console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
+  // });
 
   // Fires when StageLinq receives messages from a device.
-  stageLinq.on('stateMessage',  (data) => { 
-   if (data.message.json) {
-    const msg = data.message.json
-    ? JSON.stringify(data.message.json)
-    : data.message.interval;
-    console.debug(`${data.deviceId.toString()} ` +
-    `${data.message.name} => ${msg}`);
   
-   }
+  stageLinq.stateMap.on('newStateMapDevice',  (deviceId: DeviceId, service: InstanceType <typeof Services.StateMap>) => { 
+    console.log(`Subscribing to States on ${deviceId.toString()}`);
+    
+    const player = new Player({
+      stateMap: service,
+      address: service.socket.remoteAddress,
+      port: service.socket.remotePort,
+      deviceId: deviceId,
+    });
+
+    //wait for Player to setup
+    while (!player.ready) {
+      sleep(250);
+    }
+
+    service.subscribe();
+
+    player.on('trackLoaded', async (status) => {
+      if (stageLinq.options.downloadDbSources && downloadFlag) {
+        getTrackInfo(stageLinq, status);
+      }
   
-  });
+      // Example of how to download the actual track from the media.
+      
+      if (downloadFlag) {
+        const filename = [status.title,'.mp3'].join('');
+        while (!stageLinq.hasSource(status.dbSourceName)) {
+          await sleep(250);
+        }
+        await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
+      }
+
+    });
+
+    player.on('stateChanged', (status) => {
+      console.log(`Updating state [${status.deck}]`, status)
+    });
+
+    player.on('nowPlaying', (status) => {
+      console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
+    });
+   });
+  
+  // stageLinq.stateMap.on('stateMessage',  (data) => { 
+  //  if (data.message.json) {
+  //   const msg = data.message.json
+  //   ? JSON.stringify(data.message.json)
+  //   : data.message.interval;
+  //   console.debug(`${data.deviceId.toString()} ` +
+  //   `${data.message.name} => ${msg}`);
+  
+  //  }
+  
+  // });
   
   // Fires when the state of a device has changed.
-  stageLinq.on('stateChanged', (status) => {
-    console.log(`Updating state [${status.deck}]`, status)
-  });
+  // stageLinq.on('stateChanged', (status) => {
+  //   console.log(`Updating state [${status.deck}]`, status)
+  // });
 
   /////////////////////////////////////////////////////////////////////////
   // CLI

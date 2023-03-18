@@ -62,7 +62,7 @@ export class Player extends EventEmitter {
    */
   constructor(options: PlayerOptions) {
     super();
-    options.stateMap.on('message', this.messageHandler.bind(this));
+    options.stateMap.on('stateMessage', this.messageHandler.bind(this));
     this.address = options.address;
     this.port = options.port;
     this.deviceId = options.deviceId;
@@ -83,6 +83,9 @@ export class Player extends EventEmitter {
    * @returns
    */
   private messageHandler(data: ServiceMessage<StateData>) {
+    if (!data?.message) {
+      return
+    }
     const message = data.message
     if (!message.json) return;
     const name = message.name;
