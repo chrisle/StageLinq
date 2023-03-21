@@ -213,7 +213,7 @@ export abstract class Service<T> extends EventEmitter {
 					
 					const message = ctx.read(length);
 					if (!message) {
-						console.log(message)
+						Logger.warn(message)
 					}
 					// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 					const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
@@ -264,7 +264,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	//	callback for timeout timer
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>, handler: ServiceHandler<T>) {
-		Logger.debug(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
+		Logger.silly(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
 		
 		await server.close();
 		let serverName = serviceName;

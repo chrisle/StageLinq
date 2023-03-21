@@ -23,6 +23,12 @@ export interface BeatData {
 	deckCount: number;
 	deck: deckBeatData[];
 }
+
+export declare interface BeatInfoHandler {
+	on(event: 'newBeatInfoDevice', listener: (device: Service<BeatData>) => void): this;
+	on(event: 'beatMsg', listener: (beatData: BeatData, device: Service<BeatData>) => void): this;
+  }
+
 export class BeatInfoHandler extends ServiceHandler<BeatData> {
 	public name: string = 'BeatInfo'
   
@@ -31,31 +37,20 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 		const beatInfo = service as BeatInfo;
 		this.addDevice(deviceId, service);
 		
-		// Just a counter to test resolution
-		let beatCalls: number = 0;  
-		//  User callback function. 
-		//  Will be triggered everytime a player's beat counter crosses the resolution threshold
-		function beatCallback(bd: BeatData) {
-		let deckBeatString = ""
-		for (let i=0; i<bd.deckCount; i++) {
-			deckBeatString += `Player: ${i+1} Beat: ${bd.deck[i].beat.toFixed(3)} `
-		}
-		console.warn(`Total Calls ${beatCalls} ${deckBeatString}`);
-		beatCalls++
-		}
-		//  User Options
-		const beatOptions = {
-		everyNBeats: 1, // 1 = every beat, 4 = every 4 beats, .25 = every 1/4 beat
-		}
+		
 		//  Start BeatInfo, pass user callback
-		beatInfo.server.on("connection", (socket) =>{ 
-			beatInfo.startBeatInfo(beatCallback, beatOptions, socket);
+		beatInfo.server.on("connection", () =>{ 
+			//beatInfo.startBeatInfo(beatCallback, beatOptions, socket);
+			this.emit('newBeatInfoDevice', beatInfo)
 		}); 
+		beatInfo.on('beatMessage', (message: BeatData) => {
+			this.emit('beatMsg', message, beatInfo)
+		})
 	}
   }
 
 export declare interface BeatInfo {
-    on(event: 'message', listener: (message: BeatData) => void): this;
+    on(event: 'beatMessage', listener: (message: BeatData) => void): this;
   }
 
 export class BeatInfo extends Service<BeatData> {
@@ -67,11 +62,14 @@ export class BeatInfo extends Service<BeatData> {
 	
 	async init() {}
 
-	public async startBeatInfo(beatCB: beatCallback, options: BeatOptions, socket?: Socket) {
-		this._userBeatCallback = beatCB;
+	public async startBeatInfo(options: BeatOptions, beatCB?: beatCallback,) {
+		if (beatCB) {
+			this._userBeatCallback = beatCB;
+		}
+		
 		this._userBeatOptions = options;
 		
-        this.sendBeatInfoRequest(socket);
+        this.sendBeatInfoRequest(this.socket);
 	}
 
 	private async sendBeatInfoRequest(socket: Socket) {
@@ -113,14 +111,21 @@ export class BeatInfo extends Service<BeatData> {
 
 	protected messageHandler(p_data: ServiceMessage<BeatData>): void {
         if (p_data && p_data.message) {
-            function resCheck(res: number, prevBeat: number, currentBeat: number ) {
-                return ( Math.floor(currentBeat/res) - Math.floor(prevBeat/res)  >= 1) 
+            function resCheck(res: number, prevBeat: number, currentBeat: number ): boolean {
+                if (res === 0) {
+					return true
+				} 
+				return ( Math.floor(currentBeat/res) - Math.floor(prevBeat/res)  >= 1) 
                     || (  Math.floor(prevBeat/res) - Math.floor(currentBeat/res)   >= 1)	
             }
     
             if (!this._currentBeatData) {
                 this._currentBeatData = p_data.message
-                this._userBeatCallback(p_data.message);
+                if (this._userBeatCallback) {
+					this._userBeatCallback(p_data.message);
+				}
+				this.emit('beatMessage', p_data.message)
+				
             } 
     
             let hasUpdated = false;
@@ -134,7 +139,11 @@ export class BeatInfo extends Service<BeatData> {
             }
             if (hasUpdated) {
                 this._currentBeatData = p_data.message;
-                this._userBeatCallback(p_data.message);
+                if (this._userBeatCallback) {
+					this._userBeatCallback(p_data.message);
+				}
+				this.emit('beatMessage', p_data.message)
+				
             }
         }
 	}

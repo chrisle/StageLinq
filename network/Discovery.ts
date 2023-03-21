@@ -31,6 +31,7 @@ export class Discovery {
     private broadcastAddress: IpAddress;   
     private options: DiscoveryMessageOptions = null;
     private peers: Map<string, ConnectionInfo> = new Map(); 
+    private deviceId: DeviceId = null
     
 
     private announceTimer: NodeJS.Timer;
@@ -38,6 +39,7 @@ export class Discovery {
   
     constructor(_parent: InstanceType<typeof StageLinq>) {
         this.parent = _parent;
+        
     }
 
     public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {
@@ -62,6 +64,8 @@ export class Discovery {
 
     async init(options:DiscoveryMessageOptions) {
         this.options = options;
+        this.deviceId = new DeviceId(options.token)
+
         await this.listenForDevices( (connectionInfo) => {
             
             if (!this.parent.devices.hasDeviceIdString(deviceIdFromBuff(connectionInfo.token)) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
@@ -102,7 +106,7 @@ export class Discovery {
         const msg = this.writeDiscoveryMessage(discoveryMessage)
         
         this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress );
-        Logger.debug("Announced myself");
+        Logger.debug(`Broadcast Discovery Message ${this.deviceId.toString()} ${discoveryMessage.source}`);
         this.announceTimer = setInterval(this.broadcastMessage, ANNOUNCEMENT_INTERVAL, this.socket, msg, LISTEN_PORT, this.broadcastAddress);
     }
 
@@ -117,7 +121,7 @@ export class Discovery {
         await this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);
         await this.socket.close();
         
-        Logger.debug("Unannounced myself");
+        Logger.debug("Broadcast Unannounce Message");
     }
     
     

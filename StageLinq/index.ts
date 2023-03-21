@@ -170,13 +170,13 @@ export class StageLinq extends EventEmitter {
     assert(service);
     await service.isAvailable();
     
-    let thisTxid = service.txid;
+    // let thisTxid = service.txid;
 
-    service.on('fileTransferProgress', (txid, progress) => {
-      if (thisTxid === txid) {
-        this.emit('fileProgress', path.split('/').pop(), progress.total, progress.bytesDownloaded, progress.percentComplete);
-      }
-    });
+    // service.on('fileTransferProgress', (txid, progress) => {
+    //   if (thisTxid === txid) {
+    //     this.emit('fileProgress', path.split('/').pop(), progress.total, progress.bytesDownloaded, progress.percentComplete);
+    //   }
+    // });
 
     try {
       const file = await service.getFile(path,service.socket);

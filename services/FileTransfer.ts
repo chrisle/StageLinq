@@ -9,6 +9,7 @@ import type { ServiceMessage, Source, DeviceId } from '../types';
 import { Socket } from 'net';
 
 
+
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
@@ -27,7 +28,7 @@ enum MessageId {
   RequestSources = 0x7d2,
 }
 
-interface FileTransferProgress {
+export interface FileTransferProgress {
   sizeLeft: number;
   total: number;
   bytesDownloaded: number;
@@ -35,17 +36,27 @@ interface FileTransferProgress {
 }
 
 export declare interface FileTransfer {
-  on(event: 'fileTransferProgress', listener: (txId: number, progress: FileTransferProgress) => void): this;
-  //on(event: 'dbDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
+  on(event: 'fileTransferProgress', listener: (fileName: string, txId: number, progress: FileTransferProgress) => void): this;
+  on(event: 'dbNewSource', listener: (source: Source) => void): this;
 }
 
 export class FileTransferHandler extends ServiceHandler<FileTransfer> {
   public name: string = "FileTransfer"
   
+ 
+
   public setupService(service: Service<FileTransferData>, deviceId: DeviceId) {
     const fileTransfer = service as FileTransfer;
     Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.toString()}`);
     this.addDevice(deviceId, service);
+    fileTransfer.on('fileTransferProgress', (fileName, txid, progress) => {
+      this.emit('fileTransferProgress', fileName, txid, progress);
+    });
+    fileTransfer.on('dbNewSource', (source: Source) => {
+      this.emit('dbNewSource', source);
+    });
+
+    
   }
 }
 
@@ -281,7 +292,7 @@ export class FileTransfer extends Service<FileTransferData> {
           while (this.receivedFile.isEOF() === false) {
             const bytesDownloaded = total - this.receivedFile.sizeLeft();
             const percentComplete = (bytesDownloaded / total) * 100;
-            this.emit('fileTransferProgress', this.txId,{
+            this.emit('fileTransferProgress', p_location.split('/').pop(), this.txId,{
               sizeLeft: this.receivedFile.sizeLeft(),
               total: txinfo.size,
               bytesDownloaded: bytesDownloaded,
@@ -339,10 +350,10 @@ export class FileTransfer extends Service<FileTransferData> {
             },
             
           }
-          
+          this.emit('dbNewSource', thisSource);
           this.parent.setSource(thisSource);
           result.push(thisSource);
-          this.parent.databases.downloadDb(thisSource.name);
+          this.parent.databases.downloadDb(thisSource);
 
           break;
         }
@@ -350,6 +361,10 @@ export class FileTransfer extends Service<FileTransferData> {
     }
     return result;
   }
+
+
+  
+
 
   ///////////////////////////////////////////////////////////////////////////
   // Private methods

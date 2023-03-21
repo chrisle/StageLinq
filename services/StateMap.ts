@@ -7,7 +7,7 @@ import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';
 import * as Services from '../services';
-
+import { StageLinq } from '../StageLinq';
 import * as stagelinqConfig from '../stagelinqConfig.json';
 
 export type Player = typeof stagelinqConfig.player;
@@ -73,11 +73,16 @@ export class StateMapHandler extends ServiceHandler<StateData> {
 }
 
 export class StateMap extends Service<StateData> {
-  name: string = "StateMap";
+  public name: string = "StateMap";
+  public handler: StateMapHandler;
 
   async init() {
   }
 
+  constructor(p_parent:InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
+    super(p_parent, serviceHandler, deviceId)
+    this.handler = this._handler as StateMapHandler
+  }
   public async subscribe() {
     
     const socket = this.socket;
@@ -98,11 +103,12 @@ export class StateMap extends Service<StateData> {
         for (let i=0; i< thisPeer.device.decks; i++) {
           playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i+1}/`)];
         } 
-        const handler = this._handler as Services.StateMapHandler
+        
+        //const handler = this._handler as Services.StateMapHandler
         for (let state of playerDeckStateValues) {
           const stateValue = `${this.deviceId.toString()},/${state.split('/').slice(1,3).join("/")}`
           const newValue = `{${this.deviceId}},${state.split('/').slice(2,3).shift().substring(4,5)}`
-          handler.deviceTrackRegister.set(stateValue, newValue);
+          this.handler.deviceTrackRegister.set(stateValue, newValue);
           await this.subscribeState(state, 0, socket);
         }
         
@@ -197,29 +203,28 @@ export class StateMap extends Service<StateData> {
     return null;
   }
 
-  private deckMessageAdapter(data: ServiceMessage<StateData>): ServiceMessage<StateData> {
-    const handler = this._handler as Services.StateMapHandler
-    const deckHandlerMsgs = handler.deviceTrackRegister.entries();
-    let returnMsg: ServiceMessage<StateData> = {...data}
+  // private deckMessageAdapter(data: ServiceMessage<StateData>): ServiceMessage<StateData> {
+  //   const handler = this._handler as Services.StateMapHandler
+  //   const deckHandlerMsgs = handler.deviceTrackRegister.entries();
+  //   let returnMsg: ServiceMessage<StateData> = {...data}
     
-    for (let [oldValue, newValue] of deckHandlerMsgs) {
-      const oldValueArr = oldValue.split(',')
-      //const testString = `${this.deviceId.toString()}${data?.message?.name.substring(0,oldValue.length)}`
-      //console.warn(testString, oldValue)
-      if (oldValueArr[0] == this.deviceId.toString() && data?.message?.name.substring(0,oldValueArr[1].length) == oldValueArr[1]) {
-      //if (testString == oldValue) {
-        returnMsg.message.name = `${newValue},${data.message.name.substring(oldValueArr[1].length, data.message.name.length)}`
-      }
-    }
+  //   for (let [oldValue, newValue] of deckHandlerMsgs) {
+  //     const oldValueArr = oldValue.split(',')
+  //     //const testString = `${this.deviceId.toString()}${data?.message?.name.substring(0,oldValue.length)}`
+  //     //console.warn(testString, oldValue)
+  //     if (oldValueArr[0] == this.deviceId.toString() && data?.message?.name.substring(0,oldValueArr[1].length) == oldValueArr[1]) {
+  //     //if (testString == oldValue) {
+  //       returnMsg.message.name = `${newValue},${data.message.name.substring(oldValueArr[1].length, data.message.name.length)}`
+  //     }
+  //   }
   
-    return returnMsg
-  }
+  //   return returnMsg
+  // }
 
   private mixerAssignmentAdapter(data: ServiceMessage<StateData>) {
-    const handler = this._handler as Services.StateMapHandler 
     const keyString = `${this.deviceId.toString()},/Mixer/CH${data.message.name.substring(data.message.name.length-1,data.message.name.length)}faderPosition`
     const valueString = `${data.message.json.string},/Mixer/ChannelFaderPosition`;
-    handler.deviceTrackRegister.set(keyString, valueString);
+    this.handler.deviceTrackRegister.set(keyString, valueString);
   }
 
 
@@ -234,7 +239,8 @@ export class StateMap extends Service<StateData> {
       //console.warn(p_data.deviceId.toString(), p_data.socket.localPort, p_data.message.interval, p_data.message.name)
       //this.emit('stateMessage', this.deckMessageAdapter(p_data));
     } else {
-      this.emit('stateMessage', this.deckMessageAdapter(p_data));
+      //this.emit('stateMessage', this.deckMessageAdapter(p_data));
+      this.emit('stateMessage', p_data);
     }
 
     if (p_data && p_data.message.json) { 

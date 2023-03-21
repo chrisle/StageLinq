@@ -2,8 +2,9 @@ import { ActingAsDevice, StageLinqOptions, ServiceList, ServiceMessage, Source} 
 import * as Services from '../services'
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
-
-
+import * as fs from 'fs';
+import * as os from 'os';
+import * as Path from 'path';
 
 require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
@@ -24,25 +25,43 @@ function progressBar(size: number, bytes: number, total: number): string {
   return `[${progressArrary.join('')}]`
 }
 
-
-async function downloadFile(stageLinq: StageLinq, sourceName: string, path: string, dest?: string) {
-  //
-  
-  while (!source.has(sourceName)) {
+async function getTrackInfo(stageLinq: StageLinq, sourceName: string, trackName: string) {
+  while (!stageLinq.hasSource(sourceName)) {
     await sleep(250);
   }
-  const _source = source.get(sourceName);
   try {
+    const _source = stageLinq.getSource(sourceName);
+    //const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
+    const connection = _source.database.connection;
+    const result = await connection.getTrackInfo(trackName);
+    //connection.close();
+    console.log('Database entry:', result);
+    return result;
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function downloadFile(stageLinq: StageLinq, sourceName: string, path: string, dest?: string) {
+  
+  while (!stageLinq.hasSource(sourceName)) {
+    await sleep(250);
+  }
+  try {
+    const _source = stageLinq.getSource(sourceName);
     const data = await stageLinq.downloadFile(_source, path);
     if (dest && data) {
-      //fs.writeFileSync(, Buffer.from(data));
-      //console.log(`Downloaded ${status.trackPathAbsolute} to ${dest}`);
+      const filePath = `${dest}/${path.split('/').pop()}`
+      
+      fs.writeFileSync(filePath, Buffer.from(data));
+      console.log(`Downloaded ${path} to ${dest}`);
     }
   } catch(e) {
     console.error(`Could not download ${path}`);
     console.error(e)
   }
 }
+
 let source: Map<string, Source> = new Map();
 
 
@@ -62,22 +81,44 @@ async function main() {
   
   const stageLinq = new StageLinq(stageLinqOptions);  
 
-  stageLinq.on('fileProgress', (file, total, bytes, percent) => {
-      console.debug(`Reading ${file}: ${progressBar(10,bytes,total)} (${Math.ceil(percent)}%)`);
+  stageLinq.logger.on('error', (...args: any) => {
+    console.error(...args);
   });
+  stageLinq.logger.on('warn', (...args: any) => {
+    console.warn(...args);
+    args.push("\n");
+  });
+  stageLinq.logger.on('info', (...args: any) => {
+    console.info(...args);
+    args.push("\n");
+  });
+  stageLinq.logger.on('log', (...args: any) => {
+    console.log(...args);
+    args.push("\n");
+  });
+  stageLinq.logger.on('debug', (...args: any) => {
+    console.debug(...args);
+    args.push("\n");
+  });
+  //Note: Silly is very verbose!
+  // stageLinq.logger.on('silly', (...args: any) => {
+  //   console.debug(...args);
+  // });
+
 
 
   if (stageLinq.stateMap) {
     
-    stageLinq.stateMap.on('stateMessage',  (data: ServiceMessage<Services.StateData>) => { 
+    stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => { 
       if (data.message.json) {
         console.debug(`${data.message.name} => ${JSON.stringify(data.message.json)}`);
         if (data.message.json.string && data.message.name.split('/').pop() === "TrackNetworkPath") {
           const split = data.message.json.string.substring(43,data.message.json.string.length).split('/')
           const sourceName = split.shift();
           const path = `/${sourceName}/${split.join('/')}`
-          //console.log(sourceName, path, data.message.json.string);
-          downloadFile(stageLinq, sourceName, path);
+          await getTrackInfo(stageLinq, sourceName, data.message.json.string);
+          downloadFile(stageLinq, sourceName, path, Path.resolve(os.tmpdir()));
+
         }
       }
      });
@@ -88,13 +129,62 @@ async function main() {
      });
 
   }
-   
+  
+  if (stageLinq.fileTransfer) {
+    
+    stageLinq.fileTransfer.on('fileTransferProgress', (file, txid, progress) => {
+      console.debug(`{${txid}} Reading ${file}: ${progressBar(10,progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
+    });
 
-   stageLinq.databases.on('dbNewSource', (_source: Source) => {
-    console.log(`New Source Available (${_source.name})`);
-    source.set(_source.name, _source)
-  });
+    stageLinq.fileTransfer.on('dbNewSource', (_source: Source) => {
+      console.log(`New Source Available (${_source.name})`);
+      source.set(_source.name, _source)
+    });
+  
+    stageLinq.databases.on('dbDownloaded', (_source: Source) => {
+      console.log(`New Downloaded Database (${_source.name})`);
+      source.set(_source.name, _source);
+    });
 
+  }
+
+  if (stageLinq.beatInfo) {
+
+    stageLinq.beatInfo.on('newBeatInfoDevice', (beatInfo: Services.BeatInfo) => {
+
+        //  User callback function. 
+        //  Will be triggered everytime a player's beat counter crosses the resolution threshold
+        function beatCallback(bd: Services.BeatData, ) {
+          let deckBeatString = ""
+          for (let i=0; i<bd.deckCount; i++) {
+            deckBeatString += `Deck: ${i+1} Beat: ${bd.deck[i].beat.toFixed(3)}/${bd.deck[i].totalBeats.toFixed(0)} `
+          }
+          console.log(`BeatInfo: ${beatInfo.deviceId.toString()} ${deckBeatString}`);
+        }
+        
+        //  User Options
+        const beatOptions = {
+          // Resolution for triggering callback
+          //    0 = every message WARNING, it's a lot!
+          //    1 = every beat 
+          //    4 = every 4 beats 
+          //    .25 = every 1/4 beat
+          everyNBeats: 4, 
+        }
+        //  start BeatInfo
+        //  callback is optional, BeatInfo messages can be consumed by event messages, or reading the register 
+        //beatInfo.startBeatInfo(beatOptions, beatCallback);
+        
+        beatInfo.startBeatInfo(beatOptions);
+        stageLinq.beatInfo.on('beatMsg', (bd) => {
+          beatCallback(bd);
+        });
+    })
+    
+
+  }
+
+  
   /////////////////////////////////////////////////////////////////////////
   // CLI
 
