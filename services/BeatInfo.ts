@@ -37,10 +37,7 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 		const beatInfo = service as BeatInfo;
 		this.addDevice(deviceId, service);
 		
-		
-		//  Start BeatInfo, pass user callback
 		beatInfo.server.on("connection", () =>{ 
-			//beatInfo.startBeatInfo(beatCallback, beatOptions, socket);
 			this.emit('newBeatInfoDevice', beatInfo)
 		}); 
 		beatInfo.on('beatMessage', (message: ServiceMessage<BeatData>) => {
@@ -54,21 +51,18 @@ export declare interface BeatInfo {
   }
 
 export class BeatInfo extends Service<BeatData> {
-    public name: string = "BeatInfo";
+    public readonly name = "BeatInfo";
 
 	private _userBeatCallback: beatCallback = null;
 	private _userBeatOptions: BeatOptions = null;
 	private _currentBeatData: BeatData = null;    
 	
-	async init() {}
 
 	public async startBeatInfo(options: BeatOptions, beatCB?: beatCallback,) {
 		if (beatCB) {
 			this._userBeatCallback = beatCB;
 		}
-		
-		this._userBeatOptions = options;
-		
+		this._userBeatOptions = options;	
         this.sendBeatInfoRequest(this.socket);
 	}
 
@@ -123,13 +117,14 @@ export class BeatInfo extends Service<BeatData> {
                 this._currentBeatData = p_data.message
                 if (this._userBeatCallback) {
 					this._userBeatCallback(p_data);
+					
 				}
 				this.emit('beatMessage', p_data)
-				
             } 
     
             let hasUpdated = false;
-            for (let i = 0; i<p_data.message.deckCount; i++) {
+            
+			for (let i = 0; i<p_data.message.deckCount; i++) {
                 if (resCheck(
                         this._userBeatOptions.everyNBeats, 
                         this._currentBeatData.deck[i].beat, 
@@ -137,13 +132,13 @@ export class BeatInfo extends Service<BeatData> {
                     hasUpdated = true;
                 }
             }
+
             if (hasUpdated) {
                 this._currentBeatData = p_data.message;
                 if (this._userBeatCallback) {
 					this._userBeatCallback(p_data);
 				}
 				this.emit('beatMessage', p_data.message)
-				
             }
         }
 	}

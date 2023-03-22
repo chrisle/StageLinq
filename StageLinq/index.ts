@@ -1,8 +1,8 @@
 import { Discovery } from '../network';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions, Devices, DeviceId, ConnectionInfo, ServiceMessage, PlayerStatus, Source} from '../types';
-import { Databases } from '../Databases';
+import { ActingAsDevice, StageLinqOptions, Devices, DeviceId, ConnectionInfo, ServiceMessage, Source} from '../types';
+import { Databases, Sources } from '../Databases';
 import * as Services from '../services';
 import { Server } from 'net';
 import { assert } from 'console';
@@ -18,9 +18,7 @@ export interface ServiceHandlers {
 }
 
 export declare interface StageLinq {
-  on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
-  on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
-  on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
+  
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => void): this;
   on(event: 'stateMessage', listener: ( message: ServiceMessage<Services.StateData>) => void): this;
@@ -34,27 +32,30 @@ export declare interface StageLinq {
  */
 export class StageLinq extends EventEmitter {
 
+  public options: StageLinqOptions;
   public services: ServiceHandlers = {};
   
+  public readonly devices = new Devices();
+  public readonly logger: Logger = Logger.instance;
+  public readonly discovery: Discovery = new Discovery(this);
+  
+  public readonly stateMap: InstanceType<typeof Services.StateMapHandler> = null;
+  public readonly fileTransfer: InstanceType<typeof Services.FileTransferHandler> = null;
+  public readonly beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
+  public readonly timeSync: InstanceType<typeof Services.TimeSynchronizationHandler> = null;
+
   private directory: InstanceType<typeof Services.Directory> = null;
   private _databases: Databases;
-  public devices = new Devices();
-  private _sources: Map<string, Source> = new Map();
+  private _sources: Sources;
   private servers: Map<string, Server> = new Map();
-
-  public options: StageLinqOptions;
-  public stateMap: InstanceType<typeof Services.StateMapHandler> = null;
-  public fileTransfer: InstanceType<typeof Services.FileTransferHandler> = null;
-  public beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
-  public timeSync: InstanceType<typeof Services.TimeSynchronizationHandler> = null;
-
-  public logger: Logger = Logger.instance;
-  public discovery: Discovery = new Discovery(this);
-
+ 
   constructor(options?: StageLinqOptions) {
     super();
     this.options = options || DEFAULT_OPTIONS;
     this._databases = new Databases(this);
+    this._sources = new Sources(this);
+    
+    //TODO make this into factory function?
     for (let service of this.options.services) {  
       switch (service) {
         case "StateMap": {
@@ -85,7 +86,6 @@ export class StageLinq extends EventEmitter {
         break;
       }
     }
-    
   }
 
   ////// Getters & Setters /////////
@@ -93,28 +93,8 @@ export class StageLinq extends EventEmitter {
     return this._databases;
   }
 
-  hasSource(sourceName: string): boolean {
-    return this._sources.has(sourceName);
-  }
-
-  getSource(sourceName: string): Source {
-    return this._sources.get(sourceName);
-  }
-  
-  setSource(source: Source) {
-    this._sources.set(source.name, source);
-  }
-  
-  getSourceList(): string[] {
-    return [...this._sources.keys()]
-  } 
-
-  getSources(): Source[] {
-    return [...this._sources.values()]
-  }
-
-  getSourcesArray()  {
-    return this._sources.entries()
+  get sources() {
+    return this._sources
   }
 
   addServer(serverName: string , server: Server) {

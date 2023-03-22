@@ -4,7 +4,6 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
 import * as Services from '../services';
-//import { Logger } from '../LogEmitter';
 import { ServiceMessage, Tokens, DeviceId } from '../types';
 import { Logger } from '../LogEmitter';
 import { Socket } from 'net';
@@ -30,19 +29,17 @@ export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
             Logger.debug(`New TimeSync Device ${service.deviceId.string}`)
             //this.emit('newDevice',  service);
             _service.sendTimeSyncRequest();
-          })
-        
+          })   
     }
 }
 
 export class TimeSynchronization extends Service<TimeSyncData> {
-	public name:string = "TimeSynchronization"
+	public readonly name = "TimeSynchronization"
     protected isBufferedService: boolean = false;
     private localTime: bigint;
     private remoteTime: bigint;
     private avgTimeArray: bigint[] = [];
     //private queryTimer: NodeJS.Timer;
-	
 	
 
 	public async sendTimeSyncRequest() {
@@ -72,18 +69,15 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     }
 
     private getTimeStamp(): bigint {
-        //const timestamp = Math.floor(performance.now() * 1000000); //Date.now();
         return (BigInt(Math.floor(performance.now())))
     }
 
 
     private sendTimeSyncQuery(localTime: bigint, remoteTime: bigint) {
         this.localTime = localTime;
-        //this.currrentTime = currentTime;
         const buffMsg = this.timeSyncMsgHelper(1,[this.localTime]);
         const ctx = new WriteContext()
         ctx.write(buffMsg)
-        //Logger.debug(buffMsg);
         this.remoteTime = remoteTime;
         this.write(ctx, this.socket);
      };
@@ -96,15 +90,9 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     // };
 
 	protected parseData(p_ctx: ReadContext): ServiceMessage<TimeSyncData> {
-		const timestamp = this.getTimeStamp()
-        //console.log(performance.now())
-        
-        //console.log(p_ctx.readRemainingAsNewBuffer())
-        //p_ctx.rewind();
+		const timestamp = this.getTimeStamp();
         const size = p_ctx.readUInt32();
-           
-       // console.log(timestamp, size)
-
+       
         if (size === 0) {
             const token = p_ctx.read(16);
             const deviceId = new DeviceId(token)
@@ -117,7 +105,6 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             while (p_ctx.sizeLeft()) {
                 msgs.push(p_ctx.readUInt64())
             };
-            //console.log(this.deviceId.string, size,id,msgs)
             return {
                 id: id,
                 deviceId: this.deviceId,
@@ -131,7 +118,6 @@ export class TimeSynchronization extends Service<TimeSyncData> {
 	}
 
     private timeAvg(time: bigint) {
-        //const timeInt = Number(time);
         if (this.avgTimeArray.length > 100) {
             this.avgTimeArray.shift();
             this.avgTimeArray.push(time);
@@ -140,45 +126,26 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             console.log(`${this.deviceId.string} Average time ${Number(avg)}`)
         } else {
             this.avgTimeArray.push(time);
-            //console.log(this.avgTimeArray.length)
         }
     } 
 
 	protected messageHandler(msg: ServiceMessage<TimeSyncData>): void {
-		//console.log(msg.message)
-        
         if (!msg?.message) {
             return
         }
-        if (msg?.deviceId && msg?.deviceId.string != "4be14112-5ead-4848-a07d-b37ca8a7220e") {
-           // return
-        }
-
-       // if (!this._hasReplied) {
-        //this.sendTimeSyncReply(msg.message.msgs.shift(), msg.message.timestamp)
-           // this._hasReplied = true;
-      //  }
-
-        //console.log(performance.now())
-
         switch (msg.id) {
             case 1:
-                //console.log(msg.deviceId.string, msg.message.msgs[0])
-
-                //this.remoteTime = msg.message.msgs.shift();
                 this.sendTimeSyncQuery(msg.message.timestamp, msg.message.msgs.shift());  
-                
             break;
             case 2:
-            console.log(msg.message)    
-            const localClock =  msg.message.timestamp - msg.message.msgs[0] 
+                console.log(msg.message)    
+                const localClock =  msg.message.timestamp - msg.message.msgs[0] 
                 const remoteClock =  msg.message.msgs[1] - this.remoteTime
-                
                 console.log(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))    
                 this.timeAvg(remoteClock)
-            
             break;
-
+            default:
+            break;
 	    }
     }
 

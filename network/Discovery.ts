@@ -7,7 +7,6 @@ import { strict as assert } from 'assert';
 import { sleep, WriteContext } from '../utils';
 import { networkInterfaces } from 'os';
 import { subnet, SubnetInfo } from 'ip';
-//import * as Services from '../services';
 import { Logger } from '../LogEmitter';
 import { StageLinq } from '../StageLinq';
 
@@ -69,7 +68,6 @@ export class Discovery {
         await this.listenForDevices( (connectionInfo: ConnectionInfo) => {
             
             if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
-                //const deviceId = new DeviceId(connectionInfo.token)
                 
                 const device = this.parent.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);

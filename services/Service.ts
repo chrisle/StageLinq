@@ -79,21 +79,21 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 
 export abstract class Service<T> extends EventEmitter {
 	public readonly name: string = "Service";
+	public readonly device: Device;
 	public deviceId: DeviceId = null;
-	//public type: T;
-	protected _deviceId: DeviceId = null;
-	public device: Device;
-
-	protected isBufferedService: boolean = true;
-	protected parent: InstanceType<typeof StageLinq>;
-	protected _handler: ServiceHandler<T> = null;
-
-	
 	public server: Server = null;
 	public serverInfo: AddressInfo;
 	public serverStatus: boolean = false;
 	public socket: Socket = null;
 
+	//TODO figure out removing this second DeviceId
+	protected _deviceId: DeviceId = null;
+	
+	protected isBufferedService: boolean = true;
+	protected parent: InstanceType<typeof StageLinq>;
+	protected _handler: ServiceHandler<T> = null;
+
+	
 	protected timeout: NodeJS.Timer;
 
 	private messageBuffer: Buffer = null;
@@ -101,7 +101,6 @@ export abstract class Service<T> extends EventEmitter {
 	constructor(p_parent:InstanceType<typeof StageLinq>, serviceHandler: InstanceType <typeof ServiceHandler>, deviceId?: DeviceId) {
 		super();
 		this.parent = p_parent;
-		//this.type = Service<T>;
 		this._handler = serviceHandler as ServiceHandler<T>;
 		this.deviceId = deviceId || null;
 		this.device = (deviceId ? this.parent.devices.device(deviceId) : null);
@@ -163,8 +162,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	private async dataHandler(p_data: Buffer, socket: Socket) {
 
-
-		//append queue to current data
+		// Concantenate messageBuffer with current data
 		let buffer: Buffer = null;
 		if ( this.messageBuffer && this.messageBuffer.length > 0) {
 			buffer = Buffer.concat([this.messageBuffer, p_data]);
@@ -279,8 +277,8 @@ export abstract class Service<T> extends EventEmitter {
 		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
 		
 		await server.close();
-		let serverName = serviceName;
-		serverName += deviceId.string;
+		
+		const serverName = `${serviceName}${deviceId.string}`;
 		parent.deleteServer(serverName);
 		
 		await handler.deleteDevice(deviceId);
@@ -290,11 +288,6 @@ export abstract class Service<T> extends EventEmitter {
 		parent.devices.deleteService(deviceId, serviceName);
 		await service.deleteDevice(deviceId);
 		assert(!service.hasDevice(deviceId));
-	}
-
-	// TODO: Cannot use abstract because of async; is there another way to get this?
-	protected async init() {
-		assert.fail('Implement this');
 	}
 
 	protected abstract parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<T>;

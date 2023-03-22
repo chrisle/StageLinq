@@ -1,4 +1,4 @@
-import { ActingAsDevice, StageLinqOptions, ServiceList, ServiceMessage, Source} from '../types';
+import { ActingAsDevice, StageLinqOptions, ServiceList, ServiceMessage, Source, DeviceId} from '../types';
 import * as Services from '../services'
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
@@ -25,12 +25,12 @@ function progressBar(size: number, bytes: number, total: number): string {
   return `[${progressArrary.join('')}]`
 }
 
-async function getTrackInfo(stageLinq: StageLinq, sourceName: string, trackName: string) {
-  while (!stageLinq.hasSource(sourceName)) {
+async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, trackName: string) {
+  while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
     await sleep(250);
   }
   try {
-    const _source = stageLinq.getSource(sourceName);
+    const _source = stageLinq.sources.getSource(sourceName, deviceId);
     //const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
     const connection = _source.database.connection;
     const result = await connection.getTrackInfo(trackName);
@@ -42,13 +42,13 @@ async function getTrackInfo(stageLinq: StageLinq, sourceName: string, trackName:
   }
 }
 
-async function downloadFile(stageLinq: StageLinq, sourceName: string, path: string, dest?: string) {
+async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
   
-  while (!stageLinq.hasSource(sourceName)) {
+  while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
     await sleep(250);
   }
   try {
-    const _source = stageLinq.getSource(sourceName);
+    const _source = stageLinq.sources.getSource(sourceName, deviceId);
     const data = await stageLinq.downloadFile(_source, path);
     if (dest && data) {
       const filePath = `${dest}/${path.split('/').pop()}`
@@ -124,8 +124,8 @@ async function main() {
           const split = data.message.json.string.substring(43,data.message.json.string.length).split('/')
           const sourceName = split.shift();
           const path = `/${sourceName}/${split.join('/')}`
-          await getTrackInfo(stageLinq, sourceName, data.message.json.string);
-          downloadFile(stageLinq, sourceName, path, Path.resolve(os.tmpdir()));
+          await getTrackInfo(stageLinq, sourceName, data.deviceId, data.message.json.string);
+          downloadFile(stageLinq, sourceName, data.deviceId, path, Path.resolve(os.tmpdir()));
 
         }
       }

@@ -9,7 +9,6 @@ import type { ServiceMessage, Source, DeviceId } from '../types';
 import { Socket } from 'net';
 
 
-
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
@@ -41,9 +40,7 @@ export declare interface FileTransfer {
 }
 
 export class FileTransferHandler extends ServiceHandler<FileTransfer> {
-  public name: string = "FileTransfer"
-  
- 
+  public readonly name = "FileTransfer"
 
   public setupService(service: Service<FileTransferData>, deviceId: DeviceId) {
     const fileTransfer = service as FileTransfer;
@@ -55,19 +52,15 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
     fileTransfer.on('dbNewSource', (source: Source) => {
       this.emit('dbNewSource', source);
     });
-
-    
   }
 }
 
 export class FileTransfer extends Service<FileTransferData> {
-  private receivedFile: WriteContext = null;
   public name: string = "FileTransfer";
   
+  private receivedFile: WriteContext = null;
   private _isAvailable: boolean = true;
   private txId: number = 1;
-
-  async init() {}
 
   // TODO need better txId to handle consurrent transfers
   public get txid() {
@@ -203,11 +196,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
       case MessageId.Unknown0: {
         //sizeLeft() of 6 means its not an offline analyzer
-        //TODO actually parse these messages
-        //if (p_ctx.sizeLeft() >= 5) {
-          //Logger.debug(`requesting sources from `, deviceId.string);
         this.requestSources(socket);
-        //}
 
         return {
           id: messageId,
@@ -242,9 +231,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
   protected messageHandler(p_data: ServiceMessage<FileTransferData>): void {
     this.emit('fileMessage', p_data);
-    
     if (p_data && p_data.id === MessageId.FileTransferChunk && this.receivedFile) {
-      //assert(this.receivedFile.sizeLeft() >= p_data.message.size);
       this.receivedFile.write(p_data.message.data);
     }
     if (p_data && p_data.id === MessageId.RequestSources) {
@@ -351,7 +338,7 @@ export class FileTransfer extends Service<FileTransferData> {
             
           }
           this.emit('dbNewSource', thisSource);
-          this.parent.setSource(thisSource);
+          this.parent.sources.setSource(thisSource);
           result.push(thisSource);
           this.parent.databases.downloadDb(thisSource);
 
