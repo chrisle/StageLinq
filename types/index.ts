@@ -2,15 +2,14 @@ import { Socket } from 'net';
 import { DbConnection } from '../Databases';
 import { DiscoveryMessageOptions } from '../network';
 import * as Services from '../services';
-import { DeviceId } from './DeviceId';
+import { DeviceId } from '../devices/DeviceId';
 
 
 export * from './common';
 export * from './player';
 export * from './tokens';
 export * from './models';
-export * from './DeviceId';
-export * from './Devices';
+
 
 export interface DiscoveryMessage {
 	token: Uint8Array;

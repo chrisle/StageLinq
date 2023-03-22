@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
-import { DeviceId, PlayerLayerState, PlayerStatus, ServiceMessage } from '../types';
+import { PlayerLayerState, PlayerStatus, ServiceMessage } from '../types';
+import { DeviceId } from '../devices'
 import { PlayerMessageQueue } from './PlayerMessageQueue';
 import { StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
@@ -12,7 +13,7 @@ export declare interface Player {
 
 //////////////////////////////////////////////////////////////////////////////
 
-interface PlayerOptions {
+export interface PlayerOptions {
   stateMap: StateMap;
   address: string,
   port: number;
@@ -181,7 +182,7 @@ export class Player extends EventEmitter {
       port: this.port,
       masterTempo: this.masterTempo,
       masterStatus: this.masterStatus,
-      deviceId: `net://${this.deviceId.string}`,
+      deviceId: this.deviceId,
       ...result
     };
 
@@ -191,7 +192,7 @@ export class Player extends EventEmitter {
     if (currentState.trackNetworkPath && currentState.trackNetworkPath.startsWith('net:')) {
       const pathParts = currentState.trackNetworkPath.split('net://')[1].split('/', 2);
       currentState.dbSourceName = pathParts[1];//`net://${pathParts[0]}/${pathParts[1]}`;
-      currentState.deviceId = pathParts[0];//`net://${pathParts[0]}`;
+      currentState.deviceId = new DeviceId(pathParts[0]);//`net://${pathParts[0]}`;
     } else if (!currentState.source || /Unknown/.test(currentState.source)) {
       // Tracks from streaming sources won't be in the database.
       currentState.dbSourceName = '';

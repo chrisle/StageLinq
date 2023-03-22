@@ -1,4 +1,5 @@
-import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, DeviceId, deviceIdFromBuff, deviceTypes,  } from '../types';
+import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, deviceTypes,  } from '../types';
+import { DeviceId, deviceIdFromBuff } from '../devices'
 import { Socket, RemoteInfo } from 'dgram';
 import * as UDPSocket from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from '../types/common';

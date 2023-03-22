@@ -1,4 +1,5 @@
-import { ActingAsDevice, StageLinqOptions, ServiceList, ServiceMessage, Source, DeviceId} from '../types';
+import { ActingAsDevice, StageLinqOptions, ServiceList, ServiceMessage, Source } from '../types';
+import { DeviceId } from '../devices'
 import * as Services from '../services'
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
@@ -76,7 +77,7 @@ async function main() {
       ServiceList.StateMap,
       ServiceList.BeatInfo,
       ServiceList.FileTransfer,
-      //ServiceList.TimeSynchronization,
+      ServiceList.TimeSynchronization,
     ],
   }
   
@@ -97,14 +98,17 @@ async function main() {
     console.log(...args);
     args.push("\n");
   });
-  // stageLinq.logger.on('debug', (...args: any) => {
-  //   console.debug(...args);
-  //   args.push("\n");
-  // });
+  stageLinq.logger.on('debug', (...args: any) => {
+    console.debug(...args);
+    args.push("\n");
+  });
   //Note: Silly is very verbose!
   // stageLinq.logger.on('silly', (...args: any) => {
   //   console.debug(...args);
   // });
+
+
+  //stageLinq.status.on()
 
 
   stageLinq.devices.on('newDevice', (device) =>{
@@ -119,7 +123,7 @@ async function main() {
     
     stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => { 
       if (data.message.json) {
-        console.debug(`${data.message.name} => ${JSON.stringify(data.message.json)}`);
+        //console.debug(`${data.message.name} => ${JSON.stringify(data.message.json)}`);
         if (data.message.json.string && data.message.name.split('/').pop() === "TrackNetworkPath") {
           const split = data.message.json.string.substring(43,data.message.json.string.length).split('/')
           const sourceName = split.shift();
@@ -134,7 +138,44 @@ async function main() {
      stageLinq.stateMap.on('newDevice',  (service: Services.StateMapDevice) => { 
       console.log(`Subscribing to States on ${service.deviceId.string}`);
       service.subscribe();
+      stageLinq.status.addPlayer({
+          stateMap: service,
+          address: service.socket.remoteAddress,
+          port: service.socket.remotePort,
+          deviceId: service.deviceId,
+      })
      });
+
+     stageLinq.status.on('trackLoaded', async (status) => {
+        console.log(`STATUS Track Loaded ${status.deviceId.string}`);
+        console.dir(status);
+      
+      // if (stageLinq.options.downloadDbSources && downloadFlag) {
+            //   getTrackInfo(stageLinq, status);
+            // }
+        
+            // // Example of how to download the actual track from the media.
+            
+            // if (downloadFlag) {
+            //   const filename = [status.title,'.mp3'].join('');
+            //   while (!stageLinq.hasSource(status.dbSourceName)) {
+            //     await sleep(250);
+            //   }
+            //   await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
+            // }
+      
+      });
+      stageLinq.status.on('nowPlaying', async (status) => {
+        console.log(`STATUS Now Playing ${status.deviceId.string}`);
+        console.dir(status);       
+      
+      });
+      
+      stageLinq.status.on('stateChanged', async (status) => {
+        console.log(`STATUS State Changed ${status.deviceId.string}`);
+        console.dir(status);
+      
+      });
 
   }
   

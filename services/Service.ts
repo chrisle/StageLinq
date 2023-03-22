@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { MessageId, MESSAGE_TIMEOUT, DeviceId, Device } from '../types';
+import { MessageId, MESSAGE_TIMEOUT } from '../types';
+import { DeviceId, Device } from '../devices'
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';

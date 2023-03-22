@@ -2,7 +2,8 @@ import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
-import { ServiceMessage, DeviceId, MessageId } from '../types';
+import { ServiceMessage, MessageId } from '../types';
+import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';

@@ -5,7 +5,8 @@ import { Service, ServiceHandler } from './Service';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
-import type { ServiceMessage, Source, DeviceId } from '../types';
+import type { ServiceMessage, Source } from '../types';
+import { DeviceId } from '../devices'
 import { Socket } from 'net';
 
 

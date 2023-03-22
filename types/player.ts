@@ -1,10 +1,11 @@
+import { DeviceId } from "../devices/DeviceId";
 
 export interface PlayerStatus {
   address: string;
   artist: string;
   currentBpm: number
   deck: string;
-  deviceId: string;
+  deviceId: DeviceId;
   externalMixerVolume: number;
   fileLocation: string;
   hasTrackData: boolean;

@@ -4,7 +4,8 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
 import * as Services from '../services';
-import { ServiceMessage, Tokens, DeviceId } from '../types';
+import { ServiceMessage, Tokens } from '../types';
+import { DeviceId } from '../devices'
 import { Logger } from '../LogEmitter';
 import { Socket } from 'net';
 const { performance } = require('perf_hooks');
@@ -122,8 +123,8 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             this.avgTimeArray.shift();
             this.avgTimeArray.push(time);
             const sum = this.avgTimeArray.reduce((a, b) => a + b, 0n);
-            const avg = (sum / BigInt(this.avgTimeArray.length)) || 0;
-            console.log(`${this.deviceId.string} Average time ${Number(avg)}`)
+            const avg = (sum / BigInt(this.avgTimeArray.length)) || 0n;
+            Logger.silly(`${this.deviceId.string} Average time ${avg}`)
         } else {
             this.avgTimeArray.push(time);
         }
@@ -138,10 +139,10 @@ export class TimeSynchronization extends Service<TimeSyncData> {
                 this.sendTimeSyncQuery(msg.message.timestamp, msg.message.msgs.shift());  
             break;
             case 2:
-                console.log(msg.message)    
+                Logger.silly(msg.message)    
                 const localClock =  msg.message.timestamp - msg.message.msgs[0] 
                 const remoteClock =  msg.message.msgs[1] - this.remoteTime
-                console.log(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))    
+                Logger.silly(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))    
                 this.timeAvg(remoteClock)
             break;
             default:

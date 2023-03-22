@@ -1,9 +1,11 @@
 import { Discovery } from '../network';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions, Devices, DeviceId, ConnectionInfo, ServiceMessage, Source} from '../types';
+import { ActingAsDevice, StageLinqOptions, ConnectionInfo, ServiceMessage, Source} from '../types';
+import {Devices, DeviceId} from '../devices'
 import { Databases, Sources } from '../Databases';
 import * as Services from '../services';
+import { Status }  from '../status/Status';
 import { Server } from 'net';
 import { assert } from 'console';
 
@@ -44,6 +46,8 @@ export class StageLinq extends EventEmitter {
   public readonly beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
   public readonly timeSync: InstanceType<typeof Services.TimeSynchronizationHandler> = null;
 
+  public readonly status: Status = null;
+
   private directory: InstanceType<typeof Services.Directory> = null;
   private _databases: Databases;
   private _sources: Sources;
@@ -54,6 +58,7 @@ export class StageLinq extends EventEmitter {
     this.options = options || DEFAULT_OPTIONS;
     this._databases = new Databases(this);
     this._sources = new Sources(this);
+    this.status = new Status(this);
     
     //TODO make this into factory function?
     for (let service of this.options.services) {  

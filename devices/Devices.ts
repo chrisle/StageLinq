@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import * as Services from '../services';
-import { ConnectionInfo, DeviceId } from '../types';
+import { ConnectionInfo } from '../types';
+import { DeviceId} from '../devices'
 
 
 export declare interface Devices {

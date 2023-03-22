@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 //import * as Services from '../services';
-import { Source, DeviceId} from '../types';
+import { Source} from '../types';
+import { DeviceId } from '../devices'
 import { StageLinq } from '../StageLinq';
 
 export declare interface Sources {

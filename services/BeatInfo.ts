@@ -3,7 +3,8 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
 import { Logger } from '../LogEmitter';
-import type { ServiceMessage, DeviceId } from '../types';
+import type { ServiceMessage } from '../types';
+import { DeviceId } from '../devices'
 import { Socket } from 'net';
 
 type beatCallback = (n: ServiceMessage<BeatData>) => void;

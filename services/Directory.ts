@@ -1,7 +1,8 @@
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceHandler } from './Service';
-import { ServiceMessage, MessageId, Tokens, DeviceId, deviceTypes } from '../types';
+import { ServiceMessage, MessageId, Tokens, deviceTypes } from '../types';
+import { DeviceId } from '../devices'
 import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
 import { strict as assert } from 'assert';
