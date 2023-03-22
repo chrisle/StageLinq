@@ -33,7 +33,7 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 	public name: string = 'BeatInfo'
   
 	public setupService(service: Service<BeatData>, deviceId: DeviceId) {
-		Logger.debug(`Setting up ${service.name} for ${deviceId.toString()}`);
+		Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
 		const beatInfo = service as BeatInfo;
 		this.addDevice(deviceId, service);
 		
@@ -150,7 +150,7 @@ export class BeatInfo extends Service<BeatData> {
 	
     protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<BeatData> {
 		assert((socket));
-		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.toString()}`)
+		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.string}`)
 		return
       }
 }

@@ -108,11 +108,11 @@ async function main() {
 
 
   stageLinq.devices.on('newDevice', (device) =>{
-    console.log(`DEVICES New Device ${device.deviceId.toString()}`)
+    console.log(`DEVICES New Device ${device.deviceId.string}`)
   });
 
   stageLinq.devices.on('newService', (device, service) =>{
-    console.log(`DEVICES New ${service.name} Service on ${device.deviceId.toString()}`)
+    console.log(`DEVICES New ${service.name} Service on ${device.deviceId.string}`)
   });
 
   if (stageLinq.stateMap) {
@@ -168,10 +168,10 @@ async function main() {
             deckBeatString += `Deck: ${i+1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
           }
           
-          //if (beatInfo.deviceId.toString() == "4be14112-5ead-4848-a07d-b37ca8a7220e") {
-            console.log(`${bd.deviceId.toString()} clock: ${bd.message.clock} ${deckBeatString}`);  
+          //if (beatInfo.deviceId.string == "4be14112-5ead-4848-a07d-b37ca8a7220e") {
+            console.log(`${bd.deviceId.string} clock: ${bd.message.clock} ${deckBeatString}`);  
           //}
-          //console.log(`BeatInfo: ${beatInfo.deviceId.toString()} ${deckBeatString}`);
+          //console.log(`BeatInfo: ${beatInfo.deviceId.string} ${deckBeatString}`);
         }
         
         //  User Options

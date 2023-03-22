@@ -92,7 +92,7 @@ export class Player extends EventEmitter {
     const json = message.json as any;
 
     //check if message is for this Player
-    if(data.deviceId.toString() !== this.deviceId.toString()) return;
+    if(data.deviceId.string !== this.deviceId.string) return;
 
     if (/Client\/Preferences\/Player$/.test(name)) {
       this.player = parseInt(json.string);
@@ -181,7 +181,7 @@ export class Player extends EventEmitter {
       port: this.port,
       masterTempo: this.masterTempo,
       masterStatus: this.masterStatus,
-      deviceId: `net://${this.deviceId.toString()}`,
+      deviceId: `net://${this.deviceId.string}`,
       ...result
     };
 
@@ -196,7 +196,7 @@ export class Player extends EventEmitter {
       // Tracks from streaming sources won't be in the database.
       currentState.dbSourceName = '';
     } else {
-      currentState.dbSourceName = `net://${this.deviceId.toString()}/${currentState.source}`;
+      currentState.dbSourceName = `net://${this.deviceId.string}/${currentState.source}`;
     }
 
     // If a song is loaded and we have a location emit the trackLoaded event.

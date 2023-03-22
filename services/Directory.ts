@@ -41,7 +41,7 @@ export class Directory extends Service<DirectoryData> {
     socket: Socket
   ): ServiceMessage<DirectoryData> {
     assert(socket);
-    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`);
+    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`);
     return;
   }
 
@@ -106,14 +106,14 @@ export class Directory extends Service<DirectoryData> {
 
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(Tokens.Listen);
-    if (!this.parent.devices.hasDevice(deviceId.toString())) {
+    if (!this.parent.devices.hasDevice(deviceId.string)) {
        await sleep(250);
     }
 
     let services: InstanceType<typeof Service>[] = []
     for (const serviceName of Object.keys(this.parent.services)) {
     //for (const serviceName of this.parent.serviceList) {
-      const device =  this.parent.devices.device(deviceId.toString());
+      const device =  this.parent.devices.device(deviceId.string);
     if (device && !!deviceTypes[device.info?.software?.name]) {
         switch (serviceName) {
           case 'FileTransfer': {
@@ -145,19 +145,19 @@ export class Directory extends Service<DirectoryData> {
       
     }
 
-    //this.parent.services[deviceId.toString()] = new Map();
-    //this.parent.sockets[deviceId.toString()] = new Map();
+    //this.parent.services[deviceId.string] = new Map();
+    //this.parent.sockets[deviceId.string] = new Map();
 
     for (const service of services) {
       
-      //this.parent.services[deviceId.toString()].set(service.name, service);
+      //this.parent.services[deviceId.string].set(service.name, service);
      
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
       ctx.write(Tokens.Listen);
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
 
-      Logger.debug(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`);
+      Logger.debug(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
       
     }
 

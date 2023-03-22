@@ -31,11 +31,11 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 	}
 
 	hasDevice(deviceId: DeviceId): boolean {
-		return this._devices.has(deviceId.toString())
+		return this._devices.has(deviceId.string)
 	}
 
 	getDevice(deviceId: DeviceId): Service<T>  {
-		return this._devices.get(deviceId.toString());
+		return this._devices.get(deviceId.string);
 	}
 
 	getDevices(): Service<T>[] {
@@ -43,11 +43,11 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 	}
 
 	addDevice(deviceId: DeviceId, service: Service<T>) {
-		this._devices.set(deviceId.toString(), service)
+		this._devices.set(deviceId.string, service)
 	}
 
 	deleteDevice(deviceId: DeviceId) {
-		this._devices.delete(deviceId.toString())
+		this._devices.delete(deviceId.string)
 	}
 
 	async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
@@ -65,7 +65,7 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 		let serverName = `${ctor.name}`;
 
 		if (deviceId) {
-			serverName += deviceId.toString();
+			serverName += deviceId.string;
 		}
 
 		this.parent.addServer(serverName, service.server);
@@ -205,7 +205,7 @@ export abstract class Service<T> extends EventEmitter {
 			(assert (ctx.sizeLeft() >= 2));
 			ctx.readUInt16(); //read port, though we don't need it
 			
-			Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${this.deviceId.toString()}`);
+			Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${this.deviceId.string}`);
 			if (this.device) {
 				this.device.parent.emit('newService', this.device, this)
 			}
@@ -239,7 +239,7 @@ export abstract class Service<T> extends EventEmitter {
 				}
 			}
 		} catch (err) {
-			Logger.error(this.name, this.deviceId.toString(), err);
+			Logger.error(this.name, this.deviceId.string, err);
 		}
 	}
 
@@ -276,11 +276,11 @@ export abstract class Service<T> extends EventEmitter {
 
 	//	callback for timeout timer
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>, handler: ServiceHandler<T>) {
-		Logger.debug(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
+		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
 		
 		await server.close();
 		let serverName = serviceName;
-		serverName += deviceId.toString();
+		serverName += deviceId.string;
 		parent.deleteServer(serverName);
 		
 		await handler.deleteDevice(deviceId);

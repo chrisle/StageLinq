@@ -47,7 +47,7 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
 
   public setupService(service: Service<FileTransferData>, deviceId: DeviceId) {
     const fileTransfer = service as FileTransfer;
-    Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.toString()}`);
+    Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.string}`);
     this.addDevice(deviceId, service);
     fileTransfer.on('fileTransferProgress', (fileName, txid, progress) => {
       this.emit('fileTransferProgress', fileName, txid, progress);
@@ -77,7 +77,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
     assert((socket));
-    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`)
     return
   }
 
@@ -122,7 +122,7 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.isEOF());
 
         if (sources.length) {
-          Logger.silly(`getting sources for `, this.deviceId.toString());
+          Logger.silly(`getting sources for `, this.deviceId.string);
           this.getSources(sources, socket);
         }
 
@@ -205,7 +205,7 @@ export class FileTransfer extends Service<FileTransferData> {
         //sizeLeft() of 6 means its not an offline analyzer
         //TODO actually parse these messages
         //if (p_ctx.sizeLeft() >= 5) {
-          //Logger.debug(`requesting sources from `, deviceId.toString());
+          //Logger.debug(`requesting sources from `, deviceId.string);
         this.requestSources(socket);
         //}
 
@@ -345,7 +345,7 @@ export class FileTransfer extends Service<FileTransferData> {
               size: fstatMessage.size,
               remote: {
                 location: database,
-                device: this.deviceId.toString(),
+                device: this.deviceId.string,
               }
             },
             

@@ -17,7 +17,7 @@ export class Devices extends EventEmitter {
 
   addDevice(info: ConnectionInfo): Device {
     const device = new Device(info, this);
-    this._devices.set(device.deviceId.toString(), device)
+    this._devices.set(device.deviceId.string, device)
     this.emit('newDevice', device)
     return device
   }
@@ -28,7 +28,7 @@ export class Devices extends EventEmitter {
     }
     if (deviceId instanceof DeviceId) {
       const _deviceId = deviceId as DeviceId
-      return this._devices.get(_deviceId.toString())
+      return this._devices.get(_deviceId.string)
     } 
     if (typeof deviceId == "object") {
       const deviceString = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
@@ -46,7 +46,7 @@ export class Devices extends EventEmitter {
     } 
     if (deviceId instanceof DeviceId) { 
       const _deviceId = deviceId as DeviceId
-      return this._devices.has(_deviceId.toString())
+      return this._devices.has(_deviceId.string)
     } 
     if  (typeof deviceId == "object"){
       return this._devices.has(/(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
@@ -57,12 +57,12 @@ export class Devices extends EventEmitter {
   }
 
   addService(deviceId: DeviceId, service: InstanceType<typeof Services.Service> ) {
-    const device = this.device(deviceId.toString())
+    const device = this.device(deviceId.string)
     device.addService(service) 
   }
 
   deleteService(deviceId: DeviceId, serviceName: string) {
-    const device = this.device(deviceId.toString());
+    const device = this.device(deviceId.string);
     device.deleteService(serviceName)
   }
 

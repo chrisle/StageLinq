@@ -24,10 +24,10 @@ export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
     public name: string = 'TimeSync'
 
     public setupService(service: TimeSynchronization, deviceId: DeviceId) {
-        console.log(`Setting up ${service.name} for ${deviceId.toString()}`);
+        console.log(`Setting up ${service.name} for ${deviceId.string}`);
         
         service.on('newDevice',  ( _service: InstanceType<typeof Services.TimeSynchronization>) => {
-            Logger.debug(`New TimeSync Device ${service.deviceId.toString()}`)
+            Logger.debug(`New TimeSync Device ${service.deviceId.string}`)
             //this.emit('newDevice',  service);
             _service.sendTimeSyncRequest();
           })
@@ -110,14 +110,14 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             const deviceId = new DeviceId(token)
             const svcName = p_ctx.readNetworkStringUTF16();
             const svcPort = p_ctx.readUInt16();
-            console.log(deviceId.toString(), svcName, svcPort)
+            console.log(deviceId.string, svcName, svcPort)
         } else {
             const id = p_ctx.readUInt32();
 		    const msgs: bigint[] = []
             while (p_ctx.sizeLeft()) {
                 msgs.push(p_ctx.readUInt64())
             };
-            //console.log(this.deviceId.toString(), size,id,msgs)
+            //console.log(this.deviceId.string, size,id,msgs)
             return {
                 id: id,
                 deviceId: this.deviceId,
@@ -137,7 +137,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             this.avgTimeArray.push(time);
             const sum = this.avgTimeArray.reduce((a, b) => a + b, 0n);
             const avg = (sum / BigInt(this.avgTimeArray.length)) || 0;
-            console.log(`${this.deviceId.toString()} Average time ${Number(avg)}`)
+            console.log(`${this.deviceId.string} Average time ${Number(avg)}`)
         } else {
             this.avgTimeArray.push(time);
             //console.log(this.avgTimeArray.length)
@@ -150,7 +150,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
         if (!msg?.message) {
             return
         }
-        if (msg?.deviceId && msg?.deviceId.toString() != "4be14112-5ead-4848-a07d-b37ca8a7220e") {
+        if (msg?.deviceId && msg?.deviceId.string != "4be14112-5ead-4848-a07d-b37ca8a7220e") {
            // return
         }
 
@@ -163,7 +163,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
 
         switch (msg.id) {
             case 1:
-                //console.log(msg.deviceId.toString(), msg.message.msgs[0])
+                //console.log(msg.deviceId.string, msg.message.msgs[0])
 
                 //this.remoteTime = msg.message.msgs.shift();
                 this.sendTimeSyncQuery(msg.message.timestamp, msg.message.msgs.shift());  
@@ -174,7 +174,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             const localClock =  msg.message.timestamp - msg.message.msgs[0] 
                 const remoteClock =  msg.message.msgs[1] - this.remoteTime
                 
-                console.log(msg.deviceId.toString(), localClock, remoteClock, (localClock - remoteClock))    
+                console.log(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))    
                 this.timeAvg(remoteClock)
             
             break;
@@ -184,7 +184,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
 
     protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<TimeSyncData> {
 		assert((socket));
-		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.toString()}`)
+		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.string}`)
         this.emit('newDevice', this)
 		return
       }

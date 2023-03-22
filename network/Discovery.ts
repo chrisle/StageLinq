@@ -43,15 +43,15 @@ export class Discovery {
     }
 
     public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {
-        return this.peers.get(deviceId.toString());
+        return this.peers.get(deviceId.string);
     }
     
     public async setConnectionInfo(deviceId: DeviceId, connectionInfo: ConnectionInfo) {
-        this.peers.set(deviceId.toString(), connectionInfo);
+        this.peers.set(deviceId.string, connectionInfo);
     }
 
     public hasConnectionInfo(deviceId: DeviceId): Boolean {
-        return this.peers.has(deviceId.toString());
+        return this.peers.has(deviceId.string);
     }
 
     public getDeviceList(): string[] {
@@ -72,8 +72,8 @@ export class Discovery {
                 //const deviceId = new DeviceId(connectionInfo.token)
                 
                 const device = this.parent.devices.addDevice(connectionInfo);
-                this.peers.set(device.deviceId.toString(), connectionInfo);
-                Logger.debug(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.toString()}`)
+                this.peers.set(device.deviceId.string, connectionInfo);
+                Logger.debug(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
             } else {
                 this.hasLooped = true;
             }
@@ -81,9 +81,9 @@ export class Discovery {
             if (deviceTypes[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.token) && this.parent.devices.device(connectionInfo.token).info.port !== connectionInfo.port) {
                 const deviceId = new DeviceId(connectionInfo.token)
                 
-                this.peers.set(deviceId.toString(), connectionInfo);
-                this.parent.devices.device(deviceId.toString()).info = connectionInfo;
-                Logger.debug(`Updated port for From ${deviceId.toString()}`)
+                this.peers.set(deviceId.string, connectionInfo);
+                this.parent.devices.device(deviceId.string).info = connectionInfo;
+                Logger.debug(`Updated port for From ${deviceId.string}`)
             } 
         });
     }
@@ -108,7 +108,7 @@ export class Discovery {
         const msg = this.writeDiscoveryMessage(discoveryMessage)
         
         this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress );
-        Logger.debug(`Broadcast Discovery Message ${this.deviceId.toString()} ${discoveryMessage.source}`);
+        Logger.debug(`Broadcast Discovery Message ${this.deviceId.string} ${discoveryMessage.source}`);
         this.announceTimer = setInterval(this.broadcastMessage, ANNOUNCEMENT_INTERVAL, this.socket, msg, LISTEN_PORT, this.broadcastAddress);
     }
 

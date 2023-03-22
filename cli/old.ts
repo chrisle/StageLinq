@@ -194,7 +194,7 @@
 //   // Fires when StageLinq receives messages from a device.
   
 //   stageLinq.stateMap.on('newStateMapDevice',  (deviceId: DeviceId, service: InstanceType <typeof Services.StateMap>) => { 
-//     console.log(`Subscribing to States on ${deviceId.toString()}`);
+//     console.log(`Subscribing to States on ${deviceId.string}`);
     
 //     const player = new Player({
 //       stateMap: service,
@@ -241,7 +241,7 @@
 //   //   const msg = data.message.json
 //   //   ? JSON.stringify(data.message.json)
 //   //   : data.message.interval;
-//   //   console.debug(`${data.deviceId.toString()} ` +
+//   //   console.debug(`${data.deviceId.string} ` +
 //   //   `${data.message.name} => ${msg}`);
   
 //   //  }

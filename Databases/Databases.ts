@@ -35,9 +35,9 @@ export class Databases extends EventEmitter {
 
     //let thisTxid: number = 0
 
-    const dbPath = getTempFilePath(`${source.deviceId.toString()}/${source.name}/m.db`);
+    const dbPath = getTempFilePath(`${source.deviceId.string}/${source.name}/m.db`);
 
-    Logger.info(`Reading database ${source.deviceId.toString()}/${source.name}`);
+    Logger.info(`Reading database ${source.deviceId.string}/${source.name}`);
     //this.emit('dbDownloading', source.name, dbPath);
 
    
@@ -49,13 +49,13 @@ export class Databases extends EventEmitter {
       // Save database to a file
     //thisTxid = source.service.txid;
     const file = await source.service.getFile(source.database.location, source.service.socket);
-    Logger.info(`Saving ${source.deviceId.toString()}/${source.name} to ${dbPath}`);
+    Logger.info(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
 
     source.database.connection = new DbConnection(dbPath);
 
     this.parent.setSource(source);
-    Logger.info(`Downloaded ${source.deviceId.toString()}/${source.name} to ${dbPath}`);
+    Logger.info(`Downloaded ${source.deviceId.string}/${source.name} to ${dbPath}`);
     this.emit('dbDownloaded', source);
     
   } 

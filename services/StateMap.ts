@@ -50,7 +50,7 @@ export class StateMapHandler extends ServiceHandler<StateData> {
   public deviceTrackRegister: Map<string, string> = new Map();
 
   public setupService(service: Service<StateData>, deviceId: DeviceId) {
-    Logger.debug(`Setting up ${service.name} for ${deviceId.toString()}`);
+    Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
     const stateMap = service as Services.StateMap;
     this.addDevice(deviceId, service);
 
@@ -64,7 +64,7 @@ export class StateMapHandler extends ServiceHandler<StateData> {
     stateMap.addListener('stateMessage', listener)
 
     stateMap.on('newDevice',  ( service: InstanceType<typeof Services.StateMap>) => {
-      Logger.debug(`New StateMap Device ${service.deviceId.toString()}`)
+      Logger.debug(`New StateMap Device ${service.deviceId.string}`)
       this.emit('newDevice',  service);
       //stateMap.subscribe();
       assert(service);
@@ -90,7 +90,7 @@ export class StateMap extends Service<StateData> {
       await sleep(200);
     }
 
-    Logger.silly(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.toString()}`);
+    Logger.silly(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.string}`);
 
     const thisPeer = this.parent.discovery.getConnectionInfo(this.deviceId);
 
@@ -106,7 +106,7 @@ export class StateMap extends Service<StateData> {
         
         //const handler = this._handler as Services.StateMapHandler
         for (let state of playerDeckStateValues) {
-          const stateValue = `${this.deviceId.toString()},/${state.split('/').slice(1,3).join("/")}`
+          const stateValue = `${this.deviceId.string},/${state.split('/').slice(1,3).join("/")}`
           const newValue = `{${this.deviceId}},${state.split('/').slice(2,3).shift().substring(4,5)}`
           this.handler.deviceTrackRegister.set(stateValue, newValue);
           await this.subscribeState(state, 0, socket);
@@ -141,7 +141,7 @@ export class StateMap extends Service<StateData> {
   }
 
   protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
-    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.toString()}`)
+    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`)
     sleep(500)
     assert(socket);
     
@@ -210,9 +210,9 @@ export class StateMap extends Service<StateData> {
     
   //   for (let [oldValue, newValue] of deckHandlerMsgs) {
   //     const oldValueArr = oldValue.split(',')
-  //     //const testString = `${this.deviceId.toString()}${data?.message?.name.substring(0,oldValue.length)}`
+  //     //const testString = `${this.deviceId.string}${data?.message?.name.substring(0,oldValue.length)}`
   //     //console.warn(testString, oldValue)
-  //     if (oldValueArr[0] == this.deviceId.toString() && data?.message?.name.substring(0,oldValueArr[1].length) == oldValueArr[1]) {
+  //     if (oldValueArr[0] == this.deviceId.string && data?.message?.name.substring(0,oldValueArr[1].length) == oldValueArr[1]) {
   //     //if (testString == oldValue) {
   //       returnMsg.message.name = `${newValue},${data.message.name.substring(oldValueArr[1].length, data.message.name.length)}`
   //     }
@@ -222,7 +222,7 @@ export class StateMap extends Service<StateData> {
   // }
 
   private mixerAssignmentAdapter(data: ServiceMessage<StateData>) {
-    const keyString = `${this.deviceId.toString()},/Mixer/CH${data.message.name.substring(data.message.name.length-1,data.message.name.length)}faderPosition`
+    const keyString = `${this.deviceId.string},/Mixer/CH${data.message.name.substring(data.message.name.length-1,data.message.name.length)}faderPosition`
     const valueString = `${data.message.json.string},/Mixer/ChannelFaderPosition`;
     this.handler.deviceTrackRegister.set(keyString, valueString);
   }
@@ -236,7 +236,7 @@ export class StateMap extends Service<StateData> {
     }
     
     if (p_data?.message?.interval) {
-      //console.warn(p_data.deviceId.toString(), p_data.socket.localPort, p_data.message.interval, p_data.message.name)
+      //console.warn(p_data.deviceId.string, p_data.socket.localPort, p_data.message.interval, p_data.message.name)
       //this.emit('stateMessage', this.deckMessageAdapter(p_data));
     } else {
       //this.emit('stateMessage', this.deckMessageAdapter(p_data));
@@ -245,7 +245,7 @@ export class StateMap extends Service<StateData> {
 
     if (p_data && p_data.message.json) { 
       Logger.silly(
-       `${p_data.deviceId.toString()} ${p_data.message.name} => ${
+       `${p_data.deviceId.string} ${p_data.message.name} => ${
          p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
        }`
      );
