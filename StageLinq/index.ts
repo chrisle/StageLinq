@@ -6,7 +6,6 @@ import { Databases } from '../Databases';
 import * as Services from '../services';
 import { Server } from 'net';
 import { assert } from 'console';
-//import { sleep } from '../utils/sleep';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -27,11 +26,6 @@ export declare interface StageLinq {
   on(event: 'stateMessage', listener: ( message: ServiceMessage<Services.StateData>) => void): this;
   on(event: 'ready', listener: () => void): this;
   on(event: 'connection', listener: (serviceName: string, deviceId: DeviceId) => void): this;
-  //on(event: 'StateMap', listener: (service: InstanceType<typeof Services.StateMapHandler> ) => void): this;
-  //on(event: 'stateMap', listener: (service: InstanceType<typeof Services.StateMap> ) => void): this;
-
-  //on(event: 'fileDownloaded', listener: (sourceName: string, dbPath: string) => void): this;
-  //on(event: 'fileDownloading', listener: (sourceName: string, dbPath: string) => void): this;
   on(event: 'fileProgress', listener: (path: string, total: number, bytesDownloaded: number, percentComplete: number) => void): this;
 }
 
@@ -52,6 +46,7 @@ export class StageLinq extends EventEmitter {
   public stateMap: InstanceType<typeof Services.StateMapHandler> = null;
   public fileTransfer: InstanceType<typeof Services.FileTransferHandler> = null;
   public beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
+  public timeSync: InstanceType<typeof Services.TimeSynchronizationHandler> = null;
 
   public logger: Logger = Logger.instance;
   public discovery: Discovery = new Discovery(this);
@@ -78,6 +73,12 @@ export class StageLinq extends EventEmitter {
           const beatInfo = new Services.BeatInfoHandler(this, service);
           this.services[service] = beatInfo;
           this.beatInfo = beatInfo;
+          break;
+        }
+        case "TimeSynchronization": {
+          const timeSync = new Services.TimeSynchronizationHandler(this, service);
+          this.services[service] = timeSync;
+          this.timeSync = timeSync;
           break;
         }
         default:
@@ -163,20 +164,9 @@ export class StageLinq extends EventEmitter {
 
   async downloadFile(source: Source, path: string): Promise<Uint8Array> {
    
-    
-    
-    
     const service = source.service;
     assert(service);
     await service.isAvailable();
-    
-    // let thisTxid = service.txid;
-
-    // service.on('fileTransferProgress', (txid, progress) => {
-    //   if (thisTxid === txid) {
-    //     this.emit('fileProgress', path.split('/').pop(), progress.total, progress.bytesDownloaded, progress.percentComplete);
-    //   }
-    // });
 
     try {
       const file = await service.getFile(path,service.socket);

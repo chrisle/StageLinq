@@ -76,6 +76,7 @@ async function main() {
       ServiceList.StateMap,
       ServiceList.BeatInfo,
       ServiceList.FileTransfer,
+      //ServiceList.TimeSynchronization,
     ],
   }
   
@@ -96,16 +97,23 @@ async function main() {
     console.log(...args);
     args.push("\n");
   });
-  stageLinq.logger.on('debug', (...args: any) => {
-    console.debug(...args);
-    args.push("\n");
-  });
+  // stageLinq.logger.on('debug', (...args: any) => {
+  //   console.debug(...args);
+  //   args.push("\n");
+  // });
   //Note: Silly is very verbose!
   // stageLinq.logger.on('silly', (...args: any) => {
   //   console.debug(...args);
   // });
 
 
+  stageLinq.devices.on('newDevice', (device) =>{
+    console.log(`DEVICES New Device ${device.deviceId.toString()}`)
+  });
+
+  stageLinq.devices.on('newService', (device, service) =>{
+    console.log(`DEVICES New ${service.name} Service on ${device.deviceId.toString()}`)
+  });
 
   if (stageLinq.stateMap) {
     
@@ -124,7 +132,7 @@ async function main() {
      });
      
      stageLinq.stateMap.on('newDevice',  (service: Services.StateMapDevice) => { 
-      console.log(`Subscribing to States on ${service.deviceId.toString()}`);
+      console.log(`Subscribing to States on ${service.deviceId.string}`);
       service.subscribe();
      });
 
@@ -154,12 +162,16 @@ async function main() {
 
         //  User callback function. 
         //  Will be triggered everytime a player's beat counter crosses the resolution threshold
-        function beatCallback(bd: Services.BeatData, ) {
+        function beatCallback(bd: ServiceMessage<Services.BeatData>, ) {
           let deckBeatString = ""
-          for (let i=0; i<bd.deckCount; i++) {
-            deckBeatString += `Deck: ${i+1} Beat: ${bd.deck[i].beat.toFixed(3)}/${bd.deck[i].totalBeats.toFixed(0)} `
+          for (let i=0; i<bd.message.deckCount; i++) {
+            deckBeatString += `Deck: ${i+1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
           }
-          console.log(`BeatInfo: ${beatInfo.deviceId.toString()} ${deckBeatString}`);
+          
+          //if (beatInfo.deviceId.toString() == "4be14112-5ead-4848-a07d-b37ca8a7220e") {
+            console.log(`${bd.deviceId.toString()} clock: ${bd.message.clock} ${deckBeatString}`);  
+          //}
+          //console.log(`BeatInfo: ${beatInfo.deviceId.toString()} ${deckBeatString}`);
         }
         
         //  User Options
@@ -169,16 +181,18 @@ async function main() {
           //    1 = every beat 
           //    4 = every 4 beats 
           //    .25 = every 1/4 beat
-          everyNBeats: 4, 
+          everyNBeats: 1, 
         }
         //  start BeatInfo
         //  callback is optional, BeatInfo messages can be consumed by event messages, or reading the register 
-        //beatInfo.startBeatInfo(beatOptions, beatCallback);
+        beatInfo.startBeatInfo(beatOptions, beatCallback);
         
-        beatInfo.startBeatInfo(beatOptions);
-        stageLinq.beatInfo.on('beatMsg', (bd) => {
-          beatCallback(bd);
-        });
+        // beatInfo.startBeatInfo(beatOptions);
+        // stageLinq.beatInfo.on('beatMsg', (bd) => {
+        //   if (bd.message) {
+        //     beatCallback(bd);
+        //   }
+        // });
     })
     
 

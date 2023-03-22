@@ -28,6 +28,14 @@ export class DeviceId {
     if (!reg.test(this.m_str)) throw new InvalidDeviceIdError();
   }
 
+  get string() {
+    return this.m_str
+  }
+
+  get buffer() {
+    return this.m_array
+  }
+
   toString() {
     return this.m_str;
   }

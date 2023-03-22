@@ -91,6 +91,7 @@ export enum ServiceList  {
 	StateMap =  "StateMap",
 	FileTransfer = "FileTransfer",
 	BeatInfo = "BeatInfo",
+	TimeSynchronization = "TimeSynchronization",
 	Directory = "Directory",
 }
 

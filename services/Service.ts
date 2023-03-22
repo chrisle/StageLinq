@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { MessageId, MESSAGE_TIMEOUT, DeviceId } from '../types';
+import { MessageId, MESSAGE_TIMEOUT, DeviceId, Device } from '../types';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -46,16 +46,20 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 		this._devices.set(deviceId.toString(), service)
 	}
 
-	async deleteDevice(deviceId: DeviceId) {
+	deleteDevice(deviceId: DeviceId) {
 		this._devices.delete(deviceId.toString())
 	}
 
 	async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
-		new (_parent: InstanceType<typeof StageLinq>, _serviceHandler?: InstanceType<typeof ServiceHandler>, _deviceId?: DeviceId): T;
+		new (_parent: InstanceType<typeof StageLinq>, _serviceHandler?: any, _deviceId?: DeviceId): T;
 	  }, parent?: InstanceType<typeof StageLinq>, deviceId?: DeviceId): Promise<T> {
 		
 		const service = new ctor(parent, this, deviceId);
 		await service.listen();
+		if (deviceId) {
+			this.parent.devices.addService(deviceId, service)
+		}
+
 		this.setupService(service, deviceId)
 
 		let serverName = `${ctor.name}`;
@@ -76,7 +80,9 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 export abstract class Service<T> extends EventEmitter {
 	public readonly name: string = "Service";
 	public deviceId: DeviceId = null;
+	//public type: T;
 	protected _deviceId: DeviceId = null;
+	public device: Device;
 
 	protected isBufferedService: boolean = true;
 	protected parent: InstanceType<typeof StageLinq>;
@@ -95,8 +101,10 @@ export abstract class Service<T> extends EventEmitter {
 	constructor(p_parent:InstanceType<typeof StageLinq>, serviceHandler: InstanceType <typeof ServiceHandler>, deviceId?: DeviceId) {
 		super();
 		this.parent = p_parent;
+		//this.type = Service<T>;
 		this._handler = serviceHandler as ServiceHandler<T>;
 		this.deviceId = deviceId || null;
+		this.device = (deviceId ? this.parent.devices.device(deviceId) : null);
 	}
 	
 	async createServer(): Promise<Server> {
@@ -155,6 +163,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	private async dataHandler(p_data: Buffer, socket: Socket) {
 
+
 		//append queue to current data
 		let buffer: Buffer = null;
 		if ( this.messageBuffer && this.messageBuffer.length > 0) {
@@ -168,6 +177,7 @@ export abstract class Service<T> extends EventEmitter {
 		const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 		let ctx = new ReadContext(arrayBuffer, false);
 
+	
 		// 	Notes on isBufferedService
 		// 	some simple services (Directory, TimeSync, others..) 
 		//	might receive data the is hard to parse with the buffer.
@@ -196,7 +206,9 @@ export abstract class Service<T> extends EventEmitter {
 			ctx.readUInt16(); //read port, though we don't need it
 			
 			Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${this.deviceId.toString()}`);
-			
+			if (this.device) {
+				this.device.parent.emit('newService', this.device, this)
+			}
 			const parsedData = this.parseServiceData(messageId, this.deviceId, serviceName, socket);
 			this.messageHandler(parsedData);
 		} 
@@ -264,7 +276,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	//	callback for timeout timer
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>, handler: ServiceHandler<T>) {
-		Logger.silly(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
+		Logger.debug(`closing ${serviceName} server for ${deviceId.toString()} due to timeout`);
 		
 		await server.close();
 		let serverName = serviceName;
@@ -275,6 +287,7 @@ export abstract class Service<T> extends EventEmitter {
 		assert(!handler.hasDevice(deviceId));
 		
 		const service = parent.services[serviceName]
+		parent.devices.deleteService(deviceId, serviceName);
 		await service.deleteDevice(deviceId);
 		assert(!service.hasDevice(deviceId));
 	}

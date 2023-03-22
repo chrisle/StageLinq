@@ -66,21 +66,23 @@ export class Discovery {
         this.options = options;
         this.deviceId = new DeviceId(options.token)
 
-        await this.listenForDevices( (connectionInfo) => {
+        await this.listenForDevices( (connectionInfo: ConnectionInfo) => {
             
-            if (!this.parent.devices.hasDeviceIdString(deviceIdFromBuff(connectionInfo.token)) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
-                const deviceId = new DeviceId(connectionInfo.token)
-                this.peers.set(deviceId.toString(), connectionInfo);
-                this.parent.devices.setInfo(deviceId, connectionInfo);
-                Logger.debug(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${deviceId.toString()}`)
+            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
+                //const deviceId = new DeviceId(connectionInfo.token)
+                
+                const device = this.parent.devices.addDevice(connectionInfo);
+                this.peers.set(device.deviceId.toString(), connectionInfo);
+                Logger.debug(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.toString()}`)
             } else {
                 this.hasLooped = true;
             }
 
-            if (this.parent.devices.hasDeviceIdString(deviceIdFromBuff(connectionInfo.token)) && this.parent.devices.getDeviceInfoFromString(deviceIdFromBuff(connectionInfo.token)).port !== connectionInfo.port) {
+            if (deviceTypes[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.token) && this.parent.devices.device(connectionInfo.token).info.port !== connectionInfo.port) {
                 const deviceId = new DeviceId(connectionInfo.token)
+                
                 this.peers.set(deviceId.toString(), connectionInfo);
-                this.parent.devices.setInfo(deviceId, connectionInfo);
+                this.parent.devices.device(deviceId.toString()).info = connectionInfo;
                 Logger.debug(`Updated port for From ${deviceId.toString()}`)
             } 
         });

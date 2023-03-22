@@ -6,7 +6,7 @@ import { Logger } from '../LogEmitter';
 import type { ServiceMessage, DeviceId } from '../types';
 import { Socket } from 'net';
 
-type beatCallback = (n: BeatData) => void;
+type beatCallback = (n: ServiceMessage<BeatData>) => void;
 
 type BeatOptions = {
 	everyNBeats: number,
@@ -26,7 +26,7 @@ export interface BeatData {
 
 export declare interface BeatInfoHandler {
 	on(event: 'newBeatInfoDevice', listener: (device: Service<BeatData>) => void): this;
-	on(event: 'beatMsg', listener: (beatData: BeatData, device: Service<BeatData>) => void): this;
+	on(event: 'beatMsg', listener: (beatData: ServiceMessage<BeatData>, device: Service<BeatData>) => void): this;
   }
 
 export class BeatInfoHandler extends ServiceHandler<BeatData> {
@@ -43,14 +43,14 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 			//beatInfo.startBeatInfo(beatCallback, beatOptions, socket);
 			this.emit('newBeatInfoDevice', beatInfo)
 		}); 
-		beatInfo.on('beatMessage', (message: BeatData) => {
+		beatInfo.on('beatMessage', (message: ServiceMessage<BeatData>) => {
 			this.emit('beatMsg', message, beatInfo)
 		})
 	}
   }
 
 export declare interface BeatInfo {
-    on(event: 'beatMessage', listener: (message: BeatData) => void): this;
+    on(event: 'beatMessage', listener: (message: ServiceMessage<BeatData>) => void): this;
   }
 
 export class BeatInfo extends Service<BeatData> {
@@ -122,9 +122,9 @@ export class BeatInfo extends Service<BeatData> {
             if (!this._currentBeatData) {
                 this._currentBeatData = p_data.message
                 if (this._userBeatCallback) {
-					this._userBeatCallback(p_data.message);
+					this._userBeatCallback(p_data);
 				}
-				this.emit('beatMessage', p_data.message)
+				this.emit('beatMessage', p_data)
 				
             } 
     
@@ -140,7 +140,7 @@ export class BeatInfo extends Service<BeatData> {
             if (hasUpdated) {
                 this._currentBeatData = p_data.message;
                 if (this._userBeatCallback) {
-					this._userBeatCallback(p_data.message);
+					this._userBeatCallback(p_data);
 				}
 				this.emit('beatMessage', p_data.message)
 				

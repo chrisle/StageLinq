@@ -1,105 +1,93 @@
+import { EventEmitter } from 'events';
 import * as Services from '../services';
-//import { Socket } from 'net';
-import { ConnectionInfo, DeviceId, IpAddressPort, } from '../types';
-//import { Logger } from '../LogEmitter';
-import { sleep } from '../utils';
+import { ConnectionInfo, DeviceId } from '../types';
 
 
-
-//type DeviceService = Map<string, InstanceType<typeof Services.Service>>;
-
-interface ServicesList {
-  [key: string]: InstanceType<typeof Services.Service>;
-}
-
-//type DeviceSocket = Map<string, Socket>;
-
-type IpAddressPortDeviceId = Map<IpAddressPort, DeviceId>;
-
-export interface IDevice {
-  [key: string]: {
-    info: ConnectionInfo;
-    services?: ServicesList;
-   
+export declare interface Devices {
+	on(event: 'newDevice', listener: (device: Device) => void): this;
+	on(event: 'newService', listener: (device: Device, service: InstanceType<typeof Services.Service>) => void): this;
   }
-}
 
+export class Devices extends EventEmitter {
+  private _devices: Map<string, Device> = new Map();
 
-export class Devices {
-  private _devices: IDevice = {};
-  public devices: IDevice = {};
-  //private devices: Map<DeviceId, Device> = new Map(); 
+  getDevices() {
+    return [...this._devices.entries()]
+  }
 
-  getInfo(deviceId: DeviceId) {
-    return this._devices[deviceId.toString()].info;
-  } 
+  addDevice(info: ConnectionInfo): Device {
+    const device = new Device(info, this);
+    this._devices.set(device.deviceId.toString(), device)
+    this.emit('newDevice', device)
+    return device
+  }
 
-  setInfo(deviceId: DeviceId, info: ConnectionInfo) {
-    if (!this._devices[deviceId.toString()]) {
-      this._devices[deviceId.toString()] = {
-        info: info
-      };
-    } else {
-      this._devices[deviceId.toString()].info = info;
+  device(deviceId: string | Uint8Array | DeviceId): Device {
+    if (typeof deviceId == "string") {
+      return this._devices.get(deviceId) 
     }
+    if (deviceId instanceof DeviceId) {
+      const _deviceId = deviceId as DeviceId
+      return this._devices.get(_deviceId.toString())
+    } 
+    if (typeof deviceId == "object") {
+      const deviceString = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
+      .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
+      .splice(1)
+      .join('-') as string
+      return this._devices.get(deviceString);
+    }
+  }
 
-    // if (!this.devices.has(deviceId)) {
-    //   this.devices.set(deviceId, new Device(info))
-    // } else {
-    //   //this.devices.set()
-    // }
-    
-  } 
-
-  createDevice(deviceId: DeviceId, info: ConnectionInfo) {
-    this.devices[deviceId.toString()].info = info;
-  } 
-
-  getService(deviceId: DeviceId, serviceName: string) {
-    return this._devices[deviceId.toString()].services[serviceName];
-  } 
-
-  setService(deviceId: DeviceId, serviceName: string, service: InstanceType<typeof Services.Service>) {
-    this._devices[deviceId.toString()].services[serviceName] = service;
-  } 
-
-  // getSocket(deviceId: DeviceId, serviceName: string) {
-  //   return this._devices[deviceId.toString()].socket.get(serviceName);
-  // } 
   
-  // setSocket(deviceId: DeviceId, serviceName: string, socket: Socket) {
-  //   this._devices[deviceId.toString()].socket.set(serviceName, socket);
-  // } 
-
-  hasDeviceId(deviceId: DeviceId) {
-    return !!this._devices[deviceId.toString()]
-  }
-
-  hasDeviceIdString(deviceIdString: string) {
-    return !!this._devices[deviceIdString]
-  }
-
-  getDeviceInfoFromString(deviceIdString: string): ConnectionInfo {
-    return this._devices[deviceIdString].info
-  }
-
-  async getDeviceIdFromIpAddressPort(ipAddressPort: IpAddressPort): Promise<DeviceId> {
-    //while (this.devices[key])
-    let devices: IpAddressPortDeviceId = new Map();
-
-    while (!devices.has(ipAddressPort)) {
-      const keys = Object.keys(this._devices);
-      for (const key of keys) {
-        if (this._devices[key].info) {
-          //Logger.warn(`found ${key}`)
-          devices.set(ipAddressPort, new DeviceId(key))
-        }
-      }
-      await sleep(250);
+  hasDevice(deviceId: Uint8Array | string | DeviceId) {
+    if (typeof deviceId == "string") {
+      return this._devices.has(deviceId)
+    } 
+    if (deviceId instanceof DeviceId) { 
+      const _deviceId = deviceId as DeviceId
+      return this._devices.has(_deviceId.toString())
+    } 
+    if  (typeof deviceId == "object"){
+      return this._devices.has(/(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
+      .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
+      .splice(1)
+      .join('-') as string)
     }
-    
-    return devices.get(ipAddressPort)
-
   }
 
+  addService(deviceId: DeviceId, service: InstanceType<typeof Services.Service> ) {
+    const device = this.device(deviceId.toString())
+    device.addService(service) 
+  }
+
+  deleteService(deviceId: DeviceId, serviceName: string) {
+    const device = this.device(deviceId.toString());
+    device.deleteService(serviceName)
+  }
+
+}
+
+export class Device extends EventEmitter {
+  readonly parent: Devices;
+  readonly deviceId: DeviceId;
+  info: ConnectionInfo;
+  private services: Map<string, InstanceType<typeof Services.Service>> = new Map();
+
+  constructor(info: ConnectionInfo, parent: Devices) {
+    super();
+    this.deviceId = new DeviceId(info.token);
+    this.parent = parent;
+    this.info = info;
+  }
+
+  addService(service: InstanceType<typeof Services.Service>) {
+    this.services.set(service.name, service)
+  }
+
+  deleteService(serviceName: string) {
+    this.services.delete(serviceName)
+  }
+
+  
 }

@@ -1,7 +1,7 @@
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceHandler } from './Service';
-import { ServiceMessage, ServicePorts, MessageId, Tokens, DeviceId } from '../types';
+import { ServiceMessage, ServicePorts, MessageId, Tokens, DeviceId, deviceTypes } from '../types';
 import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
 import { strict as assert } from 'assert';
@@ -9,6 +9,7 @@ import { WriteContext } from '../utils/WriteContext';
 import { FileTransfer } from './FileTransfer';
 import { StateMap } from './StateMap';
 import { BeatInfo } from './BeatInfo';
+import { TimeSynchronization } from './TimeSync';
 
 export interface DirectoryData {
   deviceId: string;
@@ -105,31 +106,43 @@ export class Directory extends Service<DirectoryData> {
 
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(Tokens.Listen);
+    if (!this.parent.devices.hasDevice(deviceId.toString())) {
+       await sleep(250);
+    }
 
     let services: InstanceType<typeof Service>[] = []
     for (const serviceName of Object.keys(this.parent.services)) {
     //for (const serviceName of this.parent.serviceList) {
-      switch (serviceName) {
-        case 'FileTransfer': {
-          //const fileTransfer = await this.parent.startServiceListener(FileTransfer, deviceId);
-          const fileTransfer = await this.parent.services[serviceName].startServiceListener(FileTransfer, this.parent, deviceId);
-          services.push(fileTransfer);
-          break;
+      const device =  this.parent.devices.device(deviceId.toString());
+    if (device && !!deviceTypes[device.info?.software?.name]) {
+        switch (serviceName) {
+          case 'FileTransfer': {
+            //const fileTransfer = await this.parent.startServiceListener(FileTransfer, deviceId);
+            const fileTransfer = await this.parent.services[serviceName].startServiceListener(FileTransfer, this.parent, deviceId);
+            services.push(fileTransfer);
+            break;
+          }
+          case 'StateMap': {
+            const stateMap = await this.parent.services[serviceName].startServiceListener(StateMap, this.parent, deviceId);
+            services.push(stateMap);
+            break;
+          }
+          case 'BeatInfo': {
+            //const beatInfo = await this.parent.startServiceListener(BeatInfo, deviceId);
+            const beatInfo = await this.parent.services[serviceName].startServiceListener(BeatInfo, this.parent, deviceId);
+            services.push(beatInfo);
+            break;
+          }
+          case 'TimeSynchronization': {
+            const timeSync = await this.parent.services[serviceName].startServiceListener(TimeSynchronization, this.parent, deviceId);
+            services.push(timeSync);
+            break;
+          }
+          default:
+            break;
         }
-        case 'StateMap': {
-          const stateMap = await this.parent.services[serviceName].startServiceListener(StateMap, this.parent, deviceId);
-          services.push(stateMap);
-          break;
-        }
-        case 'BeatInfo': {
-          //const beatInfo = await this.parent.startServiceListener(BeatInfo, deviceId);
-          const beatInfo = await this.parent.services[serviceName].startServiceListener(BeatInfo, this.parent, deviceId);
-          services.push(beatInfo);
-          break;
-        }
-        default:
-          break;
       }
+      
     }
 
     //this.parent.services[deviceId.toString()] = new Map();
@@ -144,7 +157,7 @@ export class Directory extends Service<DirectoryData> {
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
 
-      Logger.silly(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`);
+      Logger.debug(`${deviceId.toString()} Created new ${service.name} on port ${service.serverInfo.port}`);
       
     }
 
