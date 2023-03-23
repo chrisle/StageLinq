@@ -29,16 +29,8 @@ export class Databases extends EventEmitter {
   async downloadDb(source: Source) {
 
     Logger.debug(`downloadDb request for ${source.name}`);
-
-    //const source = this.parent.getSource(sourceName);
-
-    //let thisTxid: number = 0
-
     const dbPath = getTempFilePath(`${source.deviceId.string}/${source.name}/m.db`);
-
-    Logger.info(`Reading database ${source.deviceId.string}/${source.name}`);
-    //this.emit('dbDownloading', source.name, dbPath);
-
+    Logger.debug(`Reading database ${source.deviceId.string}/${source.name}`);
 
     source.database.local = {
       path: dbPath,

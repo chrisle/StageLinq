@@ -69,7 +69,7 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 		return service;
 	}
 
-	protected abstract setupService(service: InstanceType<typeof Service>, deviceId?: DeviceId): void;
+	protected abstract setupService(service: any, deviceId?: DeviceId): void;
 }
 
 

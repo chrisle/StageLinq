@@ -3,9 +3,8 @@ import { DeviceId, deviceIdFromBuff } from '../devices'
 import { Socket, RemoteInfo } from 'dgram';
 import * as UDPSocket from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from '../types/common';
-import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
-import { sleep, WriteContext } from '../utils';
+import { sleep, WriteContext, ReadContext } from '../utils';
 import { networkInterfaces } from 'os';
 import { subnet, SubnetInfo } from 'ip';
 import { Logger } from '../LogEmitter';
@@ -37,8 +36,12 @@ export class Discovery {
     private announceTimer: NodeJS.Timer;
     private hasLooped: boolean = false;
 
-    constructor(_parent: InstanceType<typeof StageLinq>) {
-        this.parent = _parent;
+    /**
+     * @constructor
+     * @param parent StageLinq Instance
+     */
+    constructor(parent: InstanceType<typeof StageLinq>) {
+        this.parent = parent;
     }
 
     public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {

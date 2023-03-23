@@ -180,11 +180,14 @@ async function main() {
     stageLinq.fileTransfer.on('dbNewSource', (_source: Source) => {
       console.log(`New Source Available (${_source.name})`);
       source.set(_source.name, _source)
+     
     });
 
     stageLinq.databases.on('dbDownloaded', (_source: Source) => {
       console.log(`New Downloaded Database (${_source.name})`);
       source.set(_source.name, _source);
+      const sources = stageLinq.sources.getSources();
+      console.dir(sources);
     });
 
   }

@@ -17,20 +17,32 @@ export class Sources extends EventEmitter {
     this.parent = parent;
   }
 
+  /** 
+   * 
+   * @param {string} sourceName - Name of source in EngineOS, eg: 'DJ STICK (USB 1)'
+   * @param {DeviceId} deviceId - DeviceID instance
+   * @returns boolean
+   */
   hasSource(sourceName: string, deviceId: DeviceId): boolean {
     return this._sources.has(`${sourceName}${deviceId.string}`);
   }
 
+  /**
+   * 
+   * @param sourceName Name of source in EngineOS, eg: 'DJ STICK (USB 1)'
+   * @param deviceId DeviceID instance
+   * @returns Source
+   */
   getSource(sourceName: string, deviceId: DeviceId): Source {
     return this._sources.get(`${sourceName}${deviceId.string}`);
   }
 
+  /**
+   * Add a new Source
+   * @param source 
+   */
   setSource(source: Source) {
     this._sources.set(`${source.name}${source.deviceId.string}`, source);
-  }
-
-  getSourceList(): string[] {
-    return [...this._sources.keys()]
   }
 
   getSources(): Source[] {

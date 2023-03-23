@@ -64,27 +64,19 @@ export class StageLinq extends EventEmitter {
     for (let service of this.options.services) {
       switch (service) {
         case "StateMap": {
-          const stateMap = new Services.StateMapHandler(this, service);
-          this.services[service] = stateMap
-          this.stateMap = stateMap
+          this.stateMap = new Services.StateMapHandler(this, service);
           break;
         }
         case "FileTransfer": {
-          const fileTransfer = new Services.FileTransferHandler(this, service);
-          this.services[service] = fileTransfer;
-          this.fileTransfer = fileTransfer;
+          this.fileTransfer = new Services.FileTransferHandler(this, service);
           break;
         }
         case "BeatInfo": {
-          const beatInfo = new Services.BeatInfoHandler(this, service);
-          this.services[service] = beatInfo;
-          this.beatInfo = beatInfo;
+          this.beatInfo = new Services.BeatInfoHandler(this, service);
           break;
         }
         case "TimeSynchronization": {
-          const timeSync = new Services.TimeSynchronizationHandler(this, service);
-          this.services[service] = timeSync;
-          this.timeSync = timeSync;
+          this.timeSync = new Services.TimeSynchronizationHandler(this, service);
           break;
         }
         default:
@@ -123,7 +115,6 @@ export class StageLinq extends EventEmitter {
 
     //Directory is required
     const directory = new Services.DirectoryHandler(this, Services.Directory.name)
-    this.services[Services.Directory.name] = directory;
     this.directory = await directory.startServiceListener(Services.Directory, this);
 
     //  Announce myself with Directory port
@@ -146,6 +137,4 @@ export class StageLinq extends EventEmitter {
       throw new Error(e);
     }
   }
-
-
 }
