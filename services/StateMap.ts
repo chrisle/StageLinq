@@ -30,12 +30,12 @@ function stateReducer(obj: any, prefix: string): string[] {
 
 const playerStateValues = stateReducer(stagelinqConfig.player, '/');
 const mixerStateValues = stateReducer(stagelinqConfig.mixer, '/');
-const controllerStateValues = [...playerStateValues,  ...mixerStateValues];
+const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 
-export type StateMapDevice = InstanceType<typeof Services.StateMap> 
+export type StateMapDevice = InstanceType<typeof Services.StateMap>
 
 export interface StateData {
-  service: InstanceType<typeof Services.StateMap> 
+  service: InstanceType<typeof Services.StateMap>
   name?: string;
   json?: {
     type: number;
@@ -63,9 +63,9 @@ export class StateMapHandler extends ServiceHandler<StateData> {
 
     stateMap.addListener('stateMessage', listener)
 
-    stateMap.on('newDevice',  ( service: InstanceType<typeof Services.StateMap>) => {
+    stateMap.on('newDevice', (service: InstanceType<typeof Services.StateMap>) => {
       Logger.debug(`New StateMap Device ${service.deviceId.string}`)
-      this.emit('newDevice',  service);
+      this.emit('newDevice', service);
       assert(service);
     })
   }
@@ -75,7 +75,7 @@ export class StateMap extends Service<StateData> {
   public readonly name = "StateMap";
   public readonly handler: StateMapHandler;
 
-  constructor(p_parent:InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
+  constructor(p_parent: InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
     super(p_parent, serviceHandler, deviceId)
     this.handler = this._handler as StateMapHandler
   }
@@ -95,12 +95,12 @@ export class StateMap extends Service<StateData> {
           await this.subscribeState(state, 0, socket);
         }
         let playerDeckStateValues: string[] = [];
-        for (let i=0; i< thisPeer.device.decks; i++) {
-          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i+1}/`)];
-        } 
+        for (let i = 0; i < thisPeer.device.decks; i++) {
+          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i + 1}/`)];
+        }
         for (let state of playerDeckStateValues) {
-          const stateValue = `${this.deviceId.string},/${state.split('/').slice(1,3).join("/")}`
-          const newValue = `{${this.deviceId}},${state.split('/').slice(2,3).shift().substring(4,5)}`
+          const stateValue = `${this.deviceId.string},/${state.split('/').slice(1, 3).join("/")}`
+          const newValue = `{${this.deviceId}},${state.split('/').slice(2, 3).shift().substring(4, 5)}`
           this.handler.deviceTrackRegister.set(stateValue, newValue);
           await this.subscribeState(state, 0, socket);
         }
@@ -111,9 +111,9 @@ export class StateMap extends Service<StateData> {
           await this.subscribeState(state, 0, socket);
         }
         let playerDeckStateValues: string[] = [];
-        for (let i=0; i< thisPeer.device.decks; i++) {
-          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i+1}/`)];
-        } 
+        for (let i = 0; i < thisPeer.device.decks; i++) {
+          playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i + 1}/`)];
+        }
         for (let state of playerDeckStateValues) {
           await this.subscribeState(state, 0, socket);
         }
@@ -125,12 +125,12 @@ export class StateMap extends Service<StateData> {
         }
         break;
       }
-      default: 
-      break;
+      default:
+        break;
     }
   }
 
-  protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
+  protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`)
     sleep(500)
     assert(socket);
@@ -158,12 +158,12 @@ export class StateMap extends Service<StateData> {
             deviceId: this.deviceId,
             socket: socket,
             message: {
-              name: name,     
+              name: name,
               service: this,
               json: json,
             },
           };
-        } catch(err) {
+        } catch (err) {
           Logger.error(this.name, jsonString, err);
         }
       }
@@ -182,41 +182,40 @@ export class StateMap extends Service<StateData> {
           },
         };
       }
-      default: 
-      break;
+      default:
+        break;
     }
     assert.fail(`Unhandled type ${type}`);
   }
 
   private mixerAssignmentAdapter(data: ServiceMessage<StateData>) {
-    const keyString = `${this.deviceId.string},/Mixer/CH${data.message.name.substring(data.message.name.length-1,data.message.name.length)}faderPosition`
+    const keyString = `${this.deviceId.string},/Mixer/CH${data.message.name.substring(data.message.name.length - 1, data.message.name.length)}faderPosition`
     const valueString = `${data.message.json.string},/Mixer/ChannelFaderPosition`;
     this.handler.deviceTrackRegister.set(keyString, valueString);
   }
 
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
     //TODO do we need to emit intervals?
-    if (p_data?.message?.name.substring(0,p_data?.message?.name?.length-1) == "/Mixer/ChannelAssignment") {
+    if (p_data?.message?.name.substring(0, p_data?.message?.name?.length - 1) == "/Mixer/ChannelAssignment") {
       this.mixerAssignmentAdapter(p_data);
     }
-    
+
     if (p_data?.message?.interval) {
-      
+
     } else {
       this.emit('stateMessage', p_data);
     }
 
-    if (p_data && p_data.message.json) { 
+    if (p_data && p_data.message.json) {
       Logger.silly(
-       `${p_data.deviceId.string} ${p_data.message.name} => ${
-         p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
-       }`
-     );
+        `${p_data.deviceId.string} ${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
+        }`
+      );
     }
   }
 
   private async subscribeState(p_state: string, p_interval: number, socket: Socket) {
-    
+
     const getMessage = function (): Buffer {
       const ctx = new WriteContext();
       ctx.writeFixedSizedString(MAGIC_MARKER);
@@ -227,7 +226,7 @@ export class StateMap extends Service<StateData> {
     };
 
     const message = getMessage();
-    
+
     const ctx = new WriteContext();
     ctx.writeUInt32(message.length);
     ctx.write(message)

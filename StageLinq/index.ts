@@ -1,11 +1,11 @@
 import { Discovery } from '../network';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions, ConnectionInfo, ServiceMessage} from '../types';
-import {Devices, DeviceId} from '../devices'
+import { ActingAsDevice, StageLinqOptions, ConnectionInfo, ServiceMessage } from '../types';
+import { Devices, DeviceId } from '../devices'
 import { Databases, Sources } from '../Databases';
 import * as Services from '../services';
-import { Status }  from '../status/Status';
+import { Status } from '../status/Status';
 import { Server } from 'net';
 
 
@@ -20,10 +20,10 @@ export interface ServiceHandlers {
 }
 
 export declare interface StageLinq {
-  
+
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => void): this;
-  on(event: 'stateMessage', listener: ( message: ServiceMessage<Services.StateData>) => void): this;
+  on(event: 'stateMessage', listener: (message: ServiceMessage<Services.StateData>) => void): this;
   on(event: 'ready', listener: () => void): this;
   on(event: 'connection', listener: (serviceName: string, deviceId: DeviceId) => void): this;
   on(event: 'fileProgress', listener: (path: string, total: number, bytesDownloaded: number, percentComplete: number) => void): this;
@@ -36,11 +36,11 @@ export class StageLinq extends EventEmitter {
 
   public options: StageLinqOptions;
   public services: ServiceHandlers = {};
-  
+
   public readonly devices = new Devices();
   public readonly logger: Logger = Logger.instance;
   public readonly discovery: Discovery = new Discovery(this);
-  
+
   public readonly stateMap: InstanceType<typeof Services.StateMapHandler> = null;
   public readonly fileTransfer: InstanceType<typeof Services.FileTransferHandler> = null;
   public readonly beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
@@ -52,16 +52,16 @@ export class StageLinq extends EventEmitter {
   private _databases: Databases;
   private _sources: Sources;
   private servers: Map<string, Server> = new Map();
- 
+
   constructor(options?: StageLinqOptions) {
     super();
     this.options = options || DEFAULT_OPTIONS;
     this._databases = new Databases(this);
     this._sources = new Sources(this);
     this.status = new Status(this);
-    
+
     //TODO make this into factory function?
-    for (let service of this.options.services) {  
+    for (let service of this.options.services) {
       switch (service) {
         case "StateMap": {
           const stateMap = new Services.StateMapHandler(this, service);
@@ -88,7 +88,7 @@ export class StageLinq extends EventEmitter {
           break;
         }
         default:
-        break;
+          break;
       }
     }
   }
@@ -102,7 +102,7 @@ export class StageLinq extends EventEmitter {
     return this._sources
   }
 
-  addServer(serverName: string , server: Server) {
+  addServer(serverName: string, server: Server) {
     this.servers.set(serverName, server);
   }
 
@@ -120,14 +120,14 @@ export class StageLinq extends EventEmitter {
   async connect() {
     //  Initialize Discovery agent
     await this.discovery.init(this.options.actingAs);
-  
+
     //Directory is required
     const directory = new Services.DirectoryHandler(this, Services.Directory.name)
     this.services[Services.Directory.name] = directory;
     this.directory = await directory.startServiceListener(Services.Directory, this);
-    
+
     //  Announce myself with Directory port
-    await this.discovery.announce(this.directory.serverInfo.port);   
+    await this.discovery.announce(this.directory.serverInfo.port);
   }
 
   /**
@@ -140,12 +140,12 @@ export class StageLinq extends EventEmitter {
       for (let [serviceName, server] of servers) {
         Logger.debug(`Closing ${serviceName} server port ${server.address()}`)
         server.close;
-      }      
+      }
       await this.discovery.unannounce();
     } catch (e) {
       throw new Error(e);
     }
   }
 
-  
+
 }

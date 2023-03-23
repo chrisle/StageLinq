@@ -58,7 +58,7 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
 
 export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
-  
+
   private receivedFile: WriteContext = null;
   private _isAvailable: boolean = true;
   private txId: number = 1;
@@ -67,9 +67,9 @@ export class FileTransfer extends Service<FileTransferData> {
   public get txid() {
     return this.txId;
   }
-  
 
-  protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
+
+  protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
     assert((socket));
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`)
     return
@@ -85,12 +85,12 @@ export class FileTransfer extends Service<FileTransferData> {
     const txId = p_ctx.readUInt32();
 
     const messageId: MessageId = p_ctx.readUInt32();
-    
+
     switch (messageId) {
       case MessageId.RequestSources: {
         assert(p_ctx.readUInt32() === 0x0)
         assert(p_ctx.isEOF());
-        
+
         return {
           id: MessageId.RequestSources,
           deviceId: this.deviceId,
@@ -181,7 +181,7 @@ export class FileTransfer extends Service<FileTransferData> {
         const chunksize = p_ctx.readUInt32();
         assert(chunksize === p_ctx.sizeLeft());
         assert(p_ctx.sizeLeft() <= CHUNK_SIZE);
-        
+
         return {
           id: messageId,
           deviceId: this.deviceId,
@@ -208,7 +208,7 @@ export class FileTransfer extends Service<FileTransferData> {
       }
 
       case MessageId.DeviceShutdown: {
-       // This message seems to be sent from connected devices when shutdown is started
+        // This message seems to be sent from connected devices when shutdown is started
         if (p_ctx.sizeLeft() > 0) {
           const msg = p_ctx.readRemainingAsNewBuffer().toString('hex');
           Logger.debug(msg)
@@ -280,7 +280,7 @@ export class FileTransfer extends Service<FileTransferData> {
           while (this.receivedFile.isEOF() === false) {
             const bytesDownloaded = total - this.receivedFile.sizeLeft();
             const percentComplete = (bytesDownloaded / total) * 100;
-            this.emit('fileTransferProgress', p_location.split('/').pop(), this.txId,{
+            this.emit('fileTransferProgress', p_location.split('/').pop(), this.txId, {
               sizeLeft: this.receivedFile.sizeLeft(),
               total: txinfo.size,
               bytesDownloaded: bytesDownloaded,
@@ -300,7 +300,7 @@ export class FileTransfer extends Service<FileTransferData> {
         Logger.error(msg);
         throw new Error(msg);
       }
-      
+
       Logger.debug(`Signaling transfer complete.`);
       await this.signalTransferComplete(socket);
       this.txId++
@@ -336,7 +336,7 @@ export class FileTransfer extends Service<FileTransferData> {
                 device: this.deviceId.string,
               }
             },
-            
+
           }
           this.emit('dbNewSource', thisSource);
           this.parent.sources.setSource(thisSource);
@@ -351,7 +351,7 @@ export class FileTransfer extends Service<FileTransferData> {
   }
 
 
-  
+
 
 
   ///////////////////////////////////////////////////////////////////////////

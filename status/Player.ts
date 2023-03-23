@@ -51,7 +51,7 @@ export class Player extends EventEmitter {
   private masterStatus: boolean;    // If this device has the matser tempo
   private decks: Map<string, PlayerLayerState> = new Map();
   private lastTrackNetworkPath: Map<string, string> = new Map();
-  private queue: {[layer: string]: PlayerMessageQueue} = {};
+  private queue: { [layer: string]: PlayerMessageQueue } = {};
   private deviceId: DeviceId;
   public readonly ready: boolean = false;
 
@@ -93,7 +93,7 @@ export class Player extends EventEmitter {
     const json = message.json as any;
 
     //check if message is for this Player
-    if(data.deviceId.string !== this.deviceId.string) return;
+    if (data.deviceId.string !== this.deviceId.string) return;
 
     if (/Client\/Preferences\/Player$/.test(name)) {
       this.player = parseInt(json.string);
@@ -112,27 +112,27 @@ export class Player extends EventEmitter {
 
     const deck =
       (/PlayerJogColor[A-D]$/.test(name)) ? split[3].replace('PlayerJogColor', '')
-      : (/Engine\/Deck\d\//.test(name)) ? this.deckNumberToLayer(split[2])
-      : null;
+        : (/Engine\/Deck\d\//.test(name)) ? this.deckNumberToLayer(split[2])
+          : null;
 
     const cueData =
-        (/PlayState$/.test(name)) ? { playState: json.state }
-      : (/Track\/TrackNetworkPath$/.test(name)) ? {
+      (/PlayState$/.test(name)) ? { playState: json.state }
+        : (/Track\/TrackNetworkPath$/.test(name)) ? {
           trackNetworkPath: json.string,
           source: this.getSourceAndTrackPath(json.string).source,
           trackPath: this.getSourceAndTrackPath(json.string).trackPath,
           trackPathAbsolute: this.getSourceAndTrackPath(json.string).trackPathAbsolute
         }
-      : (/Track\/SongLoaded$/.test(name)) ? { songLoaded: json.state }
-      : (/Track\/SongName$/.test(name)) ? { title: json.string }
-      : (/Track\/ArtistName$/.test(name)) ? { artist: json.string }
-      : (/Track\/TrackData$/.test(name)) ? { hasTrackData: json.state }
-      : (/Track\/TrackName$/.test(name)) ? { fileLocation: json.string }
-      : (/CurrentBPM$/.test(name)) ? { currentBpm: json.value }
-      : (/ExternalMixerVolume$/.test(name)) ? { externalMixerVolume: json.value }
-      : (/Play$/.test(name)) ? { play: json.state }
-      : (/PlayerJogColor[A-D]$/.test(name)) ? { jogColor: json.color }
-      : null;
+          : (/Track\/SongLoaded$/.test(name)) ? { songLoaded: json.state }
+            : (/Track\/SongName$/.test(name)) ? { title: json.string }
+              : (/Track\/ArtistName$/.test(name)) ? { artist: json.string }
+                : (/Track\/TrackData$/.test(name)) ? { hasTrackData: json.state }
+                  : (/Track\/TrackName$/.test(name)) ? { fileLocation: json.string }
+                    : (/CurrentBPM$/.test(name)) ? { currentBpm: json.value }
+                      : (/ExternalMixerVolume$/.test(name)) ? { externalMixerVolume: json.value }
+                        : (/Play$/.test(name)) ? { play: json.state }
+                          : (/PlayerJogColor[A-D]$/.test(name)) ? { jogColor: json.color }
+                            : null;
 
     if (cueData) {
       this.queue[deck].push({ layer: deck, ...cueData });

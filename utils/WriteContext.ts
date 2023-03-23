@@ -88,7 +88,7 @@ export class WriteContext extends Context {
 		this.pos += 4;
 		return 4;
 	}
-	
+
 	writeInt32(p_value: number): number {
 		this.checkSize(4);
 		new DataView(this.buffer).setInt32(this.pos, p_value, this.littleEndian);

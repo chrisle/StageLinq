@@ -18,7 +18,7 @@ export interface DirectoryData {
 
 export class DirectoryHandler extends ServiceHandler<DirectoryData> {
   public name: string = "Directory"
-  
+
   public setupService(service: Service<DirectoryData>) {
     Logger.debug(`Setting up ${service.name}`);
   }
@@ -26,7 +26,7 @@ export class DirectoryHandler extends ServiceHandler<DirectoryData> {
 
 export class Directory extends Service<DirectoryData> {
   public readonly name = 'Directory';
-  
+
   protected readonly isBufferedService = false;
   protected timeAlive: number;
 
@@ -47,7 +47,7 @@ export class Directory extends Service<DirectoryData> {
       const id = ctx.readUInt32();
       const token = ctx.read(16);
       this.deviceId = new DeviceId(token);
-      
+
       const deviceInfo = this.parent.discovery.getConnectionInfo(this.deviceId);
 
       switch (id) {
@@ -91,44 +91,44 @@ export class Directory extends Service<DirectoryData> {
     assert(directoryMsg);
   }
 
-  private async sendServiceAnnouncement(deviceId: DeviceId, socket?: Socket): Promise<void> {  
+  private async sendServiceAnnouncement(deviceId: DeviceId, socket?: Socket): Promise<void> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(Tokens.Listen);
     if (!this.parent.devices.hasDevice(deviceId)) {
-       await sleep(250);
+      await sleep(250);
     }
 
     let services: InstanceType<typeof Service>[] = []
 
     for (const serviceName of Object.keys(this.parent.services)) {
-      const device =  this.parent.devices.device(deviceId.string);
+      const device = this.parent.devices.device(deviceId.string);
       if (device && !!deviceTypes[device.info?.software?.name]) {
-          switch (serviceName) {
-            case 'FileTransfer': {
-              const fileTransfer = await this.parent.services[serviceName].startServiceListener(FileTransfer, this.parent, deviceId);
-              services.push(fileTransfer);
-              break;
-            }
-            case 'StateMap': {
-              const stateMap = await this.parent.services[serviceName].startServiceListener(StateMap, this.parent, deviceId);
-              services.push(stateMap);
-              break;
-            }
-            case 'BeatInfo': {
-              const beatInfo = await this.parent.services[serviceName].startServiceListener(BeatInfo, this.parent, deviceId);
-              services.push(beatInfo);
-              break;
-            }
-            case 'TimeSynchronization': {
-              const timeSync = await this.parent.services[serviceName].startServiceListener(TimeSynchronization, this.parent, deviceId);
-              services.push(timeSync);
-              break;
-            }
-            default:
-              break;
+        switch (serviceName) {
+          case 'FileTransfer': {
+            const fileTransfer = await this.parent.services[serviceName].startServiceListener(FileTransfer, this.parent, deviceId);
+            services.push(fileTransfer);
+            break;
           }
+          case 'StateMap': {
+            const stateMap = await this.parent.services[serviceName].startServiceListener(StateMap, this.parent, deviceId);
+            services.push(stateMap);
+            break;
+          }
+          case 'BeatInfo': {
+            const beatInfo = await this.parent.services[serviceName].startServiceListener(BeatInfo, this.parent, deviceId);
+            services.push(beatInfo);
+            break;
+          }
+          case 'TimeSynchronization': {
+            const timeSync = await this.parent.services[serviceName].startServiceListener(TimeSynchronization, this.parent, deviceId);
+            services.push(timeSync);
+            break;
+          }
+          default:
+            break;
         }
+      }
     }
 
     for (const service of services) {

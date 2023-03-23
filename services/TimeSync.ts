@@ -12,7 +12,7 @@ const { performance } = require('perf_hooks');
 
 
 export interface TimeSyncData {
-	msgs: bigint[],
+    msgs: bigint[],
     timestamp: bigint,
 }
 
@@ -22,42 +22,42 @@ export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
 
     public setupService(service: TimeSynchronization, deviceId: DeviceId) {
         console.log(`Setting up ${service.name} for ${deviceId.string}`);
-        
-        service.on('newDevice',  ( _service: InstanceType<typeof Services.TimeSynchronization>) => {
+
+        service.on('newDevice', (_service: InstanceType<typeof Services.TimeSynchronization>) => {
             Logger.debug(`New TimeSync Device ${service.deviceId.string}`)
             _service.sendTimeSyncRequest();
-          })   
+        })
     }
 }
 
 export class TimeSynchronization extends Service<TimeSyncData> {
-	public readonly name = "TimeSynchronization"
+    public readonly name = "TimeSynchronization"
     protected readonly isBufferedService: boolean = false;
     private localTime: bigint;
     private remoteTime: bigint;
     private avgTimeArray: bigint[] = [];
 
 
-	public async sendTimeSyncRequest() {
-		const ctx = new WriteContext();
-		ctx.write(new Uint8Array([0x0,0x0,0x0,0x0]));
+    public async sendTimeSyncRequest() {
+        const ctx = new WriteContext();
+        ctx.write(new Uint8Array([0x0, 0x0, 0x0, 0x0]));
         ctx.write(Tokens.Listen);
         ctx.write(new Uint8Array([0x0]));
         ctx.writeFixedSizedString('TimeSynchronization');
-		await this.write(ctx, this.socket);
-	}
+        await this.write(ctx, this.socket);
+    }
 
     private timeSyncMsgHelper(msgId: number, msgs: bigint[]): Buffer {
         const getMessage = function (): Buffer {
             const ctx = new WriteContext();
-            ctx.writeUInt32(msgId); 
+            ctx.writeUInt32(msgId);
             while (msgs.length) {
                 ctx.writeUInt64(msgs.shift())
             }
             return ctx.getBuffer()
         }
         const message = getMessage();
-        
+
         const ctx = new WriteContext();
         ctx.writeUInt32(message.length);
         ctx.write(message);
@@ -71,12 +71,12 @@ export class TimeSynchronization extends Service<TimeSyncData> {
 
     private sendTimeSyncQuery(localTime: bigint, remoteTime: bigint) {
         this.localTime = localTime;
-        const buffMsg = this.timeSyncMsgHelper(1,[this.localTime]);
+        const buffMsg = this.timeSyncMsgHelper(1, [this.localTime]);
         const ctx = new WriteContext()
         ctx.write(buffMsg)
         this.remoteTime = remoteTime;
         this.write(ctx, this.socket);
-     };
+    };
 
     // private async sendTimeSyncReply(interval: bigint, timeReceived: bigint): Promise<void> {
     //     const buffMsg = this.timeSyncMsgHelper(2,[interval,timeReceived]);
@@ -85,10 +85,10 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     //     await this.write(ctx, this.socket);
     // };
 
-	protected parseData(p_ctx: ReadContext): ServiceMessage<TimeSyncData> {
-		const timestamp = this.getTimeStamp();
+    protected parseData(p_ctx: ReadContext): ServiceMessage<TimeSyncData> {
+        const timestamp = this.getTimeStamp();
         const size = p_ctx.readUInt32();
-       
+
         if (size === 0) {
             const token = p_ctx.read(16);
             const deviceId = new DeviceId(token)
@@ -97,7 +97,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             console.log(deviceId.string, svcName, svcPort)
         } else {
             const id = p_ctx.readUInt32();
-		    const msgs: bigint[] = []
+            const msgs: bigint[] = []
             while (p_ctx.sizeLeft()) {
                 msgs.push(p_ctx.readUInt64())
             };
@@ -108,10 +108,10 @@ export class TimeSynchronization extends Service<TimeSyncData> {
                 message: {
                     msgs: msgs,
                     timestamp: timestamp,
-                }  
+                }
             }
         }
-	}
+    }
 
     private timeAvg(time: bigint) {
         if (this.avgTimeArray.length > 100) {
@@ -123,33 +123,33 @@ export class TimeSynchronization extends Service<TimeSyncData> {
         } else {
             this.avgTimeArray.push(time);
         }
-    } 
+    }
 
-	protected messageHandler(msg: ServiceMessage<TimeSyncData>): void {
+    protected messageHandler(msg: ServiceMessage<TimeSyncData>): void {
         if (!msg?.message) {
             return
         }
         switch (msg.id) {
             case 1:
-                this.sendTimeSyncQuery(msg.message.timestamp, msg.message.msgs.shift());  
-            break;
+                this.sendTimeSyncQuery(msg.message.timestamp, msg.message.msgs.shift());
+                break;
             case 2:
-                Logger.silly(msg.message)    
-                const localClock =  msg.message.timestamp - msg.message.msgs[0] 
-                const remoteClock =  msg.message.msgs[1] - this.remoteTime
-                Logger.silly(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))    
+                Logger.silly(msg.message)
+                const localClock = msg.message.timestamp - msg.message.msgs[0]
+                const remoteClock = msg.message.msgs[1] - this.remoteTime
+                Logger.silly(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))
                 this.timeAvg(remoteClock)
-            break;
+                break;
             default:
-            break;
-	    }
+                break;
+        }
     }
 
-    protected parseServiceData(messageId:number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<TimeSyncData> {
-		assert((socket));
-		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.string}`)
+    protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<TimeSyncData> {
+        assert((socket));
+        Logger.silly(`${messageId} to ${serviceName} from ${deviceId.string}`)
         this.emit('newDevice', this)
-		return
-      }
+        return
+    }
 }
 

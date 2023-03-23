@@ -1,13 +1,13 @@
 import { EventEmitter } from 'events';
 import * as Services from '../services';
 import { ConnectionInfo } from '../types';
-import { DeviceId} from '../devices'
+import { DeviceId } from '../devices'
 
 
 export declare interface Devices {
-	on(event: 'newDevice', listener: (device: Device) => void): this;
-	on(event: 'newService', listener: (device: Device, service: InstanceType<typeof Services.Service>) => void): this;
-  }
+  on(event: 'newDevice', listener: (device: Device) => void): this;
+  on(event: 'newService', listener: (device: Device, service: InstanceType<typeof Services.Service>) => void): this;
+}
 
 export class Devices extends EventEmitter {
   private _devices: Map<string, Device> = new Map();
@@ -25,41 +25,41 @@ export class Devices extends EventEmitter {
 
   device(deviceId: string | Uint8Array | DeviceId): Device {
     if (typeof deviceId == "string") {
-      return this._devices.get(deviceId) 
+      return this._devices.get(deviceId)
     }
     if (deviceId instanceof DeviceId) {
       const _deviceId = deviceId as DeviceId
       return this._devices.get(_deviceId.string)
-    } 
+    }
     if (typeof deviceId == "object") {
       const deviceString = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-      .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
-      .splice(1)
-      .join('-') as string
+        .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
+        .splice(1)
+        .join('-') as string
       return this._devices.get(deviceString);
     }
   }
 
-  
+
   hasDevice(deviceId: Uint8Array | string | DeviceId) {
     if (typeof deviceId == "string") {
       return this._devices.has(deviceId)
-    } 
-    if (deviceId instanceof DeviceId) { 
+    }
+    if (deviceId instanceof DeviceId) {
       const _deviceId = deviceId as DeviceId
       return this._devices.has(_deviceId.string)
-    } 
-    if  (typeof deviceId == "object"){
+    }
+    if (typeof deviceId == "object") {
       return this._devices.has(/(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-      .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
-      .splice(1)
-      .join('-') as string)
+        .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
+        .splice(1)
+        .join('-') as string)
     }
   }
 
-  addService(deviceId: DeviceId, service: InstanceType<typeof Services.Service> ) {
+  addService(deviceId: DeviceId, service: InstanceType<typeof Services.Service>) {
     const device = this.device(deviceId.string)
-    device.addService(service) 
+    device.addService(service)
   }
 
   deleteService(deviceId: DeviceId, serviceName: string) {

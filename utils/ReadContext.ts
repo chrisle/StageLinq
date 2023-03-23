@@ -33,17 +33,17 @@ export class ReadContext extends Context {
 		const newArrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.length);
 		return Buffer.from(newArrayBuffer);
 	}
-	
+
 	readRemainingAsNewArrayBuffer(): ArrayBuffer {
 		const view = this.readRemaining();
 		const newArrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.length);
 		return newArrayBuffer;
 	}
-	
+
 	readRemainingAsNewCtx(): ReadContext {
-		
+
 		const newArrayBuffer = this.buffer.slice(this.pos, this.pos + this.sizeLeft());
-		return new ReadContext(newArrayBuffer,false);
+		return new ReadContext(newArrayBuffer, false);
 	}
 
 	getString(p_bytes: number): string {

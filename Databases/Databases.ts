@@ -11,7 +11,7 @@ import { FileTransferProgress } from '../services';
 export declare interface Databases {
   on(event: 'dbDownloaded', listener: (source: Source) => void): this;
   on(event: 'dbDownloading', listener: (sourceName: string, dbPath: string) => void): this;
-  on(event: 'dbProgress', listener: (sourceName: string, txid: number,  progress: FileTransferProgress) => void): this;
+  on(event: 'dbProgress', listener: (sourceName: string, txid: number, progress: FileTransferProgress) => void): this;
 }
 
 export class Databases extends EventEmitter {
@@ -25,11 +25,11 @@ export class Databases extends EventEmitter {
   /**
    * Download databases from this network source.
    */
-  
+
   async downloadDb(source: Source) {
-    
+
     Logger.debug(`downloadDb request for ${source.name}`);
-    
+
     //const source = this.parent.getSource(sourceName);
 
     //let thisTxid: number = 0
@@ -39,13 +39,13 @@ export class Databases extends EventEmitter {
     Logger.info(`Reading database ${source.deviceId.string}/${source.name}`);
     //this.emit('dbDownloading', source.name, dbPath);
 
-   
+
     source.database.local = {
       path: dbPath,
     };
     source.database.connection = new DbConnection(dbPath)
 
-      // Save database to a file
+    // Save database to a file
     //thisTxid = source.service.txid;
     const file = await source.service.getFile(source.database.location, source.service.socket);
     Logger.info(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
@@ -56,12 +56,12 @@ export class Databases extends EventEmitter {
     this.parent.sources.setSource(source);
     Logger.info(`Downloaded ${source.deviceId.string}/${source.name} to ${dbPath}`);
     this.emit('dbDownloaded', source);
-    
-  } 
+
+  }
 
   // getDbPath(dbSourceName?: string) {
   //   const source = this.parent.sources.getSource(dbSourceName);
-    
+
   //   if (!source.database.size)
   //     throw new Error(`No data sources have been downloaded`);
 

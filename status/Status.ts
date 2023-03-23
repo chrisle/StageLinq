@@ -1,15 +1,15 @@
 import EventEmitter = require("events");
 import { StageLinq } from '../StageLinq';
-import { Player, PlayerOptions }  from '../status/Player';
-import {  PlayerStatus } from '../types';
-import { DeviceId} from '../devices'
+import { Player, PlayerOptions } from '../status/Player';
+import { PlayerStatus } from '../types';
+import { DeviceId } from '../devices'
 
 
 export declare interface Status {
     on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
     on(event: 'stateChanged', listener: (status: PlayerStatus) => void): this;
     on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
-  }
+}
 
 export interface StatusData extends PlayerStatus {
     deviceId: DeviceId
@@ -27,13 +27,13 @@ export class Status extends EventEmitter {
     addPlayer(options: PlayerOptions) {
         const player = new Player(options)
         this._players.set(options.deviceId.string, player);
-        player.on("nowPlaying", (status) =>{
+        player.on("nowPlaying", (status) => {
             this.emit("nowPlaying", status);
         })
-        player.on("stateChanged", (status) =>{
+        player.on("stateChanged", (status) => {
             this.emit("stateChanged", status);
         })
-        player.on("trackLoaded", (status) =>{
+        player.on("trackLoaded", (status) => {
             this.emit("trackLoaded", status);
         })
     }
