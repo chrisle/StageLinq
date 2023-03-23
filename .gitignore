@@ -1,5 +1,6 @@
 /localdb
 /dist
+/docs
 .clinic/
 
 # Logs
