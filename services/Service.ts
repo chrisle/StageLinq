@@ -57,20 +57,15 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 
 		const service = new ctor(parent, this, deviceId);
 		await service.listen();
+		
+		let serverName = `${ctor.name}`;
 		if (deviceId) {
 			this.parent.devices.addService(deviceId, service)
-		}
-
-		this.setupService(service, deviceId)
-
-		let serverName = `${ctor.name}`;
-
-		if (deviceId) {
 			serverName += deviceId.string;
 		}
-
+		this.setupService(service, deviceId)
+		
 		this.parent.addServer(serverName, service.server);
-
 		return service;
 	}
 
@@ -145,7 +140,7 @@ export abstract class Service<T> extends EventEmitter {
 	}
 
 	async listen(): Promise<AddressInfo> {
-		const server = await this.createServer()
+		const server = await this.createServer();
 		return server.address() as AddressInfo;
 	}
 
