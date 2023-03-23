@@ -1,13 +1,13 @@
 import { Discovery } from '../network';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions, ConnectionInfo, ServiceMessage, Source} from '../types';
+import { ActingAsDevice, StageLinqOptions, ConnectionInfo, ServiceMessage} from '../types';
 import {Devices, DeviceId} from '../devices'
 import { Databases, Sources } from '../Databases';
 import * as Services from '../services';
 import { Status }  from '../status/Status';
 import { Server } from 'net';
-import { assert } from 'console';
+
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -147,18 +147,5 @@ export class StageLinq extends EventEmitter {
     }
   }
 
-  async downloadFile(source: Source, path: string): Promise<Uint8Array> {
-   
-    const service = source.service;
-    assert(service);
-    await service.isAvailable();
-
-    try {
-      const file = await service.getFile(path,service.socket);
-      return file;
-    } catch (err) {
-      Logger.error(err);
-      throw new Error(err);
-    }
-  } 
+  
 }

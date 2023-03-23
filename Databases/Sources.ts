@@ -1,12 +1,11 @@
 import { EventEmitter } from 'events';
-//import * as Services from '../services';
 import { Source} from '../types';
 import { DeviceId } from '../devices'
 import { StageLinq } from '../StageLinq';
+import { Logger } from '../LogEmitter';
 
 export declare interface Sources {
-	//on(event: 'newSource', listener: (device: Device) => void): this;
-	//on(event: 'newService', listener: (device: Device, service: InstanceType<typeof Services.Service>) => void): this;
+	on(event: 'newSource', listener: (source: Source) => void): this;
 }
 
 export class Sources extends EventEmitter {
@@ -37,9 +36,18 @@ export class Sources extends EventEmitter {
   getSources(): Source[] {
     return [...this._sources.values()]
   }
+  
+  async downloadFile(source: Source, path: string): Promise<Uint8Array> {
+    const service = source.service;
+    await service.isAvailable();
 
-//   getSourcesArray()  {
-//     return this._sources.entries()
-//   }
+    try {
+      const file = await service.getFile(path,service.socket);
+      return file;
+    } catch (err) {
+      Logger.error(err);
+      throw new Error(err);
+    }
+  } 
 }  
 

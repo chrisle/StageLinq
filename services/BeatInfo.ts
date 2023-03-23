@@ -105,22 +105,22 @@ export class BeatInfo extends Service<BeatData> {
 	}
 
 	protected messageHandler(p_data: ServiceMessage<BeatData>): void {
-        if (p_data && p_data.message) {
-            function resCheck(res: number, prevBeat: number, currentBeat: number ): boolean {
-                if (res === 0) {
-					return true
-				} 
-				return ( Math.floor(currentBeat/res) - Math.floor(prevBeat/res)  >= 1) 
-                    || (  Math.floor(prevBeat/res) - Math.floor(currentBeat/res)   >= 1)	
-            }
-    
+       
+		function resCheck(res: number, prevBeat: number, currentBeat: number ): boolean {
+			if (res === 0) {
+				return true
+			} 
+			return ( Math.floor(currentBeat/res) - Math.floor(prevBeat/res)  >= 1) 
+				|| (  Math.floor(prevBeat/res) - Math.floor(currentBeat/res)   >= 1)	
+		}
+
+		if (p_data && p_data.message) {
             if (!this._currentBeatData) {
-                this._currentBeatData = p_data.message
-                if (this._userBeatCallback) {
-					this._userBeatCallback(p_data);
-					
+                this._currentBeatData = p_data.message;
+                this.emit('beatMessage', p_data);
+				if (this._userBeatCallback) {
+					this._userBeatCallback(p_data);	
 				}
-				this.emit('beatMessage', p_data)
             } 
     
             let hasUpdated = false;
@@ -136,10 +136,10 @@ export class BeatInfo extends Service<BeatData> {
 
             if (hasUpdated) {
                 this._currentBeatData = p_data.message;
-                if (this._userBeatCallback) {
+                this.emit('beatMessage', p_data.message);
+				if (this._userBeatCallback) {
 					this._userBeatCallback(p_data);
 				}
-				this.emit('beatMessage', p_data.message)
             }
         }
 	}

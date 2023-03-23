@@ -93,8 +93,6 @@ export abstract class Service<T> extends EventEmitter {
 	protected isBufferedService: boolean = true;
 	protected parent: InstanceType<typeof StageLinq>;
 	protected _handler: ServiceHandler<T> = null;
-
-	
 	protected timeout: NodeJS.Timer;
 
 	private messageBuffer: Buffer = null;
@@ -118,7 +116,6 @@ export abstract class Service<T> extends EventEmitter {
 				
 				if (this.name !== "Directory") {
 					const handler = this._handler as ServiceHandler<T>;
-	
 					handler.emit('connection', this.name, this.deviceId)
 					if (this.deviceId) {
 						handler.addDevice(this.deviceId, this)

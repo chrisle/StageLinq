@@ -89,6 +89,4 @@ export class Device extends EventEmitter {
   deleteService(serviceName: string) {
     this.services.delete(serviceName)
   }
-
-  
 }

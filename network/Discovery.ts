@@ -16,7 +16,7 @@ export interface DiscoveryMessageOptions {
     name: string;
     version: string;
     source: string;
-    token: Uint8Array; //TODO make this DeviceId?
+    token: Uint8Array; 
     port?: number
 };
 
@@ -39,7 +39,6 @@ export class Discovery {
   
     constructor(_parent: InstanceType<typeof StageLinq>) {
         this.parent = _parent;
-        
     }
 
     public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {
@@ -98,11 +97,9 @@ export class Discovery {
         }
 
         const ips = this.findBroadcastIPs()
-        
         const address = ips.filter(ip => {
             return ip.contains(this.address) === true
         });
-
         this.broadcastAddress = address.shift().broadcastAddress
         const msg = this.writeDiscoveryMessage(discoveryMessage)
         
@@ -115,8 +112,7 @@ export class Discovery {
         assert(this.announceTimer);
         clearInterval(this.announceTimer);
         this.announceTimer = null;
-        
-        let discoveryMessage = this.createDiscoveryMessage(Action.Logout, this.options);
+        const discoveryMessage = this.createDiscoveryMessage(Action.Logout, this.options);
         const msg = this.writeDiscoveryMessage(discoveryMessage)
 
         await this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);

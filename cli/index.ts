@@ -32,10 +32,8 @@ async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: 
   }
   try {
     const _source = stageLinq.sources.getSource(sourceName, deviceId);
-    //const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
     const connection = _source.database.connection;
     const result = await connection.getTrackInfo(trackName);
-    //connection.close();
     console.log('Database entry:', result);
     return result;
   } catch(e) {
@@ -50,7 +48,7 @@ async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: 
   }
   try {
     const _source = stageLinq.sources.getSource(sourceName, deviceId);
-    const data = await stageLinq.downloadFile(_source, path);
+    const data = await stageLinq.sources.downloadFile(_source, path);
     if (dest && data) {
       const filePath = `${dest}/${path.split('/').pop()}`
       
@@ -108,9 +106,6 @@ async function main() {
   // });
 
 
-  //stageLinq.status.on()
-
-
   stageLinq.devices.on('newDevice', (device) =>{
     console.log(`DEVICES New Device ${device.deviceId.string}`)
   });
@@ -119,20 +114,18 @@ async function main() {
     console.log(`DEVICES New ${service.name} Service on ${device.deviceId.string}`)
   });
 
+
   if (stageLinq.stateMap) {
     
     stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => { 
-      if (data.message.json) {
         //console.debug(`${data.message.name} => ${JSON.stringify(data.message.json)}`);
-        if (data.message.json.string && data.message.name.split('/').pop() === "TrackNetworkPath") {
+        if (data.message?.json?.string && data.message.name.split('/').pop() === "TrackNetworkPath") {
           const split = data.message.json.string.substring(43,data.message.json.string.length).split('/')
           const sourceName = split.shift();
           const path = `/${sourceName}/${split.join('/')}`
           await getTrackInfo(stageLinq, sourceName, data.deviceId, data.message.json.string);
           downloadFile(stageLinq, sourceName, data.deviceId, path, Path.resolve(os.tmpdir()));
-
         }
-      }
      });
      
      stageLinq.stateMap.on('newDevice',  (service: Services.StateMapDevice) => { 
@@ -150,35 +143,34 @@ async function main() {
         console.log(`STATUS Track Loaded ${status.deviceId.string}`);
         console.dir(status);
       
-      // if (stageLinq.options.downloadDbSources && downloadFlag) {
-            //   getTrackInfo(stageLinq, status);
-            // }
+      // if (stageLinq.options.downloadDbSources ) {
+      //   getTrackInfo(stageLinq, status);
+      // }
         
-            // // Example of how to download the actual track from the media.
+      // Example of how to download the actual track from the media.
             
-            // if (downloadFlag) {
-            //   const filename = [status.title,'.mp3'].join('');
-            //   while (!stageLinq.hasSource(status.dbSourceName)) {
-            //     await sleep(250);
-            //   }
-            //   await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
-            // }
-      
+    //  // if (downloadFlag) {
+    //     const filename = [status.title,'.mp3'].join('');
+    //     while (!stageLinq.sources.hasSource(status.dbSourceName, status.deviceId)) {
+    //       await sleep(250);
+    //     }
+    //     //await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
+    //     await downloadFile(stageLinq, filename, status.deviceId, path, Path.resolve(os.tmpdir()));
+    //   //}
+
       });
       stageLinq.status.on('nowPlaying', async (status) => {
         console.log(`STATUS Now Playing ${status.deviceId.string}`);
         console.dir(status);       
-      
       });
       
       stageLinq.status.on('stateChanged', async (status) => {
         console.log(`STATUS State Changed ${status.deviceId.string}`);
         console.dir(status);
-      
       });
-
   }
   
+
   if (stageLinq.fileTransfer) {
     
     stageLinq.fileTransfer.on('fileTransferProgress', (file, txid, progress) => {
@@ -197,46 +189,48 @@ async function main() {
 
   }
 
+
   if (stageLinq.beatInfo) {
 
-    stageLinq.beatInfo.on('newBeatInfoDevice', (beatInfo: Services.BeatInfo) => {
+    //  User Options
+    const beatOptions = {
+      // Resolution for triggering callback
+      //    0 = every message WARNING, it's a lot!
+      //    1 = every beat 
+      //    4 = every 4 beats 
+      //    .25 = every 1/4 beat
+      everyNBeats: 1, 
+    }
 
-        //  User callback function. 
-        //  Will be triggered everytime a player's beat counter crosses the resolution threshold
-        function beatCallback(bd: ServiceMessage<Services.BeatData>, ) {
-          let deckBeatString = ""
-          for (let i=0; i<bd.message.deckCount; i++) {
-            deckBeatString += `Deck: ${i+1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
-          }
-          
-          //if (beatInfo.deviceId.string == "4be14112-5ead-4848-a07d-b37ca8a7220e") {
-            console.log(`${bd.deviceId.string} clock: ${bd.message.clock} ${deckBeatString}`);  
-          //}
-          //console.log(`BeatInfo: ${beatInfo.deviceId.string} ${deckBeatString}`);
-        }
-        
-        //  User Options
-        const beatOptions = {
-          // Resolution for triggering callback
-          //    0 = every message WARNING, it's a lot!
-          //    1 = every beat 
-          //    4 = every 4 beats 
-          //    .25 = every 1/4 beat
-          everyNBeats: 1, 
-        }
-        //  start BeatInfo
-        //  callback is optional, BeatInfo messages can be consumed by event messages, or reading the register 
-        beatInfo.startBeatInfo(beatOptions, beatCallback);
-        
-        // beatInfo.startBeatInfo(beatOptions);
-        // stageLinq.beatInfo.on('beatMsg', (bd) => {
-        //   if (bd.message) {
-        //     beatCallback(bd);
-        //   }
-        // });
+    //  User callback function. 
+    //  Will be triggered everytime a player's beat counter crosses the resolution threshold
+    function beatCallback(bd: ServiceMessage<Services.BeatData>, ) {
+      let deckBeatString = ""
+      for (let i=0; i<bd.message.deckCount; i++) {
+        deckBeatString += `Deck: ${i+1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
+      }
+      console.log(`BEATINFO ${bd.deviceId.string} clock: ${bd.message.clock} ${deckBeatString}`);  
+    }
+
+    stageLinq.beatInfo.on('newBeatInfoDevice', (beatInfo: Services.BeatInfo) => {        
+       
+        ////  callback is optional, BeatInfo messages can be consumed by: 
+        //      - user callback
+        //      - event messages 
+        //      - TODO reading the register  
+        const useBeatInfoCallBack = false;
+
+        if (useBeatInfoCallBack) {
+          beatInfo.startBeatInfo(beatOptions, beatCallback);
+        } else {
+          beatInfo.startBeatInfo(beatOptions);
+          stageLinq.beatInfo.on('beatMsg', (bd) => {
+            if (bd.message) {
+              beatCallback(bd);
+            }
+          });
+        } 
     })
-    
-
   }
 
   

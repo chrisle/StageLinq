@@ -188,24 +188,6 @@ export class StateMap extends Service<StateData> {
     assert.fail(`Unhandled type ${type}`);
   }
 
-  // private deckMessageAdapter(data: ServiceMessage<StateData>): ServiceMessage<StateData> {
-  //   const handler = this._handler as Services.StateMapHandler
-  //   const deckHandlerMsgs = handler.deviceTrackRegister.entries();
-  //   let returnMsg: ServiceMessage<StateData> = {...data}
-    
-  //   for (let [oldValue, newValue] of deckHandlerMsgs) {
-  //     const oldValueArr = oldValue.split(',')
-  //     //const testString = `${this.deviceId.string}${data?.message?.name.substring(0,oldValue.length)}`
-  //     //console.warn(testString, oldValue)
-  //     if (oldValueArr[0] == this.deviceId.string && data?.message?.name.substring(0,oldValueArr[1].length) == oldValueArr[1]) {
-  //     //if (testString == oldValue) {
-  //       returnMsg.message.name = `${newValue},${data.message.name.substring(oldValueArr[1].length, data.message.name.length)}`
-  //     }
-  //   }
-  
-  //   return returnMsg
-  // }
-
   private mixerAssignmentAdapter(data: ServiceMessage<StateData>) {
     const keyString = `${this.deviceId.string},/Mixer/CH${data.message.name.substring(data.message.name.length-1,data.message.name.length)}faderPosition`
     const valueString = `${data.message.json.string},/Mixer/ChannelFaderPosition`;
@@ -221,7 +203,6 @@ export class StateMap extends Service<StateData> {
     if (p_data?.message?.interval) {
       
     } else {
-      //this.emit('stateMessage', this.deckMessageAdapter(p_data));
       this.emit('stateMessage', p_data);
     }
 

@@ -1,9 +1,3 @@
-//import { ConnectionInfo } from "./index";
-
-// export interface DiscoveryDevice extends ConnectionInfo {
-//   deviceId: DeviceId;
-// }
-
 
 class InvalidDeviceIdError extends Error {
   constructor(m?: string) {
@@ -57,7 +51,6 @@ export class DeviceId {
         .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
         .splice(1)
         .join('-') as string;
-      //return toStr(deviceId) as string
     }
 
     throw new Error(`Hell froze over: deviceId is not a string or Uint8Array`);
@@ -76,44 +69,3 @@ export class DeviceId {
 export function deviceIdFromBuff(token: Uint8Array): string {
   return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i.exec(Buffer.from(token).toString('hex')).splice(1).join('-');
 }
-
-/*
-Saving incase this is a better way to type DeviceIds
-type OptionalRecord = Record<string, unknown> | undefined
-
-type Uuid<T extends OptionalRecord = undefined> = string & { __uuidBrand: T }
-
-type Product = {
-    id: Uuid<Product>
-    name: string
-}
-
-type ProductId = Product['id']
-
-function uuid<T extends OptionalRecord = undefined>(value: string) {
-    return value as Uuid<T>
-}
-
-function productId(value: string) {
-    return uuid<Product>(value)
-}
-
-function funcWithProductIdArg(productId: ProductId) {
-    // do something
-    return productId
-}
-
-//const concreteProductId = productId('123e4567-e89b-12d3-a456-426614174000')
-
-// compiles
-
-//funcWithProductIdArg(concreteProductId)
-
-// Argument of type 'string' is not assignable to parameter of type 'ProductId'.
-//  Type 'string' is not assignable to type '{ __uuidBrand: Product; }'.(2345)
-//
-// * @ts-expect-error Not a ProductId.
-
-//funcWithProductIdArg('123e4567-e89b-12d3-a456-426614174000')
-
-*/

@@ -16,9 +16,6 @@ export interface TimeSyncData {
     timestamp: bigint,
 }
 
-// export declare interface TimeSync {
-//     //on(event: 'message', listener: (message: TimeSyncData) => void): this;
-// }
 
 export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
     public name: string = 'TimeSync'
@@ -28,7 +25,6 @@ export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
         
         service.on('newDevice',  ( _service: InstanceType<typeof Services.TimeSynchronization>) => {
             Logger.debug(`New TimeSync Device ${service.deviceId.string}`)
-            //this.emit('newDevice',  service);
             _service.sendTimeSyncRequest();
           })   
     }
@@ -36,12 +32,11 @@ export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
 
 export class TimeSynchronization extends Service<TimeSyncData> {
 	public readonly name = "TimeSynchronization"
-    protected isBufferedService: boolean = false;
+    protected readonly isBufferedService: boolean = false;
     private localTime: bigint;
     private remoteTime: bigint;
     private avgTimeArray: bigint[] = [];
-    //private queryTimer: NodeJS.Timer;
-	
+
 
 	public async sendTimeSyncRequest() {
 		const ctx = new WriteContext();

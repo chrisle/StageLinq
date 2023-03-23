@@ -286,8 +286,8 @@ export class FileTransfer extends Service<FileTransferData> {
               bytesDownloaded: bytesDownloaded,
               percentComplete: percentComplete
             })
-            //Logger.info(`sizeleft ${this.receivedFile.sizeLeft()} total ${txinfo.size} total ${total}`);
-            //Logger.info(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
+            Logger.silly(`sizeleft ${this.receivedFile.sizeLeft()} total ${txinfo.size} total ${total}`);
+            Logger.silly(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
             await sleep(200);
           }
           Logger.info(`Download complete.`);
