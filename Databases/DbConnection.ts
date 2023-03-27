@@ -1,7 +1,7 @@
 import Database = require('better-sqlite3');
 import { Track } from '../types';
 import { Logger } from '../LogEmitter';
-import { inflate as Inflate } from 'zlib'
+import { inflate } from 'zlib'
 
 export class DbConnection {
 
@@ -28,9 +28,9 @@ export class DbConnection {
   }
 
 
-  async inflate(data: Buffer): Promise<Buffer> {
+  async zInflate(data: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      Inflate(data.slice(4), (err, buffer) => {
+      inflate(data.slice(4), (err, buffer) => {
         if (err) {
           reject(err);
         } else {
@@ -58,9 +58,9 @@ export class DbConnection {
     result = this.querySource('SELECT * FROM Track WHERE path = (?) LIMIT 1', trackPath);
     //}
     if (!result) throw new Error(`Could not find track: ${trackPath} in database.`);
-    result[0].trackData = await this.inflate(result[0].trackData);
-    result[0].overviewWaveFormData = await this.inflate(result[0].overviewWaveFormData);
-    result[0].beatData = await this.inflate(result[0].beatData);
+    result[0].trackData = await this.zInflate(result[0].trackData);
+    result[0].overviewWaveFormData = await this.zInflate(result[0].overviewWaveFormData);
+    result[0].beatData = await this.zInflate(result[0].beatData);
 
     return result[0];
   }
