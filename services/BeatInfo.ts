@@ -6,6 +6,7 @@ import { Logger } from '../LogEmitter';
 import type { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
+import { StageLinq } from '../StageLinq';
 
 type beatCallback = (n: ServiceMessage<BeatData>) => void;
 
@@ -19,6 +20,7 @@ interface deckBeatData {
 	BPM: number;
 	samples?: number;
 }
+
 export interface BeatData {
 	clock: bigint;
 	deckCount: number;
@@ -31,7 +33,16 @@ export declare interface BeatInfoHandler {
 }
 
 export class BeatInfoHandler extends ServiceHandler<BeatData> {
-	public name: string = 'BeatInfo'
+	public name: string = 'BeatInfo';
+	private _beatregister: Map<string, BeatData> = new Map();
+
+	getBeatData(deviceId?: DeviceId): BeatData[] {
+		return (deviceId? [this._beatregister.get(deviceId.string)] : [...this._beatregister.values()])
+	}
+
+	setBeatData(deviceId: DeviceId, data: BeatData) {
+		this._beatregister.set(deviceId.string, data);
+	}
 
 	public setupService(service: Service<BeatData>, deviceId: DeviceId) {
 		Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
@@ -53,11 +64,23 @@ export declare interface BeatInfo {
 
 export class BeatInfo extends Service<BeatData> {
 	public readonly name = "BeatInfo";
+	public readonly handler: BeatInfoHandler;
 
 	private _userBeatCallback: beatCallback = null;
 	private _userBeatOptions: BeatOptions = null;
-	private _currentBeatData: BeatData = null;
+	private _currentBeatData: ServiceMessage<BeatData> = null;
+	#isBufferedService: boolean = true;
+	
+	constructor(p_parent: InstanceType<typeof StageLinq>, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
+		super(p_parent, serviceHandler, deviceId)
+		this.handler = this._handler as BeatInfoHandler
+	  }
 
+	getBeatData(): ServiceMessage<BeatData> {
+		return this._currentBeatData;
+	}
+
+	
 
 	public async startBeatInfo(options: BeatOptions, beatCB?: beatCallback,) {
 		if (beatCB) {
@@ -116,7 +139,8 @@ export class BeatInfo extends Service<BeatData> {
 
 		if (p_data && p_data.message) {
 			if (!this._currentBeatData) {
-				this._currentBeatData = p_data.message;
+				this._currentBeatData = p_data;
+				this.handler.setBeatData(this.deviceId, p_data.message);
 				this.emit('beatMessage', p_data);
 				if (this._userBeatCallback) {
 					this._userBeatCallback(p_data);
@@ -128,19 +152,21 @@ export class BeatInfo extends Service<BeatData> {
 			for (let i = 0; i < p_data.message.deckCount; i++) {
 				if (resCheck(
 					this._userBeatOptions.everyNBeats,
-					this._currentBeatData.deck[i].beat,
+					this._currentBeatData.message.deck[i].beat,
 					p_data.message.deck[i].beat)) {
 					hasUpdated = true;
 				}
 			}
 
 			if (hasUpdated) {
-				this._currentBeatData = p_data.message;
-				this.emit('beatMessage', p_data.message);
+				
+				this.emit('beatMessage', p_data);
 				if (this._userBeatCallback) {
 					this._userBeatCallback(p_data);
 				}
 			}
+			this._currentBeatData = p_data;
+			this.handler.setBeatData(this.deviceId, p_data.message);
 		}
 	}
 
