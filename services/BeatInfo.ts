@@ -69,7 +69,7 @@ export class BeatInfo extends Service<BeatData> {
 	private _userBeatCallback: beatCallback = null;
 	private _userBeatOptions: BeatOptions = null;
 	private _currentBeatData: ServiceMessage<BeatData> = null;
-	#isBufferedService: boolean = true;
+	isBufferedService: boolean = true;
 	
 	constructor(p_parent: InstanceType<typeof StageLinq>, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
 		super(p_parent, serviceHandler, deviceId)

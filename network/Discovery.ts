@@ -9,6 +9,7 @@ import { networkInterfaces } from 'os';
 import { subnet, SubnetInfo } from 'ip';
 import { Logger } from '../LogEmitter';
 import { StageLinq } from '../StageLinq';
+import EventEmitter = require('events');
 
 
 export interface DiscoveryMessageOptions {
@@ -21,8 +22,12 @@ export interface DiscoveryMessageOptions {
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
+export declare interface Discovery {
+	on(event: 'newDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
+	//on(event: 'beatMsg', listener: (beatData: ServiceMessage<BeatData>, device: Service<BeatData>) => void): this;
+}
 
-export class Discovery {
+export class Discovery extends EventEmitter {
     public parent: InstanceType<typeof StageLinq>;
 
     private socket: Socket;
@@ -41,6 +46,7 @@ export class Discovery {
      * @param parent StageLinq Instance
      */
     constructor(parent: InstanceType<typeof StageLinq>) {
+        super();
         this.parent = parent;
     }
 
@@ -68,16 +74,14 @@ export class Discovery {
         this.options = options;
         this.deviceId = new DeviceId(options.token)
 
-
-
-
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
             if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
 
-                const device = await this.parent.devices.addDevice(connectionInfo);
+                const device = this.parent.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);
-                Logger.debug(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
+                Logger.silly(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
+                this.emit('newDiscoveryDevice', connectionInfo);
             } else {
                 this.hasLooped = true;
             }

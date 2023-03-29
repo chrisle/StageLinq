@@ -141,7 +141,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	async listen(): Promise<AddressInfo> {
 		const server = await this.createServer();
-		return server.address() as AddressInfo;
+		return server.address() as net.AddressInfo;
 	}
 
 	closeServer() {
@@ -157,11 +157,8 @@ export abstract class Service<T> extends EventEmitter {
 		try {
 			const msg = buff.readInt32BE();
 			const deviceId = buff.slice(4);
-			//console.warn(msg, deviceId);
 			if (msg === 0 && deviceId.length === 16) {
-				//console.warn('true');
 				return true
-				
 			} else {
 				return false
 			}
@@ -185,22 +182,13 @@ export abstract class Service<T> extends EventEmitter {
 		const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 		let ctx = new ReadContext(arrayBuffer, false);
 
-
-		// 	Notes on isBufferedService
-		// 	some simple services (Directory, TimeSync, others..) 
-		//	might receive data the is hard to parse with the buffer.
-		// if isBufferedService is false, we send this data immediately to parse.
 		if (!this.isBufferedService) {
 			const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket);
 			this.messageHandler(parsedData);
+			
 		};
 
-		//	Check if device has announced itself to this service yet
-		// 	Basically, we only want to handle first msg sent to non-directory services
-		
-		
 		if (await this.subMessageTest(ctx.peek(20))) {
-		//if (!this._deviceId && ctx.sizeLeft() >= 20) {
 
 			const messageId = ctx.readUInt32();
 			this._deviceId = new DeviceId(ctx.read(16));
@@ -222,6 +210,7 @@ export abstract class Service<T> extends EventEmitter {
 			}
 			const parsedData = this.parseServiceData(messageId, this.deviceId, serviceName, socket);
 			this.messageHandler(parsedData);
+			
 		}
 
 		try {

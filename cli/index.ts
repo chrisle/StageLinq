@@ -73,8 +73,8 @@ async function main() {
     actingAs: ActingAsDevice.NowPlaying,
     services: [
       ServiceList.StateMap,
-     // ServiceList.BeatInfo,
-     // ServiceList.FileTransfer,
+      ServiceList.BeatInfo,
+      ServiceList.FileTransfer,
       //ServiceList.TimeSynchronization,
     ],
   }
@@ -106,6 +106,11 @@ async function main() {
   // });
 
 
+  stageLinq.discovery.on('newDiscoveryDevice', (info) => {
+    console.log(`DISCOVERY New Device ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name}:${info.software.version}`)
+  }); 
+
+
   stageLinq.devices.on('newDevice', (device) => {
     console.log(`DEVICES New Device ${device.deviceId.string}`)
   });
@@ -118,7 +123,7 @@ async function main() {
   if (stageLinq.stateMap) {
 
     stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => {
-      console.debug(`${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
+      console.debug(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
       if (data.message?.json?.string && data.message.name.split('/').pop() === "TrackNetworkPath") {
         const split = data.message.json.string.substring(43, data.message.json.string.length).split('/')
         const sourceName = split.shift();
