@@ -63,7 +63,7 @@ export class Devices extends EventEmitter {
   }
 
 
-  hasDevice(deviceId: Uint8Array | string | DeviceId) {
+  hasDevice(deviceId: Uint8Array | string | DeviceId): boolean {
     if (typeof deviceId == "string") {
       return this._devices.has(deviceId)
     }
@@ -77,6 +77,17 @@ export class Devices extends EventEmitter {
         .splice(1)
         .join('-') as string)
     }
+  }
+  async updateDeviceInfo(deviceId: DeviceId, info: ConnectionInfo) {
+    const device = await this.getDevice(deviceId)
+    device.info = info;
+    this._devices.set(deviceId.string, device);
+  }
+  
+  hasNewInfo(deviceId: Uint8Array | string | DeviceId, info: ConnectionInfo): boolean {
+    //const device = this.device(deviceId)
+    //console.log(device.info?.port, info.port)
+    return this.device(deviceId).info?.port !== info.port
   }
 
   addService(deviceId: DeviceId, service: InstanceType<typeof Services.Service>) {

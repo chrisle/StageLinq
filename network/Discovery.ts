@@ -1,5 +1,5 @@
 import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, deviceTypes, } from '../types';
-import { DeviceId, deviceIdFromBuff } from '../devices'
+import { DeviceId } from '../devices'
 import { Socket, RemoteInfo } from 'dgram';
 import * as UDPSocket from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from '../types/common';
@@ -76,7 +76,7 @@ export class Discovery extends EventEmitter {
 
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
-            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
+            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token) ) {//&& deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
 
                 const device = this.parent.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);
@@ -86,13 +86,13 @@ export class Discovery extends EventEmitter {
                 this.hasLooped = true;
             }
 
-            if (deviceTypes[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.token) && this.parent.devices.device(connectionInfo.token).info.port !== connectionInfo.port) {
+            if (deviceTypes[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.token) && this.parent.devices.hasNewInfo(connectionInfo.token, connectionInfo)) {
                 const deviceId = new DeviceId(connectionInfo.token)
 
                 this.peers.set(deviceId.string, connectionInfo);
-                this.parent.devices.device(deviceId.string).info = connectionInfo;
-                Logger.debug(`Updated port for From ${deviceId.string}`)
-            }
+                this.parent.devices.updateDeviceInfo(deviceId, connectionInfo);
+                Logger.warn(`Updated port for From ${deviceId.string}`)
+            } 
         });
     }
 

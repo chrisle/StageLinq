@@ -43,33 +43,60 @@ export class Directory extends Service<DirectoryData> {
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
     
+     if (ctx.sizeLeft() < 20) {
+      return
+      //console.log('woah')
+    }
+// while (!ctx.isEOF()) {
+
+
     const id = ctx.readUInt32();
     const token = ctx.read(16);
-    this.deviceId = new DeviceId(token);
+    if (!token) {
+      return
+    }
+    //try {
+      this.deviceId = new DeviceId(token);
+    // } catch (err) {
+    //   console.error(err)
+    // }
+    
 
     const deviceInfo = this.parent.discovery.getConnectionInfo(this.deviceId);
 
-    switch (id) {
-      case MessageId.TimeStamp:
-        ctx.seek(16);
-        const timeAlive = ctx.readUInt64();
-        this.timeAlive = Number(timeAlive / (1000n * 1000n * 1000n));
-
-        if (deviceInfo && deviceInfo.device && deviceInfo.device.type === 'MIXER') {
-          this.sendTimeStampReply(token, socket);
-        }
-        break;
-      case MessageId.ServicesAnnouncement:
-        const service = ctx.readNetworkStringUTF16();
-        const port = ctx.readUInt16();
-        console.warn('received ', service, port);
-        break;
-      case MessageId.ServicesRequest:
-        this.sendServiceAnnouncement(this.deviceId, socket);
-        break;
-      default:
-        assert.fail(`NetworkDevice Unhandled message id '${id}'`);
+    try {
+      switch (id) {
+        case MessageId.TimeStamp:
+          ctx.seek(16);
+          let timeAlive:bigint = 1n
+          if (ctx.sizeLeft()>= 8) {
+            timeAlive = ctx.readUInt64();
+            this.timeAlive = Number(timeAlive / (1000n * 1000n * 1000n));
+          } 
+          
+          if (deviceInfo && deviceInfo.device && deviceInfo.device.type === 'MIXER') {
+            this.sendTimeStampReply(token, socket);
+          }
+          break;
+        case MessageId.ServicesAnnouncement:
+          const service = ctx.readNetworkStringUTF16();
+          const port = ctx.readUInt16();
+          console.warn('received ', service, port);
+          break;
+        case MessageId.ServicesRequest:
+          this.sendServiceAnnouncement(this.deviceId, socket);
+          break;
+        default:
+          //assert.fail(`NetworkDevice Unhandled message id '${id}'`);
+          ctx.rewind()
+          Logger.warn(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`);
+          break;
+      }
+    } catch (err) {
+      ctx.rewind();
+      Logger.error(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`)
     }
+    
 
     const directoryMessage: DirectoryData = {
       deviceId: this.deviceId.string
@@ -81,10 +108,13 @@ export class Directory extends Service<DirectoryData> {
       message: directoryMessage,
     };
     return directoryData;
+  //}
   }
 
   protected messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {
-    assert(directoryMsg);
+    if (!directoryMsg) {
+      //Logger.warn('empty directory message')
+    }
   }
 
   private async sendServiceAnnouncement(deviceId: DeviceId, socket?: Socket): Promise<void> {

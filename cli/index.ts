@@ -68,7 +68,7 @@ async function main() {
 
   console.log('Starting CLI');
   const stageLinqOptions: StageLinqOptions = {
-    downloadDbSources: false,
+    downloadDbSources: true,
     maxRetries: 3,
     actingAs: ActingAsDevice.NowPlaying,
     services: [
@@ -111,7 +111,7 @@ async function main() {
   }); 
 
   stageLinq.discovery.on('announcing', (info) => {
-    console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name}:${info.software.version}`)
+    console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} disc Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
   }); 
 
 
@@ -212,8 +212,10 @@ async function main() {
     stageLinq.databases.on('dbDownloaded', (_source: Source) => {
       console.log(`[FILETRANSFER] Database Downloaded: (${_source.name})`);
       source.set(_source.name, _source);
-      //const sources = stageLinq.sources.getSources();
-      //console.dir(sources);
+      const sources = stageLinq.sources.getSources();
+      for (const source of sources) {
+        console.log(`${source.name} on ${source.deviceId.string}`);
+      }
     });
 
   }
