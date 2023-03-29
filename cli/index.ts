@@ -124,7 +124,7 @@ async function main() {
         const sourceName = split.shift();
         if (stageLinq.fileTransfer) {
           const path = `/${sourceName}/${split.join('/')}`
-          //await getTrackInfo(stageLinq, sourceName, data.deviceId, data.message.json.string);
+          await getTrackInfo(stageLinq, sourceName, data.deviceId, data.message.json.string);
           downloadFile(stageLinq, sourceName, data.deviceId, path, Path.resolve(os.tmpdir()));
         }
         
