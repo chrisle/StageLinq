@@ -37,7 +37,9 @@ export interface FileTransferProgress {
 
 export declare interface FileTransfer {
   on(event: 'fileTransferProgress', listener: (fileName: string, txId: number, progress: FileTransferProgress) => void): this;
-  on(event: 'dbNewSource', listener: (source: Source) => void): this;
+  on(event: 'fileTransferComplete', listener: (fileName: string, txId: number) => void): this;
+  on(event: 'newSource', listener: (source: Source) => void): this;
+  on(event: 'sourceRemoved', listener: (sourceName: string, deviceId: DeviceId) => void): this;
 }
 
 export class FileTransferHandler extends ServiceHandler<FileTransfer> {
@@ -50,8 +52,14 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
     fileTransfer.on('fileTransferProgress', (fileName, txid, progress) => {
       this.emit('fileTransferProgress', fileName, txid, progress);
     });
-    fileTransfer.on('dbNewSource', (source: Source) => {
-      this.emit('dbNewSource', source);
+    fileTransfer.on('newSource', (source: Source) => {
+      this.emit('newSource', source);
+    });
+    fileTransfer.on('sourceRemoved', (name: string, deviceId: DeviceId) => {
+      this.emit('sourceRemoved', name, deviceId);
+    });
+    fileTransfer.on('fileTransferComplete', (fileName, txid) => {
+      this.emit('fileTransferComplete', fileName, txid);
     });
   }
 }
@@ -115,10 +123,12 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(p_ctx.readUInt8() === 0x1);
         assert(p_ctx.isEOF());
 
-        if (sources.length) {
+        //if (sources.length) {
           Logger.silly(`getting sources for `, this.deviceId.string);
-          this.getSources(sources, socket);
-        }
+          
+          //this.getSources(sources, socket);
+          this.updateSources(sources);
+        //}
 
         return {
           id: messageId,
@@ -290,7 +300,8 @@ export class FileTransfer extends Service<FileTransferData> {
             Logger.silly(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
             await sleep(200);
           }
-          Logger.info(`Download complete.`);
+          Logger.debug(`Download complete.`);
+          this.emit('fileTransferComplete', p_location.split('/').pop(), this.txId)
           resolve(true);
         });
       } catch (err) {
@@ -312,7 +323,24 @@ export class FileTransfer extends Service<FileTransferData> {
     return buf;
   }
 
-  async getSources(sources: string[], socket: Socket): Promise<Source[]> {
+  async updateSources(sources: string[]) { //: Promise<Source[]> {
+    const currentSources = this.parent.sources.getSources(this.deviceId);
+    const currentSourceNames = currentSources.map(source => source.name);
+    const markedForDelete = currentSources.filter(item => !sources.includes(item.name)) //filter(source => item.name !== source))
+    const newSources = sources.filter(source => !currentSourceNames.includes(source));
+    for (const source of markedForDelete) {
+      this.parent.sources.deleteSource(source.name, source.deviceId)
+      this.emit('sourceRemoved', source.name, source.deviceId);
+    }
+    // console.log(markedForDelete)
+    // console.log(newSources)
+    if (newSources.length) {
+      this.getSources(newSources);
+    }
+  }
+
+  async getSources(sources: string[]): Promise<Source[]> {
+    const socket = this.socket;
     const result: Source[] = [];
 
     for (const source of sources) {
@@ -338,15 +366,20 @@ export class FileTransfer extends Service<FileTransferData> {
             },
 
           }
-          this.emit('dbNewSource', thisSource);
+          this.emit('newSource', thisSource);
           this.parent.sources.setSource(thisSource);
           result.push(thisSource);
-          this.parent.databases.downloadDb(thisSource);
+          
+          if (this.parent.options.downloadDbSources) {
+            this.parent.databases.downloadDb(thisSource);
+          }
+          
 
           break;
         }
       }
     }
+    this.updateSources(sources);
     return result;
   }
 

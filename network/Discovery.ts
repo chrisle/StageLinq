@@ -24,7 +24,7 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
 export declare interface Discovery {
 	on(event: 'newDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
-	//on(event: 'beatMsg', listener: (beatData: ServiceMessage<BeatData>, device: Service<BeatData>) => void): this;
+	on(event: 'announcing', listener: (info: DiscoveryMessage) => void): this;
 }
 
 export class Discovery extends EventEmitter {
@@ -114,6 +114,7 @@ export class Discovery extends EventEmitter {
         const msg = this.writeDiscoveryMessage(discoveryMessage)
 
         this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);
+        this.emit('announcing', discoveryMessage)
         Logger.debug(`Broadcast Discovery Message ${this.deviceId.string} ${discoveryMessage.source}`);
         this.announceTimer = setInterval(this.broadcastMessage, ANNOUNCEMENT_INTERVAL, this.socket, msg, LISTEN_PORT, this.broadcastAddress);
     }

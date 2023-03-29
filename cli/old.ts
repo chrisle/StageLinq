@@ -150,7 +150,7 @@
 //        // dbDownloaded = true;
 //       });
 
-//       stageLinq.databases.on('dbNewSource', (source: Source) => {
+//       stageLinq.databases.on('newSource', (source: Source) => {
 //         console.log(`New Source Available (${source.name})`);
 //        // dbDownloaded = true;
 //       });

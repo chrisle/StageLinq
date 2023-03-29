@@ -40,13 +40,13 @@ export class Databases extends EventEmitter {
     // Save database to a file
     //thisTxid = source.service.txid;
     const file = await source.service.getFile(source.database.location, source.service.socket);
-    Logger.info(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
+    Logger.debug(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
 
     source.database.connection = new DbConnection(dbPath);
 
     this.parent.sources.setSource(source);
-    Logger.info(`Downloaded ${source.deviceId.string}/${source.name} to ${dbPath}`);
+    Logger.debug(`Downloaded ${source.deviceId.string}/${source.name} to ${dbPath}`);
     this.emit('dbDownloaded', source);
 
   }

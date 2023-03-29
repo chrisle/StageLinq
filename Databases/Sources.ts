@@ -8,6 +8,7 @@ export declare interface Sources {
   on(event: 'newSource', listener: (source: Source) => void): this;
 }
 
+
 export class Sources extends EventEmitter {
   private _sources: Map<string, Source> = new Map();
   public readonly parent: InstanceType<typeof StageLinq>;
@@ -34,7 +35,7 @@ export class Sources extends EventEmitter {
    * @returns Source
    */
   getSource(sourceName: string, deviceId: DeviceId): Source {
-    return this._sources.get(`${sourceName}${deviceId.string}`);
+    return this._sources.get(`${deviceId.string}${sourceName}`);
   }
 
   /**
@@ -42,11 +43,19 @@ export class Sources extends EventEmitter {
    * @param source 
    */
   setSource(source: Source) {
-    this._sources.set(`${source.name}${source.deviceId.string}`, source);
+    this._sources.set(`${source.deviceId.string}${source.name}`, source);
   }
 
-  getSources(): Source[] {
+  getSources(deviceId?: DeviceId): Source[] {
+    if (deviceId) {
+      const filteredMap = new Map([...this._sources.entries()].filter(entry => entry[0].substring(0,36) == deviceId.string))
+      return [...filteredMap.values()]
+    }
     return [...this._sources.values()]
+  }
+
+  deleteSource(sourceName: string, deviceId: DeviceId) {
+    this._sources.delete(`${deviceId.string}${sourceName}`)
   }
 
   async downloadFile(source: Source, path: string): Promise<Uint8Array> {
