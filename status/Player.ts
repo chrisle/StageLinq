@@ -144,7 +144,7 @@ export class Player extends EventEmitter {
    * @param data
    */
   private handleUpdate(data: PlayerLayerState) {
-    Logger.debug(`data: ${JSON.stringify(data, null, 2)}`);
+    Logger.silly(`data: ${JSON.stringify(data, null, 2)}`);
 
     const layer = data.layer;
 

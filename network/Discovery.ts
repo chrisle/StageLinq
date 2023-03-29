@@ -68,11 +68,14 @@ export class Discovery {
         this.options = options;
         this.deviceId = new DeviceId(options.token)
 
-        await this.listenForDevices((connectionInfo: ConnectionInfo) => {
+
+
+
+        await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
             if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token) && deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
 
-                const device = this.parent.devices.addDevice(connectionInfo);
+                const device = await this.parent.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);
                 Logger.debug(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
             } else {
@@ -96,7 +99,7 @@ export class Discovery {
         const discoveryMessage = this.createDiscoveryMessage(Action.Login, this.options, port);
 
         while (!this.hasLooped) {
-            await sleep(250);
+            await sleep(500);
         }
 
         const ips = this.findBroadcastIPs()

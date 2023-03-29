@@ -16,7 +16,7 @@ export class Devices extends EventEmitter {
     return [...this._devices.entries()]
   }
 
-  addDevice(info: ConnectionInfo): Device {
+  async addDevice(info: ConnectionInfo): Promise<Device> {
     const device = new Device(info, this);
     this._devices.set(device.deviceId.string, device)
     this.emit('newDevice', device)

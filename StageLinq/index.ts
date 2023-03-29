@@ -7,6 +7,7 @@ import { Databases, Sources } from '../Databases';
 import * as Services from '../services';
 import { Status } from '../status/Status';
 import { Server } from 'net';
+import { sleep } from '../utils/sleep';
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
@@ -118,6 +119,7 @@ export class StageLinq extends EventEmitter {
     this.directory = await directory.startServiceListener(Services.Directory, this);
 
     //  Announce myself with Directory port
+    //await sleep(1000);
     await this.discovery.announce(this.directory.serverInfo.port);
   }
 

@@ -153,6 +153,23 @@ export abstract class Service<T> extends EventEmitter {
 		}
 	}
 
+	private async subMessageTest(buff: Buffer): Promise<boolean> {
+		try {
+			const msg = buff.readInt32BE();
+			const deviceId = buff.slice(4);
+			//console.warn(msg, deviceId);
+			if (msg === 0 && deviceId.length === 16) {
+				//console.warn('true');
+				return true
+				
+			} else {
+				return false
+			}
+		} catch {
+			return false
+		}
+	}
+
 	private async dataHandler(p_data: Buffer, socket: Socket) {
 
 		// Concantenate messageBuffer with current data
@@ -180,7 +197,10 @@ export abstract class Service<T> extends EventEmitter {
 
 		//	Check if device has announced itself to this service yet
 		// 	Basically, we only want to handle first msg sent to non-directory services
-		if (!this._deviceId && ctx.sizeLeft() >= 20) {
+		
+		
+		if (await this.subMessageTest(ctx.peek(20))) {
+		//if (!this._deviceId && ctx.sizeLeft() >= 20) {
 
 			const messageId = ctx.readUInt32();
 			this._deviceId = new DeviceId(ctx.read(16));

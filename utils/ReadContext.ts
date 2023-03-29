@@ -24,6 +24,18 @@ export class ReadContext extends Context {
 		return view;
 	}
 
+	peek(p_bytes: number): Buffer {
+		const bytesToRead = Math.min(this.sizeLeft(), p_bytes);
+		if (bytesToRead <= 0) {
+			return null;
+		}
+
+		const view = new Uint8Array(this.buffer, this.pos, bytesToRead); // Buffer.from(this.buffer.slice(this.pos, this.pos + p_bytes))
+		//this.pos += bytesToRead;
+		assert(view.byteLength === bytesToRead);
+		return Buffer.from(view)
+	}
+
 	readRemaining(): Uint8Array {
 		return this.read(this.sizeLeft());
 	}

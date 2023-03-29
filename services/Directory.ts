@@ -43,11 +43,12 @@ export class Directory extends Service<DirectoryData> {
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
     let deviceId: string = '';
-    while (ctx.isEOF() === false) {
+    //while (ctx.isEOF() === false) {
       const id = ctx.readUInt32();
       const token = ctx.read(16);
       this.deviceId = new DeviceId(token);
 
+      //console.log(`${this.name} for ${this.deviceId.string} ${this.parent.discovery.hasConnectionInfo(this.deviceId)}`)
       const deviceInfo = this.parent.discovery.getConnectionInfo(this.deviceId);
 
       switch (id) {
@@ -55,9 +56,9 @@ export class Directory extends Service<DirectoryData> {
           ctx.seek(16);
           const timeAlive = ctx.readUInt64();
           this.timeAlive = Number(timeAlive / (1000n * 1000n * 1000n));
-          if (ctx.isEOF() === false) {
-            ctx.readRemaining();
-          }
+          // if (ctx.isEOF() === false) {
+          //   ctx.readRemaining();
+          // }
           if (deviceInfo && deviceInfo.device && deviceInfo.device.type === 'MIXER') {
             this.sendTimeStampReply(token, socket);
           }
@@ -68,13 +69,14 @@ export class Directory extends Service<DirectoryData> {
           console.warn('received ', service, port);
           break;
         case MessageId.ServicesRequest:
-          ctx.readRemaining(); //
+          //ctx.readRemaining(); //
           this.sendServiceAnnouncement(this.deviceId, socket);
           break;
         default:
           assert.fail(`NetworkDevice Unhandled message id '${id}'`);
       }
-    }
+    //}
+
     const directoryMessage: DirectoryData = {
       deviceId: deviceId,
     };
@@ -96,7 +98,8 @@ export class Directory extends Service<DirectoryData> {
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(Tokens.Listen);
     if (!this.parent.devices.hasDevice(deviceId)) {
-      await sleep(250);
+      await sleep(1000);
+      console.log(`${this.deviceId} awaiting parent.devices`)
     }
 
     let services: InstanceType<typeof Service>[] = []
@@ -128,7 +131,9 @@ export class Directory extends Service<DirectoryData> {
           default:
             break;
         }
-      }
+      } //else {
+      //   services.push(this);
+      // }
     }
 
     for (const service of services) {
@@ -136,7 +141,7 @@ export class Directory extends Service<DirectoryData> {
       ctx.write(Tokens.Listen);
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
-      Logger.debug(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
+      //Logger.debug(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
     }
 
     const msg = ctx.getBuffer();
