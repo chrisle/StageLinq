@@ -6,13 +6,12 @@ import { Devices, DeviceId } from '../devices'
 import { Databases, Sources } from '../Databases';
 import * as Services from '../services';
 import { Status } from '../status/Status';
-import { Server } from 'net';
-
+import { AddressInfo, Server } from 'net';
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
-  actingAs: ActingAsDevice.NowPlaying,
+  actingAs: ActingAsDevice.StageLinqJS,
   downloadDbSources: true,
 };
 
@@ -25,7 +24,6 @@ export declare interface StageLinq {
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => void): this;
   on(event: 'stateMessage', listener: (message: ServiceMessage<Services.StateData>) => void): this;
-  on(event: 'ready', listener: () => void): this;
   on(event: 'connection', listener: (serviceName: string, deviceId: DeviceId) => void): this;
   on(event: 'fileProgress', listener: (path: string, total: number, bytesDownloaded: number, percentComplete: number) => void): this;
 }
@@ -119,7 +117,6 @@ export class StageLinq extends EventEmitter {
     this.directory = await directory.startServiceListener(Services.Directory, this);
 
     //  Announce myself with Directory port
-    //await sleep(1000);
     await this.discovery.announce(this.directory.serverInfo.port);
   }
 
@@ -131,8 +128,9 @@ export class StageLinq extends EventEmitter {
       Logger.warn('disconnecting');
       const servers = this.getServers();
       for (let [serviceName, server] of servers) {
-        Logger.debug(`Closing ${serviceName} server port ${server.address()}`)
-        server.close;
+        const addressInfo = server.address() as AddressInfo;
+        console.log(`Closing ${serviceName} server port ${addressInfo.port}`);
+        await server.close;
       }
       await this.discovery.unannounce();
     } catch (e) {
