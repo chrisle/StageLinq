@@ -85,8 +85,6 @@ export class Devices extends EventEmitter {
   }
   
   hasNewInfo(deviceId: Uint8Array | string | DeviceId, info: ConnectionInfo): boolean {
-    //const device = this.device(deviceId)
-    //console.log(device.info?.port, info.port)
     return this.device(deviceId).info?.port !== info.port
   }
 

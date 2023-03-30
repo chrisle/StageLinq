@@ -1,7 +1,7 @@
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceHandler } from './Service';
-import { ServiceMessage, MessageId, Tokens, deviceTypes } from '../types';
+import { ServiceMessage, MessageId, deviceTypes } from '../types';
 import { DeviceId } from '../devices'
 import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
@@ -45,23 +45,15 @@ export class Directory extends Service<DirectoryData> {
     
      if (ctx.sizeLeft() < 20) {
       return
-      //console.log('woah')
     }
-// while (!ctx.isEOF()) {
-
 
     const id = ctx.readUInt32();
     const token = ctx.read(16);
     if (!token) {
       return
     }
-    //try {
-      this.deviceId = new DeviceId(token);
-    // } catch (err) {
-    //   console.error(err)
-    // }
     
-
+    this.deviceId = new DeviceId(token);
     const deviceInfo = this.parent.discovery.getConnectionInfo(this.deviceId);
 
     try {
@@ -81,20 +73,19 @@ export class Directory extends Service<DirectoryData> {
         case MessageId.ServicesAnnouncement:
           const service = ctx.readNetworkStringUTF16();
           const port = ctx.readUInt16();
-          console.warn('received ', service, port);
+          Logger.silent(this.name, 'received ', service, port);
           break;
         case MessageId.ServicesRequest:
           this.sendServiceAnnouncement(this.deviceId, socket);
           break;
         default:
-          //assert.fail(`NetworkDevice Unhandled message id '${id}'`);
           ctx.rewind()
-          Logger.warn(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`);
+          Logger.silent(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`);
           break;
       }
     } catch (err) {
       ctx.rewind();
-      Logger.error(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`)
+      Logger.silent(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`)
     }
     
 
@@ -108,19 +99,18 @@ export class Directory extends Service<DirectoryData> {
       message: directoryMessage,
     };
     return directoryData;
-  //}
   }
 
   protected messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {
     if (!directoryMsg) {
-      //Logger.warn('empty directory message')
+      Logger.silent(`${this.name} Empty Directory Message`)
     }
   }
 
   private async sendServiceAnnouncement(deviceId: DeviceId, socket?: Socket): Promise<void> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.ServicesRequest);
-    ctx.write(Tokens.Listen);
+    ctx.write(this.parent.options.actingAs.token);
     let services: InstanceType<typeof Service>[] = []
     const device = await this.parent.devices.getDevice(deviceId.string);
     for (const serviceName of Object.keys(this.parent.services)) {
@@ -154,7 +144,7 @@ export class Directory extends Service<DirectoryData> {
 
     for (const service of services) {
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
-      ctx.write(Tokens.Listen);
+      ctx.write(this.parent.options.actingAs.token);
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
       Logger.silly(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
@@ -169,7 +159,7 @@ export class Directory extends Service<DirectoryData> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.TimeStamp);
     ctx.write(token);
-    ctx.write(Tokens.Listen);
+    ctx.write(this.parent.options.actingAs.token);
     ctx.writeUInt64(0n);
     const message = ctx.getBuffer();
     assert(message.length === 44);

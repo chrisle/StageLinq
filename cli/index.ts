@@ -13,12 +13,10 @@ require('console-stamp')(console, {
 
 
 function progressBar(size: number, bytes: number, total: number): string {
-
   const progress = Math.ceil((bytes / total) * 10)
   let progressArrary = new Array<string>(size);
   progressArrary.fill(' ');
   if (progress) {
-
     for (let i = 0; i < progress; i++) {
       progressArrary[i] = '|'
     }
@@ -34,34 +32,29 @@ async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: 
     const _source = stageLinq.sources.getSource(sourceName, deviceId);
     const connection = _source.database.connection;
     const result = await connection.getTrackInfo(trackName);
-    //console.log('Database entry:', result);
+    console.log('Database entry:', result);
     return result;
   } catch (e) {
     console.error(e);
   }
 }
 
-async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
-
-  while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
-    await sleep(250);
-  }
-  try {
-    const _source = stageLinq.sources.getSource(sourceName, deviceId);
-    const data = await stageLinq.sources.downloadFile(_source, path);
-    if (dest && data) {
-      const filePath = `${dest}/${path.split('/').pop()}`
-
-      fs.writeFileSync(filePath, Buffer.from(data));
-     // console.log(`Downloaded ${path} to ${dest}`);
+async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, path: string, dest?: string) {   
+    while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
+      await sleep(250)
     }
-  } catch (e) {
-    console.error(`Could not download ${path}`);
-    console.error(e)
-  }
+    try {
+        const _source = stageLinq.sources.getSource(sourceName, deviceId);
+        const data = await stageLinq.sources.downloadFile(_source, path);
+        if (dest && data) {
+          const filePath = `${dest}/${path.split('/').pop()}`
+          fs.writeFileSync(filePath, Buffer.from(data));
+        }
+      } catch (e) {
+        console.error(`Could not download ${path}`);
+        console.error(e)
+      }
 }
-
-let source: Map<string, Source> = new Map();
 
 
 async function main() {
@@ -70,12 +63,12 @@ async function main() {
   const stageLinqOptions: StageLinqOptions = {
     downloadDbSources: true,
     maxRetries: 3,
-    actingAs: ActingAsDevice.NowPlaying,
+    actingAs: ActingAsDevice.StageLinqJS,
     services: [
       ServiceList.StateMap,
       ServiceList.BeatInfo,
       ServiceList.FileTransfer,
-      //ServiceList.TimeSynchronization,
+      //ServiceList.TimeSynchronization, TODO Implement TimeSynch Fully
     ],
   }
 
@@ -107,7 +100,7 @@ async function main() {
 
 
   stageLinq.discovery.on('newDiscoveryDevice', (info) => {
-    console.log(`[DISCOVERY] New Device ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name}:${info.software.version}`)
+    console.log(`[DISCOVERY] New Device ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name} ${info.software.version}`)
   }); 
 
   stageLinq.discovery.on('announcing', (info) => {
@@ -128,21 +121,6 @@ async function main() {
 
     stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => {
       console.log(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
-      if (data.message?.json?.string && data.message.name.split('/').pop() === "TrackNetworkPath") {
-        const split = data.message.json.string.substring(43, data.message.json.string.length).split('/')
-        const sourceName = split.shift();
-        if (stageLinq.fileTransfer) {
-          const path = `/${sourceName}/${split.join('/')}`
-          
-          if (stageLinqOptions.downloadDbSources) {
-            const trackInfo = await getTrackInfo(stageLinq, sourceName, data.deviceId, data.message.json.string);
-            if (trackInfo) {
-              console.log(`[TRACKINFO] ${{...trackInfo}}`)
-            }
-            downloadFile(stageLinq, sourceName, data.deviceId, path, Path.resolve(os.tmpdir()));
-          }
-        }   
-      }
     });
 
     stageLinq.stateMap.on('newDevice', (service: Services.StateMapDevice) => {
@@ -159,32 +137,24 @@ async function main() {
 
     stageLinq.status.on('trackLoaded', async (status) => {
       console.log(`[STATUS] Track Loaded ${status.deviceId.string}`);
-      //console.dir(status);
 
-      // if (stageLinq.options.downloadDbSources ) {
-      //   getTrackInfo(stageLinq, status);
-      // }
+      const split = status.trackNetworkPath.substring(43).split('/')
+      const sourceName = split.shift();
+      const path = `/${sourceName}/${split.join('/')}`
 
-      // Example of how to download the actual track from the media.
-
-      //  // if (downloadFlag) {
-      //     const filename = [status.title,'.mp3'].join('');
-      //     while (!stageLinq.sources.hasSource(status.dbSourceName, status.deviceId)) {
-      //       await sleep(250);
-      //     }
-      //     //await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), filename));
-      //     await downloadFile(stageLinq, filename, status.deviceId, path, Path.resolve(os.tmpdir()));
-      //   //}
-
+      if (stageLinq.fileTransfer) {              
+        if (stageLinqOptions.downloadDbSources) {
+          getTrackInfo(stageLinq, sourceName, status.deviceId, status.trackNetworkPath);
+          downloadFile(stageLinq, sourceName, status.deviceId, path, Path.resolve(os.tmpdir()));
+        }
+      } 
     });
     stageLinq.status.on('nowPlaying', async (status) => {
       console.log(`[STATUS] Now Playing ${status.deviceId.string}`);
-      //console.dir(status);
     });
 
     stageLinq.status.on('stateChanged', async (status) => {
       console.log(`[STATUS] State Changed ${status.deviceId.string}`);
-      //console.dir(status);
     });
   }
 
@@ -201,21 +171,14 @@ async function main() {
 
     stageLinq.fileTransfer.on('newSource', (_source: Source) => {
       console.log(`[FILETRANSFER] Source Available: (${_source.name})`);
-      source.set(_source.name, _source)
     });
 
     stageLinq.fileTransfer.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
       console.log(`[FILETRANSFER] Source Removed: ${sourceName} on ${deviceId.string}`);
-      source.delete(sourceName);
     });
 
     stageLinq.databases.on('dbDownloaded', (_source: Source) => {
       console.log(`[FILETRANSFER] Database Downloaded: (${_source.name})`);
-      source.set(_source.name, _source);
-      const sources = stageLinq.sources.getSources();
-      for (const source of sources) {
-        console.log(`${source.name} on ${source.deviceId.string}`);
-      }
     });
 
   }
@@ -278,7 +241,7 @@ async function main() {
           const beatData = beatInfo.getBeatData();
           if (beatData) beatCallback(beatData);
         }
-        
+  
         setTimeout(beatFunc, 4000, beatInfo)
       } 
     

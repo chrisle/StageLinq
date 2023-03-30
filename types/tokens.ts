@@ -1,7 +1,7 @@
 import { DiscoveryMessageOptions } from '../network';
+import { version } from '../package.json';
 
-//export const CLIENT_TOKEN = new Uint8Array([255, 255, 255, 255, 255, 255, 74, 28, 155, 186, 136, 180, 190, 25, 163, 209]);
-export const Tokens = {
+const Tokens = {
   SoundSwitch: new Uint8Array([82, 253, 252, 7, 33, 130, 101, 79, 22, 63, 95, 15, 154, 98, 29, 114]),
   Sc6000_1: new Uint8Array([ 130, 139, 235, 2, 218, 31, 78, 104, 166, 175, 176, 177, 103, 234, 240, 162 ]),
   Sc6000_2: new Uint8Array([ 38, 210, 56, 103, 28, 214, 78, 63, 128, 161, 17, 130, 106, 196, 17, 32 ]),
@@ -9,14 +9,15 @@ export const Tokens = {
   Listen: new Uint8Array([255, 255, 255, 255, 255, 255, 74, 28, 155, 186, 136, 180, 190, 25, 163, 209])
 }
 
-/*
-export function deviceIdFromBuff(token: Uint8Array): string {
-    return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-      .exec(Buffer.from(token).toString('hex')).splice(1).join('-');
-}
-*/
-
 export const ActingAsDevice: {[name: string]: DiscoveryMessageOptions} = {
+  
+  StageLinqJS: {
+    name: 'stagelinqjs',
+    version: version,
+    source: 'SLJS',
+    token: Tokens.Listen
+  },
+
   NowPlaying: {
     name: 'nowplaying',
     version: '2.2.0',

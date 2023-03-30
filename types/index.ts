@@ -39,18 +39,6 @@ export interface ConnectionInfo extends DiscoveryMessage {
 	addressPort?: string;
 }
 
-// export interface DiscoveryDevice {
-//     [key: string]: {
-//       info: ConnectionInfo;
-      
-//   }
-// }
-
-
-export interface ServicePorts {
-	[key: string]: number;
-}
-
 export interface ServiceMessage<T> {
 	id: number;
 	message: T;

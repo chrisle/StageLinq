@@ -4,7 +4,7 @@ import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
 import * as Services from '../services';
-import { ServiceMessage, Tokens } from '../types';
+import { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
 import { Logger } from '../LogEmitter';
 import { Socket } from 'net';
@@ -41,7 +41,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     public async sendTimeSyncRequest() {
         const ctx = new WriteContext();
         ctx.write(new Uint8Array([0x0, 0x0, 0x0, 0x0]));
-        ctx.write(Tokens.Listen);
+        ctx.write(this.parent.options.actingAs.token);
         ctx.write(new Uint8Array([0x0]));
         ctx.writeFixedSizedString('TimeSynchronization');
         await this.write(ctx, this.socket);

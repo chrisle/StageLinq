@@ -25,7 +25,7 @@ export class Sources extends EventEmitter {
    * @returns boolean
    */
   hasSource(sourceName: string, deviceId: DeviceId): boolean {
-    return this._sources.has(`${sourceName}${deviceId.string}`);
+    return this._sources.has(`${deviceId.string}${sourceName}`);
   }
 
   /**

@@ -326,17 +326,18 @@ export class FileTransfer extends Service<FileTransferData> {
     return buf;
   }
 
-  async updateSources(sources: string[]) { //: Promise<Source[]> {
+  async updateSources(sources: string[]) { 
     const currentSources = this.parent.sources.getSources(this.deviceId);
     const currentSourceNames = currentSources.map(source => source.name);
-    const markedForDelete = currentSources.filter(item => !sources.includes(item.name)) //filter(source => item.name !== source))
+    
+    //When a source is disconnected, devices send a new SourceLocations message that excludes the removed source
+    const markedForDelete = currentSources.filter(item => !sources.includes(item.name));
     const newSources = sources.filter(source => !currentSourceNames.includes(source));
     for (const source of markedForDelete) {
       this.parent.sources.deleteSource(source.name, source.deviceId)
       this.emit('sourceRemoved', source.name, source.deviceId);
     }
-    // console.log(markedForDelete)
-    // console.log(newSources)
+    
     if (newSources.length) {
       this.getSources(newSources);
     }
@@ -366,29 +367,21 @@ export class FileTransfer extends Service<FileTransferData> {
                 location: database,
                 device: this.deviceId.string,
               }
-            },
-
+            }
           }
-          this.emit('newSource', thisSource);
           this.parent.sources.setSource(thisSource);
+          this.emit('newSource', thisSource);
           result.push(thisSource);
           
           if (this.parent.options.downloadDbSources) {
             this.parent.databases.downloadDb(thisSource);
           }
-          
-
           break;
         }
       }
     }
-    this.updateSources(sources);
     return result;
   }
-
-
-
-
 
   ///////////////////////////////////////////////////////////////////////////
   // Private methods
