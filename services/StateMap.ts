@@ -16,7 +16,6 @@ export type PlayerDeck = typeof stagelinqConfig.playerDeck;
 export type Mixer = typeof stagelinqConfig.mixer;
 
 const MAGIC_MARKER = 'smaa';
-// TODO: Is this thing really an interval?
 
 enum Action {
   request = 0x000007d2,
@@ -87,8 +86,7 @@ export class StateMapHandler extends ServiceHandler<StateData> {
 export class StateMap extends Service<StateData> {
   public readonly name = "StateMap";
   public readonly handler: StateMapHandler;
-  //#stateValues: Map<string, string> = new Map();
-  #hasReceivedState: boolean = false;
+  private hasReceivedState: boolean = false;
 
   constructor(p_parent: InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
     super(p_parent, serviceHandler, deviceId)
@@ -109,30 +107,12 @@ export class StateMap extends Service<StateData> {
         for (let state of playerStateValues) {  
           await this.subscribeState(state, 0, socket);
         }
-        // let playerDeckStateValues: string[] = [];
-        // for (let i = 0; i < thisPeer.device.decks; i++) {
-        //   playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i + 1}/`)];
-        // }
-        // for (let state of playerDeckStateValues) {
-        //   const stateValue = `${this.deviceId.string},/${state.split('/').slice(1, 3).join("/")}`
-        //   const newValue = `{${this.deviceId}},${state.split('/').slice(2, 3).shift().substring(4, 5)}`
-        //   this.handler.deviceTrackRegister.set(stateValue, newValue);
-        //   stateValueArray.push(state);
-        // }
         break;
       }
-
       case "CONTROLLER": {
         for (let state of controllerStateValues) {
           await this.subscribeState(state, 0, socket);
         }
-        // let playerDeckStateValues: string[] = [];
-        // for (let i = 0; i < thisPeer.device.decks; i++) {
-        //   playerDeckStateValues = [...playerDeckStateValues, ...stateReducer(stagelinqConfig.playerDeck, `/Engine/Deck${i + 1}/`)];
-        // }
-        // for (let state of playerDeckStateValues) {
-        //   stateValueArray.push(state);
-        // }
         break;
       }
       case "MIXER": {
@@ -208,31 +188,20 @@ export class StateMap extends Service<StateData> {
     assert.fail(`Unhandled type ${type}`);
   }
 
-  // private mixerAssignmentAdapter(data: ServiceMessage<StateData>) {
-  //   const keyString = `${this.deviceId.string},/Mixer/CH${data.message.name.substring(data.message.name.length - 1, data.message.name.length)}faderPosition`
-  //   const valueString = `${data.message.json.string},/Mixer/ChannelFaderPosition`;
-  //   this.handler.deviceTrackRegister.set(keyString, valueString);
-  // }
-
   protected messageHandler(p_data: ServiceMessage<StateData>): void {
-    //TODO do we need to emit intervals?
-    // if (p_data?.message?.name.substring(0, p_data?.message?.name?.length - 1) == "/Mixer/ChannelAssignment") {
-    //   this.mixerAssignmentAdapter(p_data);
-    // }
 
     if (p_data?.message?.interval) {
         this.sendStateResponse(p_data.message.name, p_data.socket);
     } 
     if (p_data?.message?.json) {
-      //this.#stateValues.set(p_data.message.name, "")
       this.emit('stateMessage', p_data);
     }
 
-    if (p_data && p_data.message.json && !this.#hasReceivedState) {
+    if (p_data && p_data.message.json && !this.hasReceivedState) {
       Logger.silent(
         `${p_data.deviceId.string} ${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
         }`);
-        this.#hasReceivedState = true;
+        this.hasReceivedState = true;
     }
   }
 
@@ -275,5 +244,4 @@ export class StateMap extends Service<StateData> {
     const buffer = ctx.getBuffer();
     await socket.write(buffer);
   }
-
 }
