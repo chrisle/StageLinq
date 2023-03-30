@@ -25,8 +25,8 @@ function progressBar(size: number, bytes: number, total: number): string {
 }
 
 async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, trackName: string) {
-  while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
-    await sleep(250);
+  while (!stageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
+    await sleep(1000);
   }
   try {
     const _source = stageLinq.sources.getSource(sourceName, deviceId);

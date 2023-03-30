@@ -28,6 +28,17 @@ export class Sources extends EventEmitter {
     return this._sources.has(`${deviceId.string}${sourceName}`);
   }
 
+  /** 
+   * 
+   * @param {string} sourceName - Name of source in EngineOS, eg: 'DJ STICK (USB 1)'
+   * @param {DeviceId} deviceId - DeviceID instance
+   * @returns boolean
+   */
+  hasSourceAndDB(sourceName: string, deviceId: DeviceId): boolean {
+    const source = this._sources.get(`${deviceId.string}${sourceName}`);
+    return (source && source.database?.local) ? true : false
+  }
+
   /**
    * 
    * @param sourceName Name of source in EngineOS, eg: 'DJ STICK (USB 1)'
