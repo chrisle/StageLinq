@@ -24,6 +24,7 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
 export declare interface Discovery {
 	on(event: 'newDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
+    on(event: 'updatedDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
 	on(event: 'announcing', listener: (info: DiscoveryMessage) => void): this;
 }
 
@@ -91,7 +92,8 @@ export class Discovery extends EventEmitter {
 
                 this.peers.set(deviceId.string, connectionInfo);
                 this.parent.devices.updateDeviceInfo(deviceId, connectionInfo);
-                Logger.warn(`Updated port for From ${deviceId.string}`)
+                Logger.silly(`Updated port for ${deviceId.string}`);
+                this.emit('updatedDiscoveryDevice', connectionInfo);
             } 
         });
     }

@@ -103,8 +103,12 @@ async function main() {
     console.log(`[DISCOVERY] New Device ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name} ${info.software.version}`)
   }); 
 
+  stageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
+    console.log(`[DISCOVERY] Updated Device ${Buffer.from(info.token).toString('hex')} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
+  }); 
+
   stageLinq.discovery.on('announcing', (info) => {
-    console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} disc Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
+    console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
   }); 
 
 
