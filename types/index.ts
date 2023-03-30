@@ -42,7 +42,7 @@ export interface ConnectionInfo extends DiscoveryMessage {
 export interface ServiceMessage<T> {
 	id: number;
 	message: T;
-	socket: Socket; //TODO replace with service
+	socket: Socket; //TODO replace with service?
 	deviceId: DeviceId;
 }
 

@@ -198,7 +198,7 @@ export class Discovery extends EventEmitter {
                 version: discoveryMessageOptions.version
             },
             source: discoveryMessageOptions.source,
-            token: discoveryMessageOptions.token //TODO make this DeviceId
+            token: discoveryMessageOptions.token, 
         };
         return msg;
     }

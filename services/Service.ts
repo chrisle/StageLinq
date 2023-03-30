@@ -82,9 +82,6 @@ export abstract class Service<T> extends EventEmitter {
 	public serverStatus: boolean = false;
 	public socket: Socket = null;
 
-	//TODO figure out removing this second DeviceId
-	protected _deviceId: DeviceId = null;
-
 	protected isBufferedService: boolean = true;
 	protected parent: InstanceType<typeof StageLinq>;
 	protected _handler: ServiceHandler<T> = null;
@@ -191,7 +188,6 @@ export abstract class Service<T> extends EventEmitter {
 		if (await this.subMessageTest(ctx.peek(20))) {
 
 			const messageId = ctx.readUInt32();
-			this._deviceId = new DeviceId(ctx.read(16));
 
 			//peak at network string length then rewind and read string
 			const stringLength = ctx.readUInt32();

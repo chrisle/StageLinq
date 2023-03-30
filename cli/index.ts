@@ -68,7 +68,7 @@ async function main() {
       ServiceList.StateMap,
       ServiceList.BeatInfo,
       ServiceList.FileTransfer,
-      //ServiceList.TimeSynchronization, TODO Implement TimeSynch Fully
+      //ServiceList.TimeSynchronization, TODO Implement TimeSync Fully
     ],
   }
 
