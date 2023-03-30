@@ -71,7 +71,7 @@ export class FileTransfer extends Service<FileTransferData> {
   private _isAvailable: boolean = true;
   private txId: number = 1;
 
-  // TODO need better txId to handle consurrent transfers
+  // TODO need better txId to handle concurrent transfers
   public get txid() {
     return this.txId;
   }
