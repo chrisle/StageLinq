@@ -188,7 +188,7 @@ export abstract class Service<T> extends EventEmitter {
 		if (await this.subMessageTest(ctx.peek(20))) {
 
 			const messageId = ctx.readUInt32();
-
+			ctx.seek(16) // DeviceID
 			//peak at network string length then rewind and read string
 			const stringLength = ctx.readUInt32();
 			ctx.seek(-4);
