@@ -72,13 +72,6 @@ export class StateMapHandler extends ServiceHandler<StateData> {
     const stateMap = service as Services.StateMap;
     this.addDevice(deviceId, service);
 
-    // const listener = (data: ServiceMessage<Services.StateData>) => {
-    //   if (data && data.message && data.message.json) {
-    //     this.emit('stateMessage', data);
-    //   }
-    // };
-    // stateMap.addListener('stateMessage', listener)
-
     stateMap.on('stateMessage', (data: ServiceMessage<Services.StateData>) => {
       this.emit('stateMessage', data);
     });
@@ -163,19 +156,7 @@ export class StateMap extends Service<StateData> {
 
   protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
     assert(this.deviceId);
-    //const buffer = p_ctx.readRemainingAsNewBuffer(); //new DataView(p_ctx.readRemainingAsNewArrayBuffer());
     
-    //buffer.byteLength
-    
-   //const marker = p_ctx.getString(4);
-   //const action = p_ctx.read(4)
-    // const message = p_ctx.read()
-    // const response = p_ctx.read(4);
-    // p_ctx.rewind();
-    // p_ctx.seek(12);
-    
-    // console.warn(`${action} ${response} ${message}`)
-
     const marker = p_ctx.getString(4);
     if (marker !== MAGIC_MARKER) {
       Logger.error(assert(marker !== MAGIC_MARKER));
@@ -210,7 +191,6 @@ export class StateMap extends Service<StateData> {
         const interval = p_ctx.readInt32();
         p_ctx.seek(-4);
 
-        //console.warn(`${this.deviceId.string} name: ${name} interval: ${interval} last4bytes ${Buffer.from(p_ctx.read(4)).toString('hex')} sizeLeft: ${p_ctx.sizeLeft()}`)
         return {
           id: MAGIC_MARKER_INTERVAL,
           socket: socket,
