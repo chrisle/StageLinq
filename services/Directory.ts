@@ -109,7 +109,7 @@ export class Directory extends Service<DirectoryData> {
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(this.parent.options.actingAs.token);
     let services: InstanceType<typeof Service>[] = []
-    const device = await this.parent.devices.getDevice(deviceId.string);
+    const device = await this.parent.devices.getDevice(deviceId);
     for (const serviceName of Object.keys(this.parent.services)) {
       if (device && !!deviceTypes[device.info?.software?.name]) {
         switch (serviceName) {

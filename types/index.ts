@@ -13,6 +13,7 @@ export * from './models';
 
 export interface DiscoveryMessage {
 	token: Uint8Array;
+	deviceId?: DeviceId;
 	source: string;
 	action: string;
 	software: {
@@ -22,8 +23,8 @@ export interface DiscoveryMessage {
 	port: number;
 }
 
-export enum DeviceType  {
-	Player =  "PLAYER",
+export enum DeviceType {
+	Player = "PLAYER",
 	Mixer = "MIXER",
 	Controller = "CONTROLLER",
 }
@@ -53,7 +54,7 @@ export interface Source {
 	database: {
 		location: string;
 		size: number;
-		connection?: DbConnection; 
+		connection?: DbConnection;
 		remote?: {
 			location: string,
 			device: string,
@@ -74,8 +75,8 @@ export type IpAddress = string;
 export type IpAddressPort = string;
 
 
-export enum ServiceList  {
-	StateMap =  "StateMap",
+export enum ServiceList {
+	StateMap = "StateMap",
 	FileTransfer = "FileTransfer",
 	BeatInfo = "BeatInfo",
 	TimeSynchronization = "TimeSynchronization",
@@ -88,22 +89,21 @@ export interface StageLinqOptions {
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
 	services?: ServiceList[];
-	//services?: typeof Services[]
 }
 
 type deviceType = {
-	[key: string] : {
+	[key: string]: {
 		name: string,
 		type: string,
 		decks: number,
 	}
 }
 
-export const deviceTypes:deviceType = {
+export const deviceTypes: deviceType = {
 	JC11: { name: 'PRIME4', type: 'CONTROLLER', decks: 4 },
 	JC16: { name: 'PRIME2', type: 'CONTROLLER', decks: 2 },
-	JC20: { name: 'LC6000', type: 'OTHER' , decks: 0 },
-	JP07: { name: 'SC5000', type: 'PLAYER' , decks: 2 },
+	JC20: { name: 'LC6000', type: 'OTHER', decks: 0 },
+	JP07: { name: 'SC5000', type: 'PLAYER', decks: 2 },
 	JP08: { name: 'SC5000M', type: 'PLAYER', decks: 2 },
 	JP11: { name: 'PRIMEGO', type: 'CONTROLLER', decks: 2 },
 	JP13: { name: 'SC6000', type: 'PLAYER', decks: 2 },
@@ -114,6 +114,5 @@ export const deviceTypes:deviceType = {
 	NH09: { name: 'MIXSTREAMPROPLUS', type: 'CONTROLLER', decks: 2 },
 	NH10: { name: 'MIXSTREAMPROGO', type: 'CONTROLLER', decks: 2 },
 	JM08: { name: 'DN-X1800Prime', type: 'MIXER', decks: 0 },
-	JM10: { name: 'DN-X1850Prime', type: 'MIXER' , decks: 0 },
-	//OfflineAnalyzer: { name: 'OfflineAnalyzer', type: 'OTHER' }
-  }
+	JM10: { name: 'DN-X1850Prime', type: 'MIXER', decks: 0 },
+}

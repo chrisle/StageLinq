@@ -67,7 +67,6 @@ async function main() {
       ServiceList.StateMap,
       ServiceList.BeatInfo,
       ServiceList.FileTransfer,
-      //ServiceList.TimeSynchronization, //TODO Implement TimeSync fully
     ],
   }
 
@@ -103,15 +102,15 @@ async function main() {
   });
 
   stageLinq.discovery.on('announcing', (info) => {
-    console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
+    console.log(`[DISCOVERY] Broadcasting Announce ${info.deviceId.string} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
   });
 
   stageLinq.discovery.on('newDiscoveryDevice', (info) => {
-    console.log(`[DISCOVERY] New Device ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name} ${info.software.version}`)
+    console.log(`[DISCOVERY] New Device ${info.deviceId.string} ${info.source} ${info.software.name} ${info.software.version}`)
   });
 
   stageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
-    console.log(`[DISCOVERY] Updated Device ${Buffer.from(info.token).toString('hex')} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
+    console.log(`[DISCOVERY] Updated Device ${info.deviceId.string} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
   });
 
 
@@ -128,13 +127,11 @@ async function main() {
 
   if (stageLinq.stateMap) {
 
-    stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => {
-      console.log(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
-    });
-
     stageLinq.stateMap.on('newDevice', (service: Services.StateMapDevice) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
       service.subscribe();
+
+      // To Utilize NowPlaying Status updates
       stageLinq.status.addPlayer({
         stateMap: service,
         address: service.socket.remoteAddress,
@@ -142,6 +139,11 @@ async function main() {
         deviceId: service.deviceId,
       })
     });
+
+    stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => {
+      console.log(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
+    });
+
 
 
     stageLinq.status.on('trackLoaded', async (status) => {

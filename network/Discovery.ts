@@ -107,8 +107,7 @@ export class Discovery extends EventEmitter {
         this.emit('listening');
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
-            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token)) {//&& deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
-
+            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.deviceId)) {
                 const device = this.parent.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);
                 Logger.silly(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
@@ -117,12 +116,10 @@ export class Discovery extends EventEmitter {
                 this.hasLooped = true;
             }
 
-            if (deviceTypes[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.token) && this.parent.devices.hasNewInfo(connectionInfo.token, connectionInfo)) {
-                const deviceId = new DeviceId(connectionInfo.token)
-
-                this.peers.set(deviceId.string, connectionInfo);
-                this.parent.devices.updateDeviceInfo(deviceId, connectionInfo);
-                Logger.silly(`Updated port for ${deviceId.string}`);
+            if (deviceTypes[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.deviceId) && this.parent.devices.hasNewInfo(connectionInfo.deviceId, connectionInfo)) {
+                this.peers.set(connectionInfo.deviceId.string, connectionInfo);
+                this.parent.devices.updateDeviceInfo(connectionInfo.deviceId, connectionInfo);
+                Logger.silly(`Updated port for ${connectionInfo.deviceId.string}`);
                 this.emit('updatedDiscoveryDevice', connectionInfo);
             }
         });
@@ -226,6 +223,7 @@ export class Discovery extends EventEmitter {
             port: ctx.readUInt16(),
             address: address,
         };
+        connectionInfo.deviceId = new DeviceId(connectionInfo.token)
         connectionInfo.addressPort = [connectionInfo.address, connectionInfo.port].join(":");
         if (deviceTypes[connectionInfo.software.name]) {
             connectionInfo.device = deviceTypes[connectionInfo.software.name];
@@ -246,6 +244,7 @@ export class Discovery extends EventEmitter {
         const msg: DiscoveryMessage = {
             action: action,
             port: port || 0,
+            deviceId: new DeviceId(discoveryMessageOptions.token),
             software: {
                 name: discoveryMessageOptions.name,
                 version: discoveryMessageOptions.version

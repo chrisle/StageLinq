@@ -27,80 +27,41 @@ export class Devices extends EventEmitter {
 
   /**
    * 
-   * @param {(string | Uint8Array | DeviceId)} deviceId 
+   * @param {DeviceId} deviceId 
    * @returns {Promise<Device>}
    */
-  async getDevice(deviceId: string | Uint8Array | DeviceId): Promise<Device> {
+  async getDevice(deviceId: DeviceId): Promise<Device> {
     while (!this.hasDevice(deviceId)) {
       await sleep(150);
     }
-
-    if (typeof deviceId == "string") {
-      return this.#devices.get(deviceId)
-    }
-    if (deviceId instanceof DeviceId) {
-      const _deviceId = deviceId as DeviceId
-      return this.#devices.get(_deviceId.string)
-    }
-    if (typeof deviceId == "object") {
-      const deviceString = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-        .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
-        .splice(1)
-        .join('-') as string
-      return this.#devices.get(deviceString);
-    }
+    return this.#devices.get(deviceId.string)
   }
 
   /**
    * 
-   * @param {(string | Uint8Array | DeviceId)} deviceId 
+   * @param {DeviceId} deviceId 
    * @returns {Device}
    */
-  device(deviceId: string | Uint8Array | DeviceId): Device {
-    if (typeof deviceId == "string") {
-      return this.#devices.get(deviceId)
-    }
-    if (deviceId instanceof DeviceId) {
-      const _deviceId = deviceId as DeviceId
-      return this.#devices.get(_deviceId.string)
-    }
-    if (typeof deviceId == "object") {
-      const deviceString = /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-        .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
-        .splice(1)
-        .join('-') as string
-      return this.#devices.get(deviceString);
-    }
+  device(deviceId: DeviceId): Device {
+    return this.#devices.get(deviceId.string)
   }
 
   /**
    * 
-   * @param {(string | Uint8Array | DeviceId)} deviceId 
+   * @param {DeviceId} deviceId 
    * @returns {boolean} 
    */
-  hasDevice(deviceId: Uint8Array | string | DeviceId): boolean {
-    if (typeof deviceId == "string") {
-      return this.#devices.has(deviceId)
-    }
-    if (deviceId instanceof DeviceId) {
-      const _deviceId = deviceId as DeviceId
-      return this.#devices.has(_deviceId.string)
-    }
-    if (typeof deviceId == "object") {
-      return this.#devices.has(/(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-        .exec(Buffer.from(deviceId as Uint8Array).toString('hex'))
-        .splice(1)
-        .join('-') as string)
-    }
+  hasDevice(deviceId: DeviceId): boolean {
+    return this.#devices.has(deviceId.string)
   }
 
   /**
   * 
-  * @param {(string | Uint8Array | DeviceId)} deviceId 
+  * @param {DeviceId} deviceId 
   * @param {ConnectionInfo} info 
   * @returns {boolean}
   */
-  hasNewInfo(deviceId: Uint8Array | string | DeviceId, info: ConnectionInfo): boolean {
+  hasNewInfo(deviceId: DeviceId, info: ConnectionInfo): boolean {
     return this.device(deviceId).info?.port !== info.port
   }
 
@@ -121,7 +82,7 @@ export class Devices extends EventEmitter {
    * @param {Service} service 
    */
   addService(deviceId: DeviceId, service: InstanceType<typeof Services.Service>) {
-    const device = this.device(deviceId.string)
+    const device = this.device(deviceId)
     device.addService(service)
   }
 
@@ -131,7 +92,7 @@ export class Devices extends EventEmitter {
    * @param {string} serviceName 
    */
   deleteService(deviceId: DeviceId, serviceName: string) {
-    const device = this.device(deviceId.string);
+    const device = this.device(deviceId);
     device.deleteService(serviceName)
   }
 
@@ -150,7 +111,7 @@ export class Device extends EventEmitter {
    */
   constructor(info: ConnectionInfo, parent: Devices) {
     super();
-    this.deviceId = new DeviceId(info.token);
+    this.deviceId = info.deviceId;
     this.parent = parent;
     this.info = info;
   }
