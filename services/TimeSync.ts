@@ -44,7 +44,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
         ctx.write(this.parent.options.actingAs.token);
         ctx.write(new Uint8Array([0x0]));
         ctx.writeFixedSizedString('TimeSynchronization');
-        await this.write(ctx, this.socket);
+        await this.write(ctx);
     }
 
     private timeSyncMsgHelper(msgId: number, msgs: bigint[]): Buffer {
@@ -75,7 +75,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
         const ctx = new WriteContext()
         ctx.write(buffMsg)
         this.remoteTime = remoteTime;
-        this.write(ctx, this.socket);
+        this.write(ctx);
     };
 
     // private async sendTimeSyncReply(interval: bigint, timeReceived: bigint): Promise<void> {
@@ -148,7 +148,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<TimeSyncData> {
         assert((socket));
         Logger.silly(`${messageId} to ${serviceName} from ${deviceId.string}`)
-        this.emit('newDevice', this)
+        //this.emit('newDevice', this)
         return
     }
 }

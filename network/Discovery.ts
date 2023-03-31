@@ -23,9 +23,9 @@ export interface DiscoveryMessageOptions {
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
 export declare interface Discovery {
-	on(event: 'newDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
+    on(event: 'newDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
     on(event: 'updatedDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
-	on(event: 'announcing', listener: (info: DiscoveryMessage) => void): this;
+    on(event: 'announcing', listener: (info: DiscoveryMessage) => void): this;
 }
 
 export class Discovery extends EventEmitter {
@@ -44,40 +44,67 @@ export class Discovery extends EventEmitter {
 
     /**
      * @constructor
-     * @param parent StageLinq Instance
+     * @param {StageLinq} parent StageLinq Instance
      */
     constructor(parent: InstanceType<typeof StageLinq>) {
         super();
         this.parent = parent;
     }
 
+    /**
+     * 
+     * @param {DeviceId} deviceId 
+     * @returns {ConnectionInfo}
+     */
     public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {
         return this.peers.get(deviceId.string);
     }
 
-    public async setConnectionInfo(deviceId: DeviceId, connectionInfo: ConnectionInfo) {
+    /**
+     * 
+     * @param {DeviceId} deviceId 
+     * @param {ConnectionInfo} connectionInfo 
+     */
+    public setConnectionInfo(deviceId: DeviceId, connectionInfo: ConnectionInfo) {
         this.peers.set(deviceId.string, connectionInfo);
     }
 
-    public hasConnectionInfo(deviceId: DeviceId): Boolean {
+    /**
+     * 
+     * @param {DeviceId} deviceId 
+     * @returns {boolean} 
+     */
+    public hasConnectionInfo(deviceId: DeviceId): boolean {
         return this.peers.has(deviceId.string);
     }
 
+    /**
+     * Get list of devices
+     * @returns {string[]}
+     */
     public getDeviceList(): string[] {
         return [...this.peers.keys()]
     }
 
+    /**
+     * Get array of device ConnectionInfos
+     * @returns {ConnectionInfo[]}
+     */
     public getDevices(): ConnectionInfo[] {
         return [...this.peers.values()]
     }
 
+    /**
+     * Initialize Discovery 
+     * @param {DiscoveryMessageOptions} options 
+     */
     async init(options: DiscoveryMessageOptions) {
         this.options = options;
         this.deviceId = new DeviceId(options.token)
 
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
-            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token) ) {//&& deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
+            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token)) {//&& deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {
 
                 const device = this.parent.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);
@@ -94,33 +121,36 @@ export class Discovery extends EventEmitter {
                 this.parent.devices.updateDeviceInfo(deviceId, connectionInfo);
                 Logger.silly(`Updated port for ${deviceId.string}`);
                 this.emit('updatedDiscoveryDevice', connectionInfo);
-            } 
+            }
         });
     }
 
+    /**
+     * Announce library to network
+     * @param {number} port 
+     */
     async announce(port: number) {
         assert(this.socket);
         this.socket.setBroadcast(true);
-
         const discoveryMessage = this.createDiscoveryMessage(Action.Login, this.options, port);
-
         while (!this.hasLooped) {
             await sleep(500);
         }
-
         const ips = this.findBroadcastIPs()
         const address = ips.filter(ip => {
             return ip.contains(this.address) === true
         });
         this.broadcastAddress = address.shift().broadcastAddress
         const msg = this.writeDiscoveryMessage(discoveryMessage)
-
         this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);
         this.emit('announcing', discoveryMessage)
         Logger.debug(`Broadcast Discovery Message ${this.deviceId.string} ${discoveryMessage.source}`);
         this.announceTimer = setInterval(this.broadcastMessage, ANNOUNCEMENT_INTERVAL, this.socket, msg, LISTEN_PORT, this.broadcastAddress);
     }
 
+    /**
+     * Unanounce Library to network
+     */
     async unannounce(): Promise<void> {
         assert(this.announceTimer);
         clearInterval(this.announceTimer);
@@ -137,24 +167,31 @@ export class Discovery extends EventEmitter {
 
     //////////// PRIVATE METHODS ///////////////
 
-    private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress) {
-        socket.send(msg, port, address);
+    /**
+     * 
+     * @param {Socket} socket 
+     * @param {Buffer} msg 
+     * @param {number} port 
+     * @param {IpAddress} address 
+     */
+    private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress): Promise<void> {
+        await socket.send(msg, port, address);
     }
 
     /**
    * Listen for new devices on the network and callback when a new one is found.
-   * @param callback Callback when new device is discovered.
+   * @param {DeviceDiscoveryCallback} callback Callback when new device is discovered.
    */
 
     private async listenForDevices(callback: DeviceDiscoveryCallback) {
         this.socket = UDPSocket.createSocket('udp4');
-        this.socket.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
-            const ctx = new ReadContext(p_announcement.buffer, false);
-            const result = this.readConnectionInfo(ctx, p_remote.address);
+        this.socket.on('message', (announcement: Uint8Array, remote: RemoteInfo) => {
+            const ctx = new ReadContext(announcement.buffer, false);
+            const result = this.readConnectionInfo(ctx, remote.address);
             if (!this.address) {
-                this.address = p_remote.address
+                this.address = remote.address
             }
-            assert(ctx.tell() === p_remote.size);
+            assert(ctx.tell() === remote.size);
             callback(result);
         });
         this.socket.bind({
@@ -163,34 +200,45 @@ export class Discovery extends EventEmitter {
         });
     }
 
-
-    private readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {
-        const magic = p_ctx.getString(4);
+    /**
+     * 
+     * @param {ReadContext} ctx 
+     * @param {IpAddress} address 
+     * @returns {ConnectionInfo}
+     */
+    private readConnectionInfo(ctx: ReadContext, address: IpAddress): ConnectionInfo {
+        const magic = ctx.getString(4);
         if (magic !== DISCOVERY_MESSAGE_MARKER) {
             return null;
         }
 
         const connectionInfo: ConnectionInfo = {
-            token: p_ctx.read(16),
-            source: p_ctx.readNetworkStringUTF16(),
-            action: p_ctx.readNetworkStringUTF16(),
+            token: ctx.read(16),
+            source: ctx.readNetworkStringUTF16(),
+            action: ctx.readNetworkStringUTF16(),
             software: {
-                name: p_ctx.readNetworkStringUTF16(),
-                version: p_ctx.readNetworkStringUTF16(),
+                name: ctx.readNetworkStringUTF16(),
+                version: ctx.readNetworkStringUTF16(),
             },
-            port: p_ctx.readUInt16(),
-            address: p_address,
+            port: ctx.readUInt16(),
+            address: address,
         };
         connectionInfo.addressPort = [connectionInfo.address, connectionInfo.port].join(":");
         if (deviceTypes[connectionInfo.software.name]) {
             connectionInfo.device = deviceTypes[connectionInfo.software.name];
         }
 
-        assert(p_ctx.isEOF());
+        assert(ctx.isEOF());
         return connectionInfo;
     }
 
-
+    /**
+     *
+     * @param {string} action 
+     * @param {DiscoveryMessageOptions} discoveryMessageOptions 
+     * @param {number} port 
+     * @returns {DiscoveryMessage}
+     */
     private createDiscoveryMessage(action: string, discoveryMessageOptions: DiscoveryMessageOptions, port?: number): DiscoveryMessage {
         const msg: DiscoveryMessage = {
             action: action,
@@ -200,25 +248,32 @@ export class Discovery extends EventEmitter {
                 version: discoveryMessageOptions.version
             },
             source: discoveryMessageOptions.source,
-            token: discoveryMessageOptions.token, 
+            token: discoveryMessageOptions.token,
         };
         return msg;
     }
 
-
-    private writeDiscoveryMessage(p_message: DiscoveryMessage): Buffer {
-        const p_ctx = new WriteContext();
-        p_ctx.writeFixedSizedString(DISCOVERY_MESSAGE_MARKER);
-        p_ctx.write(p_message.token);
-        p_ctx.writeNetworkStringUTF16(p_message.source);
-        p_ctx.writeNetworkStringUTF16(p_message.action);
-        p_ctx.writeNetworkStringUTF16(p_message.software.name);
-        p_ctx.writeNetworkStringUTF16(p_message.software.version);
-        p_ctx.writeUInt16(p_message.port);
-        return p_ctx.getBuffer()
+    /**
+     * 
+     * @param {DiscoveryMessage} message 
+     * @returns {Buffer}
+     */
+    private writeDiscoveryMessage(message: DiscoveryMessage): Buffer {
+        const ctx = new WriteContext();
+        ctx.writeFixedSizedString(DISCOVERY_MESSAGE_MARKER);
+        ctx.write(message.token);
+        ctx.writeNetworkStringUTF16(message.source);
+        ctx.writeNetworkStringUTF16(message.action);
+        ctx.writeNetworkStringUTF16(message.software.name);
+        ctx.writeNetworkStringUTF16(message.software.version);
+        ctx.writeUInt16(message.port);
+        return ctx.getBuffer()
     }
 
-
+    /**
+     * 
+     * @returns {SubnetInfo[]}
+     */
     private findBroadcastIPs(): SubnetInfo[] {
         const interfaces = Object.values(networkInterfaces());
         assert(interfaces.length);

@@ -68,7 +68,7 @@ export class StateMapHandler extends ServiceHandler<StateData> {
 
   public setupService(service: Service<StateData>, deviceId: DeviceId) {
     Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
-    const stateMap = service as Services.StateMap;
+    const stateMap = service as Services.Service<StateData>;
     this.addDevice(deviceId, service);
 
     stateMap.on('stateMessage', (data: ServiceMessage<Services.StateData>) => {
@@ -88,8 +88,8 @@ export class StateMap extends Service<StateData> {
   public readonly handler: StateMapHandler;
   private hasReceivedState: boolean = false;
 
-  constructor(p_parent: InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
-    super(p_parent, serviceHandler, deviceId)
+  constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
+    super(parent, serviceHandler, deviceId)
     this.handler = this._handler as StateMapHandler
   }
 
@@ -104,7 +104,7 @@ export class StateMap extends Service<StateData> {
 
     switch (thisPeer?.device?.type) {
       case "PLAYER": {
-        for (let state of playerStateValues) {  
+        for (let state of playerStateValues) {
           await this.subscribeState(state, 0, socket);
         }
         break;
@@ -128,28 +128,28 @@ export class StateMap extends Service<StateData> {
 
   protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
     Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`)
-    sleep(500)
+    //sleep(500)
     assert(socket);
-    this.emit('newDevice', this)
+    //this.emit('newDevice', this)
     return
   }
 
-  protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
+  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
     assert(this.deviceId);
-    
-    const marker = p_ctx.getString(4);
+
+    const marker = ctx.getString(4);
     if (marker !== MAGIC_MARKER) {
       Logger.error(assert(marker !== MAGIC_MARKER));
     }
     assert(marker === MAGIC_MARKER);
-    
-    const type = p_ctx.readUInt32();
+
+    const type = ctx.readUInt32();
     switch (type) {
       case MAGIC_MARKER_JSON: {
-        const name = p_ctx.readNetworkStringUTF16();
+        const name = ctx.readNetworkStringUTF16();
         let jsonString = "";
         try {
-          jsonString = p_ctx.readNetworkStringUTF16();
+          jsonString = ctx.readNetworkStringUTF16();
           const json = JSON.parse(jsonString);
           return {
             id: MAGIC_MARKER_JSON,
@@ -167,9 +167,9 @@ export class StateMap extends Service<StateData> {
       }
 
       case MAGIC_MARKER_INTERVAL: {
-        const name = p_ctx.readNetworkStringUTF16();
-        const interval = p_ctx.readInt32();
-        p_ctx.seek(-4);
+        const name = ctx.readNetworkStringUTF16();
+        const interval = ctx.readInt32();
+        ctx.seek(-4);
 
         return {
           id: MAGIC_MARKER_INTERVAL,
@@ -188,30 +188,30 @@ export class StateMap extends Service<StateData> {
     assert.fail(`Unhandled type ${type}`);
   }
 
-  protected messageHandler(p_data: ServiceMessage<StateData>): void {
+  protected messageHandler(data: ServiceMessage<StateData>): void {
 
-    if (p_data?.message?.interval) {
-        this.sendStateResponse(p_data.message.name, p_data.socket);
-    } 
-    if (p_data?.message?.json) {
-      this.emit('stateMessage', p_data);
+    if (data?.message?.interval) {
+      this.sendStateResponse(data.message.name, data.socket);
+    }
+    if (data?.message?.json) {
+      this.emit('stateMessage', data);
     }
 
-    if (p_data && p_data.message.json && !this.hasReceivedState) {
+    if (data && data.message.json && !this.hasReceivedState) {
       Logger.silent(
-        `${p_data.deviceId.string} ${p_data.message.name} => ${p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
+        `${data.deviceId.string} ${data.message.name} => ${data.message.json ? JSON.stringify(data.message.json) : data.message.interval
         }`);
-        this.hasReceivedState = true;
+      this.hasReceivedState = true;
     }
   }
 
-  private async sendStateResponse(p_state: string, socket: Socket) {
+  private async sendStateResponse(state: string, socket: Socket) {
 
     const getMessage = function (): Buffer {
       const ctx = new WriteContext();
       ctx.writeFixedSizedString(MAGIC_MARKER);
       ctx.writeUInt32(Action.response);
-      ctx.writeNetworkStringUTF16(p_state);
+      ctx.writeNetworkStringUTF16(state);
       ctx.writeUInt32(Result.reject);
       return ctx.getBuffer();
     };
@@ -225,14 +225,14 @@ export class StateMap extends Service<StateData> {
     await socket.write(buffer);
   }
 
-  private async subscribeState(p_state: string, p_interval: number, socket: Socket) {
+  private async subscribeState(state: string, interval: number, socket: Socket) {
 
     const getMessage = function (): Buffer {
       const ctx = new WriteContext();
       ctx.writeFixedSizedString(MAGIC_MARKER);
       ctx.writeUInt32(MAGIC_MARKER_INTERVAL);
-      ctx.writeNetworkStringUTF16(p_state);
-      ctx.writeUInt32(p_interval);
+      ctx.writeNetworkStringUTF16(state);
+      ctx.writeUInt32(interval);
       return ctx.getBuffer();
     };
 

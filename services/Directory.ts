@@ -42,8 +42,8 @@ export class Directory extends Service<DirectoryData> {
   }
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
-    
-     if (ctx.sizeLeft() < 20) {
+
+    if (ctx.sizeLeft() < 20) {
       return
     }
 
@@ -52,22 +52,23 @@ export class Directory extends Service<DirectoryData> {
     if (!token) {
       return
     }
-    
+
     this.deviceId = new DeviceId(token);
     const deviceInfo = this.parent.discovery.getConnectionInfo(this.deviceId);
 
+    assert(this.socket)
     try {
       switch (id) {
         case MessageId.TimeStamp:
           ctx.seek(16);
-          let timeAlive:bigint = 1n
-          if (ctx.sizeLeft()>= 8) {
+          let timeAlive: bigint = 1n
+          if (ctx.sizeLeft() >= 8) {
             timeAlive = ctx.readUInt64();
             this.timeAlive = Number(timeAlive / (1000n * 1000n * 1000n));
-          } 
-          
+          }
+
           if (deviceInfo && deviceInfo.device && deviceInfo.device.type === 'MIXER') {
-            this.sendTimeStampReply(token, socket);
+            this.sendTimeStampReply(token);
           }
           break;
         case MessageId.ServicesAnnouncement:
@@ -76,6 +77,7 @@ export class Directory extends Service<DirectoryData> {
           Logger.silent(this.name, 'received ', service, port);
           break;
         case MessageId.ServicesRequest:
+          Logger.silly(`service request from ${this.deviceId.string}`)
           this.sendServiceAnnouncement(this.deviceId, socket);
           break;
         default:
@@ -87,14 +89,14 @@ export class Directory extends Service<DirectoryData> {
       ctx.rewind();
       Logger.silent(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`)
     }
-    
+
 
     const directoryMessage: DirectoryData = {
       deviceId: this.deviceId.string
     };
     const directoryData = {
       id: 69,
-      socket: socket,
+      socket: this.socket,
       deviceId: this.deviceId,
       message: directoryMessage,
     };
@@ -107,7 +109,13 @@ export class Directory extends Service<DirectoryData> {
     }
   }
 
-  private async sendServiceAnnouncement(deviceId: DeviceId, socket?: Socket): Promise<void> {
+  /////////// Private Methods
+
+  /**
+   * 
+   * @param {DeviceId} deviceId 
+   */
+  private async sendServiceAnnouncement(deviceId: DeviceId, socket: Socket): Promise<void> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.ServicesRequest);
     ctx.write(this.parent.options.actingAs.token);
@@ -139,7 +147,7 @@ export class Directory extends Service<DirectoryData> {
           default:
             break;
         }
-      } 
+      }
     }
 
     for (const service of services) {
@@ -147,15 +155,19 @@ export class Directory extends Service<DirectoryData> {
       ctx.write(this.parent.options.actingAs.token);
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
-      Logger.silly(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
+      Logger.debug(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
     }
 
     const msg = ctx.getBuffer();
     await socket.write(msg);
-    Logger.silly(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`);
+    Logger.debug(`[${this.name}] sent ServiceAnnouncement to ${socket.remoteAddress}:${socket.remotePort}`);
   }
 
-  private async sendTimeStampReply(token: Uint8Array, socket: Socket) {
+  /**
+   * 
+   * @param {Uint8Array} token Token from recepient Device
+   */
+  private async sendTimeStampReply(token: Uint8Array) {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.TimeStamp);
     ctx.write(token);
@@ -164,7 +176,7 @@ export class Directory extends Service<DirectoryData> {
     const message = ctx.getBuffer();
     assert(message.length === 44);
     await sleep(1400);
-    await socket.write(message);
-    Logger.silly(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`);
+    await this.socket.write(message);
+    Logger.silly(`sent TimeStamp to ${this.socket.remoteAddress}:${this.socket.remotePort}`);
   }
 }

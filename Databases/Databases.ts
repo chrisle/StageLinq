@@ -14,16 +14,22 @@ export declare interface Databases {
   on(event: 'dbProgress', listener: (sourceName: string, txid: number, progress: FileTransferProgress) => void): this;
 }
 
+
 export class Databases extends EventEmitter {
   parent: InstanceType<typeof StageLinq>;
 
+  /**
+   * @constructor
+   * @param {StageLinq} _parent Instance of main StageLinq Class
+   */
   constructor(_parent: InstanceType<typeof StageLinq>) {
     super();
     this.parent = _parent;
   }
 
   /**
-   * Download databases from this network source.
+   * Download a Database from Device
+   * @param {Source} source instance of Source
    */
 
   async downloadDb(source: Source) {
@@ -32,8 +38,7 @@ export class Databases extends EventEmitter {
     const dbPath = getTempFilePath(`${source.deviceId.string}/${source.name}/m.db`);
     Logger.debug(`Reading database ${source.deviceId.string}/${source.name}`);
 
-    // Save database to a file
-    const file = await source.service.getFile(source.database.location, source.service.socket);
+    const file = await source.service.getFile(source.database.location);
     Logger.debug(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
 
@@ -44,6 +49,5 @@ export class Databases extends EventEmitter {
     this.parent.sources.setSource(source);
     Logger.debug(`Downloaded ${source.deviceId.string}/${source.name} to ${dbPath}`);
     this.emit('dbDownloaded', source);
-
   }
 }

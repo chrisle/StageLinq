@@ -39,21 +39,21 @@ async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: 
   }
 }
 
-async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, path: string, dest?: string) {   
-    while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
-      await sleep(250)
+async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
+  while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
+    await sleep(250)
+  }
+  try {
+    const _source = stageLinq.sources.getSource(sourceName, deviceId);
+    const data = await stageLinq.sources.downloadFile(_source, path);
+    if (dest && data) {
+      const filePath = `${dest}/${path.split('/').pop()}`
+      fs.writeFileSync(filePath, Buffer.from(data));
     }
-    try {
-        const _source = stageLinq.sources.getSource(sourceName, deviceId);
-        const data = await stageLinq.sources.downloadFile(_source, path);
-        if (dest && data) {
-          const filePath = `${dest}/${path.split('/').pop()}`
-          fs.writeFileSync(filePath, Buffer.from(data));
-        }
-      } catch (e) {
-        console.error(`Could not download ${path}`);
-        console.error(e)
-      }
+  } catch (e) {
+    console.error(`Could not download ${path}`);
+    console.error(e)
+  }
 }
 
 
@@ -101,15 +101,15 @@ async function main() {
 
   stageLinq.discovery.on('newDiscoveryDevice', (info) => {
     console.log(`[DISCOVERY] New Device ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name} ${info.software.version}`)
-  }); 
+  });
 
   stageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
     console.log(`[DISCOVERY] Updated Device ${Buffer.from(info.token).toString('hex')} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
-  }); 
+  });
 
   stageLinq.discovery.on('announcing', (info) => {
     console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
-  }); 
+  });
 
 
   stageLinq.devices.on('newDevice', (device) => {
@@ -146,12 +146,12 @@ async function main() {
       const sourceName = split.shift();
       const path = `/${sourceName}/${split.join('/')}`
 
-      if (stageLinq.fileTransfer) {              
+      if (stageLinq.fileTransfer) {
         if (stageLinqOptions.downloadDbSources) {
           getTrackInfo(stageLinq, sourceName, status.deviceId, status.trackNetworkPath);
           downloadFile(stageLinq, sourceName, status.deviceId, path, Path.resolve(os.tmpdir()));
         }
-      } 
+      }
     });
     stageLinq.status.on('nowPlaying', async (status) => {
       console.log(`[STATUS] Now Playing ${status.deviceId.string}`);
@@ -203,22 +203,22 @@ async function main() {
     //  User callback function. 
     //  Will be triggered everytime a player's beat counter crosses the resolution threshold
     function beatCallback(bd: ServiceMessage<Services.BeatData>,) {
-        let deckBeatString = ""
-        for (let i = 0; i < bd.message.deckCount; i++) {
-          deckBeatString += `Deck: ${i + 1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
-        }
-        console.log(`[BEATINFO] ${bd.deviceId.string} clock: ${bd.message.clock} ${deckBeatString}`);
+      let deckBeatString = ""
+      for (let i = 0; i < bd.message.deckCount; i++) {
+        deckBeatString += `Deck: ${i + 1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
+      }
+      console.log(`[BEATINFO] ${bd.deviceId.string} clock: ${bd.message.clock} ${deckBeatString}`);
     }
 
-      ////  callback is optional, BeatInfo messages can be consumed by: 
-      //      - user callback
-      //      - event messages 
-      //      - reading the register 
-      const beatMethod = {
-        useCallback: true,
-        useEvent: false, 
-        useRegister: false,
-      };
+    ////  callback is optional, BeatInfo messages can be consumed by: 
+    //      - user callback
+    //      - event messages 
+    //      - reading the register 
+    const beatMethod = {
+      useCallback: true,
+      useEvent: false,
+      useRegister: false,
+    };
 
 
     stageLinq.beatInfo.on('newBeatInfoDevice', async (beatInfo: Services.BeatInfo) => {
@@ -227,7 +227,7 @@ async function main() {
 
       if (beatMethod.useCallback) {
         beatInfo.startBeatInfo(beatOptions, beatCallback);
-      } 
+      }
 
       if (beatMethod.useEvent) {
         beatInfo.startBeatInfo(beatOptions);
@@ -240,15 +240,15 @@ async function main() {
 
       if (beatMethod.useRegister) {
         beatInfo.startBeatInfo(beatOptions);
-        
+
         function beatFunc(beatInfo: Services.BeatInfo) {
           const beatData = beatInfo.getBeatData();
           if (beatData) beatCallback(beatData);
         }
-  
+
         setTimeout(beatFunc, 4000, beatInfo)
-      } 
-    
+      }
+
     })
   }
 

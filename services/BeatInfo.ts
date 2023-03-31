@@ -8,7 +8,7 @@ import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { StageLinq } from '../StageLinq';
 
-type beatCallback = (n: ServiceMessage<BeatData>) => void;
+type BeatCallback = (n: ServiceMessage<BeatData>) => void;
 
 type BeatOptions = {
 	everyNBeats: number,
@@ -34,16 +34,31 @@ export declare interface BeatInfoHandler {
 
 export class BeatInfoHandler extends ServiceHandler<BeatData> {
 	public name: string = 'BeatInfo';
-	private _beatregister: Map<string, BeatData> = new Map();
+	#beatRegister: Map<string, BeatData> = new Map();
 
-	getBeatData(deviceId?: DeviceId): BeatData[] {
-		return (deviceId? [this._beatregister.get(deviceId.string)] : [...this._beatregister.values()])
+	/**
+	 * 
+	 * @param {DeviceId} [deviceId] optionally filter by DeviceId
+	 * @returns {BeatData[]}
+	 */
+	public getBeatData(deviceId?: DeviceId): BeatData[] {
+		return (deviceId ? [this.#beatRegister.get(deviceId.string)] : [...this.#beatRegister.values()])
 	}
 
-	setBeatData(deviceId: DeviceId, data: BeatData) {
-		this._beatregister.set(deviceId.string, data);
+	/**
+	 * 
+	 * @param {DeviceId} deviceId 
+	 * @param {BeatData} data 
+	 */
+	public setBeatData(deviceId: DeviceId, data: BeatData) {
+		this.#beatRegister.set(deviceId.string, data);
 	}
 
+	/**
+	 * 
+	 * @param {Service<BeatData>} service 
+	 * @param {DeviceId} deviceId 
+	 */
 	public setupService(service: Service<BeatData>, deviceId: DeviceId) {
 		Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
 		const beatInfo = service as BeatInfo;
@@ -66,54 +81,71 @@ export class BeatInfo extends Service<BeatData> {
 	public readonly name = "BeatInfo";
 	public readonly handler: BeatInfoHandler;
 
-	private _userBeatCallback: beatCallback = null;
+	private _userBeatCallback: BeatCallback = null;
 	private _userBeatOptions: BeatOptions = null;
 	private _currentBeatData: ServiceMessage<BeatData> = null;
 	isBufferedService: boolean = true;
-	
-	constructor(p_parent: InstanceType<typeof StageLinq>, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
-		super(p_parent, serviceHandler, deviceId)
-		this.handler = this._handler as BeatInfoHandler
-	  }
 
+	/**
+	 * @constructor
+	 * @param {StageLinq} parent 
+	 * @param {BeatInfoHandler} serviceHandler 
+	 * @param {DeviceId} [deviceId] 
+	 */
+	constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
+		super(parent, serviceHandler, deviceId)
+		this.handler = this._handler as BeatInfoHandler
+	}
+
+	/**
+	 * 
+	 * @returns {ServiceMessage<BeatData>}
+	 */
 	getBeatData(): ServiceMessage<BeatData> {
 		return this._currentBeatData;
 	}
 
-	
-
-	public async startBeatInfo(options: BeatOptions, beatCB?: beatCallback,) {
+	/**
+	 * 
+	 * @param {BeatOptions} options 
+	 * @param {BeatCallback} [beatCB] Optional User callback
+	 */
+	public startBeatInfo(options: BeatOptions, beatCB?: BeatCallback) {
 		if (beatCB) {
 			this._userBeatCallback = beatCB;
 		}
 		this._userBeatOptions = options;
-		this.sendBeatInfoRequest(this.socket);
+		this.sendBeatInfoRequest();
 	}
 
-	private async sendBeatInfoRequest(socket: Socket) {
+	/**
+	 * 
+	 * @param {Socket} socket 
+	 */
+	private async sendBeatInfoRequest() {
 		const ctx = new WriteContext();
 		ctx.write(new Uint8Array([0x0, 0x0, 0x0, 0x4, 0x0, 0x0, 0x0, 0x0]))
-		await this.write(ctx, socket);
+		await this.write(ctx);
 	}
 
-	protected parseData(p_ctx: ReadContext): ServiceMessage<BeatData> {
-		assert(p_ctx.sizeLeft() > 72);
-		let id = p_ctx.readUInt32()
-		const clock = p_ctx.readUInt64();
-		const deckCount = p_ctx.readUInt32();
+	protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<BeatData> {
+		assert(ctx.sizeLeft() > 72);
+		let id = ctx.readUInt32()
+		const clock = ctx.readUInt64();
+		const deckCount = ctx.readUInt32();
 		let deck: deckBeatData[] = [];
 		for (let i = 0; i < deckCount; i++) {
 			let deckData: deckBeatData = {
-				beat: p_ctx.readFloat64(),
-				totalBeats: p_ctx.readFloat64(),
-				BPM: p_ctx.readFloat64(),
+				beat: ctx.readFloat64(),
+				totalBeats: ctx.readFloat64(),
+				BPM: ctx.readFloat64(),
 			}
 			deck.push(deckData);
 		}
 		for (let i = 0; i < deckCount; i++) {
-			deck[i].samples = p_ctx.readFloat64();
+			deck[i].samples = ctx.readFloat64();
 		}
-		assert(p_ctx.isEOF())
+		assert(ctx.isEOF())
 		const beatMsg = {
 			clock: clock,
 			deckCount: deckCount,
@@ -122,12 +154,12 @@ export class BeatInfo extends Service<BeatData> {
 		return {
 			id: id,
 			deviceId: this.deviceId,
-			socket: this.socket,
+			socket: socket,
 			message: beatMsg
 		}
 	}
 
-	protected messageHandler(p_data: ServiceMessage<BeatData>): void {
+	protected messageHandler(data: ServiceMessage<BeatData>): void {
 
 		function resCheck(res: number, prevBeat: number, currentBeat: number): boolean {
 			if (res === 0) {
@@ -137,36 +169,36 @@ export class BeatInfo extends Service<BeatData> {
 				|| (Math.floor(prevBeat / res) - Math.floor(currentBeat / res) >= 1)
 		}
 
-		if (p_data && p_data.message) {
+		if (data && data.message) {
 			if (!this._currentBeatData) {
-				this._currentBeatData = p_data;
-				this.handler.setBeatData(this.deviceId, p_data.message);
-				this.emit('beatMessage', p_data);
+				this._currentBeatData = data;
+				this.handler.setBeatData(this.deviceId, data.message);
+				this.emit('beatMessage', data);
 				if (this._userBeatCallback) {
-					this._userBeatCallback(p_data);
+					this._userBeatCallback(data);
 				}
 			}
 
 			let hasUpdated = false;
 
-			for (let i = 0; i < p_data.message.deckCount; i++) {
+			for (let i = 0; i < data.message.deckCount; i++) {
 				if (resCheck(
 					this._userBeatOptions.everyNBeats,
 					this._currentBeatData.message.deck[i].beat,
-					p_data.message.deck[i].beat)) {
+					data.message.deck[i].beat)) {
 					hasUpdated = true;
 				}
 			}
 
 			if (hasUpdated) {
-				
-				this.emit('beatMessage', p_data);
+
+				this.emit('beatMessage', data);
 				if (this._userBeatCallback) {
-					this._userBeatCallback(p_data);
+					this._userBeatCallback(data);
 				}
 			}
-			this._currentBeatData = p_data;
-			this.handler.setBeatData(this.deviceId, p_data.message);
+			this._currentBeatData = data;
+			this.handler.setBeatData(this.deviceId, data.message);
 		}
 	}
 

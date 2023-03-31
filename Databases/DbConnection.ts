@@ -4,10 +4,13 @@ import { Logger } from '../LogEmitter';
 import { inflate } from 'zlib'
 
 export class DbConnection {
-
   private db: Database.Database;
   private dbPath: string;
-
+  /**
+   *  Create a SQLite DB Interface
+   * @constructor
+   * @param {string} dbPath file path to SQLite.db file
+   */
   constructor(dbPath: string) {
     this.dbPath = dbPath;
     Logger.debug(`Opening ${this.dbPath}`);
@@ -17,8 +20,8 @@ export class DbConnection {
   /**
    * Execute a SQL query.
    *
-   * @param query SQL query to execute
-   * @param params Parameters for BetterSqlite3 result.all.
+   * @param {string} query SQL query to execute
+   * @param {any} params Parameters for BetterSqlite3 result.all.
    * @returns
    */
   querySource<T>(query: string, ...params: any[]): T[] {
@@ -27,8 +30,12 @@ export class DbConnection {
     return result.all(params);
   }
 
-
-  async zInflate(data: Buffer): Promise<Buffer> {
+  /**
+   * Inflate Zlib compressed data
+   * @param {Buffer} data 
+   * @returns {Promise<Buffer>} Zlib inflated data
+   */
+  private async zInflate(data: Buffer): Promise<Buffer> {
     return new Promise((resolve, reject) => {
       inflate(data.slice(4), (err, buffer) => {
         if (err) {
@@ -43,8 +50,8 @@ export class DbConnection {
   /**
    * Return track's DB entry.
    *
-   * @param trackPath Path of track on the source's filesystem.
-   * @returns
+   * @param {string} _trackPath Path of track on the source's filesystem.
+   * @returns {Promise<Track>}
    */
   async getTrackInfo(_trackPath: string): Promise<Track> {
     let result: Track[];
@@ -65,6 +72,9 @@ export class DbConnection {
     return result[0];
   }
 
+  /**
+   * Close DB Connection
+   */
   close() {
     Logger.debug(`Closing ${this.dbPath}`);
     this.db.close();

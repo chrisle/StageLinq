@@ -20,7 +20,6 @@ export interface ServiceHandlers {
 }
 
 export declare interface StageLinq {
-
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => void): this;
   on(event: 'stateMessage', listener: (message: ServiceMessage<Services.StateData>) => void): this;
@@ -45,18 +44,22 @@ export class StageLinq extends EventEmitter {
   public readonly beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
   public readonly timeSync: InstanceType<typeof Services.TimeSynchronizationHandler> = null;
 
+  public readonly databases: Databases = null;
+  public readonly sources: Sources = null;
   public readonly status: Status = null;
 
   private directory: InstanceType<typeof Services.Directory> = null;
-  private _databases: Databases;
-  private _sources: Sources;
   private servers: Map<string, Server> = new Map();
 
+  /**
+   * @constructor
+   * @param {StageLinqOptions} [options]
+   */
   constructor(options?: StageLinqOptions) {
     super();
     this.options = options || DEFAULT_OPTIONS;
-    this._databases = new Databases(this);
-    this._sources = new Sources(this);
+    this.databases = new Databases(this);
+    this.sources = new Sources(this);
     this.status = new Status(this);
 
     //TODO make this into factory function?
@@ -85,22 +88,35 @@ export class StageLinq extends EventEmitter {
   }
 
   ////// Getters & Setters /////////
-  get databases() {
-    return this._databases;
-  }
+  // get databases() {
+  //   return this.#databases;
+  // }
 
-  get sources() {
-    return this._sources
-  }
+  // get sources() {
+  //   return this.#sources
+  // }
 
+  /**
+   * 
+   * @param {string} serverName 
+   * @param {Server} server 
+   */
   addServer(serverName: string, server: Server) {
     this.servers.set(serverName, server);
   }
 
+  /**
+   * 
+   * @param {string} serverName 
+   */
   deleteServer(serverName: string) {
     this.servers.delete(serverName);
   }
 
+  /**
+   * 
+   * @returns {IterableIterator<[string, Server]>}
+   */
   private getServers() {
     return this.servers.entries();
   }

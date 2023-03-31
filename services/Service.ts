@@ -23,10 +23,15 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 	protected parent: InstanceType<typeof StageLinq>;
 	private _devices: Map<string, Service<T>> = new Map();
 
+	/**
+	 * 
+	 * @param parent 
+	 * @param serviceName 
+	 */
 
-	constructor(p_parent: InstanceType<typeof StageLinq>, serviceName: string) {
+	constructor(parent: InstanceType<typeof StageLinq>, serviceName: string) {
 		super();
-		this.parent = p_parent;
+		this.parent = parent;
 		this.name = serviceName;
 		this.parent.services[serviceName] = this;
 	}
@@ -57,14 +62,14 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 
 		const service = new ctor(parent, this, deviceId);
 		await service.listen();
-		
+
 		let serverName = `${ctor.name}`;
 		if (deviceId) {
 			this.parent.devices.addService(deviceId, service)
 			serverName += deviceId.string;
 		}
 		this.setupService(service, deviceId)
-		
+
 		this.parent.addServer(serverName, service.server);
 		return service;
 	}
@@ -89,9 +94,9 @@ export abstract class Service<T> extends EventEmitter {
 
 	private messageBuffer: Buffer = null;
 
-	constructor(p_parent: InstanceType<typeof StageLinq>, serviceHandler: InstanceType<typeof ServiceHandler>, deviceId?: DeviceId) {
+	constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: InstanceType<typeof ServiceHandler>, deviceId?: DeviceId) {
 		super();
-		this.parent = p_parent;
+		this.parent = parent;
 		this._handler = serviceHandler as ServiceHandler<T>;
 		this.deviceId = deviceId || null;
 		this.device = (deviceId ? this.parent.devices.device(deviceId) : null);
@@ -118,8 +123,8 @@ export abstract class Service<T> extends EventEmitter {
 					reject(err);
 				});
 
-				socket.on('data', async p_data => {
-					await this.dataHandler(p_data, socket)
+				socket.on('data', async data => {
+					await this.dataHandler(data, socket)
 				});
 
 			}).listen(0, '0.0.0.0', () => {
@@ -128,7 +133,7 @@ export abstract class Service<T> extends EventEmitter {
 				this.server = server;
 				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
 				if (this.deviceId) {
-					Logger.silly(`started timer for ${this.name} for ${this.deviceId}`)
+					Logger.silly(`started timer for ${this.name} for ${this.deviceId.string}`)
 					this.timeout = setTimeout(this.closeService, 5000, this.deviceId, this.name, this.server, this.parent, this._handler);
 				};
 				resolve(server);
@@ -164,14 +169,14 @@ export abstract class Service<T> extends EventEmitter {
 		}
 	}
 
-	private async dataHandler(p_data: Buffer, socket: Socket) {
+	private async dataHandler(data: Buffer, socket: Socket) {
 
 		// Concantenate messageBuffer with current data
 		let buffer: Buffer = null;
 		if (this.messageBuffer && this.messageBuffer.length > 0) {
-			buffer = Buffer.concat([this.messageBuffer, p_data]);
+			buffer = Buffer.concat([this.messageBuffer, data]);
 		} else {
-			buffer = p_data;
+			buffer = data;
 		}
 		this.messageBuffer = null
 
@@ -182,7 +187,7 @@ export abstract class Service<T> extends EventEmitter {
 		if (!this.isBufferedService) {
 			const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket);
 			this.messageHandler(parsedData);
-			
+
 		};
 
 		if (await this.subMessageTest(ctx.peek(20))) {
@@ -204,9 +209,11 @@ export abstract class Service<T> extends EventEmitter {
 			if (this.device) {
 				this.device.parent.emit('newService', this.device, this)
 			}
+
+			this.emit('newDevice', this);
 			const parsedData = this.parseServiceData(messageId, this.deviceId, serviceName, socket);
 			this.messageHandler(parsedData);
-			
+
 		}
 
 		try {
@@ -239,35 +246,35 @@ export abstract class Service<T> extends EventEmitter {
 		}
 	}
 
-	async waitForMessage(message: string, p_messageId: number): Promise<T> {
+	async waitForMessage(eventMessage: string, messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
-			const listener = (p_message: ServiceMessage<T>) => {
-				if (p_message.id === p_messageId) {
-					this.removeListener(message, listener);
-					resolve(p_message.message);
+			const listener = (message: ServiceMessage<T>) => {
+				if (message.id === messageId) {
+					this.removeListener(eventMessage, listener);
+					resolve(message.message);
 				}
 			};
-			this.addListener(message, listener);
+			this.addListener(eventMessage, listener);
 			setTimeout(() => {
-				reject(new Error(`Failed to receive message '${p_messageId}' on time`));
+				reject(new Error(`Failed to receive message '${messageId}' on time`));
 			}, MESSAGE_TIMEOUT);
 		});
 	}
 
-	async write(p_ctx: WriteContext, socket: Socket) {
-		assert(p_ctx.isLittleEndian() === false);
-		const buf = p_ctx.getBuffer();
-		const written = await socket.write(buf);
+	async write(ctx: WriteContext) {
+		assert(ctx.isLittleEndian() === false);
+		const buf = ctx.getBuffer();
+		const written = await this.socket.write(buf);
 		return written;
 	}
 
-	async writeWithLength(p_ctx: WriteContext, socket: Socket) {
-		assert(p_ctx.isLittleEndian() === false);
-		const newCtx = new WriteContext({ size: p_ctx.tell() + 4, autoGrow: false });
-		newCtx.writeUInt32(p_ctx.tell());
-		newCtx.write(p_ctx.getBuffer());
+	async writeWithLength(ctx: WriteContext) {
+		assert(ctx.isLittleEndian() === false);
+		const newCtx = new WriteContext({ size: ctx.tell() + 4, autoGrow: false });
+		newCtx.writeUInt32(ctx.tell());
+		newCtx.write(ctx.getBuffer());
 		assert(newCtx.isEOF());
-		return await this.write(newCtx, socket);
+		return await this.write(newCtx);
 	}
 
 	//	callback for timeout timer
@@ -290,7 +297,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	protected abstract parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<T>;
 
-	protected abstract parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<T>;
+	protected abstract parseData(ctx: ReadContext, socket: Socket): ServiceMessage<T>;
 
-	protected abstract messageHandler(p_data: ServiceMessage<T>): void;
+	protected abstract messageHandler(data: ServiceMessage<T>): void;
 }
