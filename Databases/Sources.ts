@@ -99,7 +99,7 @@ export class Sources extends EventEmitter {
     await service.isAvailable();
 
     try {
-      const file = await service.getFile(path);
+      const file = await service.getFile(source, path);
       return file;
     } catch (err) {
       Logger.error(err);

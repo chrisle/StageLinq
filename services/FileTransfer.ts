@@ -36,8 +36,8 @@ export interface FileTransferProgress {
 }
 
 export declare interface FileTransfer {
-  on(event: 'fileTransferProgress', listener: (fileName: string, txid: number, progress: FileTransferProgress) => void): this;
-  on(event: 'fileTransferComplete', listener: (fileName: string, txid: number) => void): this;
+  on(event: 'fileTransferProgress', listener: (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => void): this;
+  on(event: 'fileTransferComplete', listener: (source: Source, fileName: string, txid: number) => void): this;
   on(event: 'newSource', listener: (source: Source) => void): this;
   on(event: 'sourceRemoved', listener: (sourceName: string, deviceId: DeviceId) => void): this;
 }
@@ -54,17 +54,17 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
     const fileTransfer = service as FileTransfer;
     Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.string}`);
     this.addDevice(deviceId, service);
-    fileTransfer.on('fileTransferProgress', (fileName, txid, progress) => {
-      this.emit('fileTransferProgress', fileName, txid, progress);
+    fileTransfer.on('fileTransferProgress', (source, fileName, txid, progress) => {
+      this.emit('fileTransferProgress', source, fileName, txid, progress);
+    });
+    fileTransfer.on('fileTransferComplete', (source, fileName, txid) => {
+      this.emit('fileTransferComplete', source, fileName, txid);
     });
     fileTransfer.on('newSource', (source: Source) => {
       this.emit('newSource', source);
     });
     fileTransfer.on('sourceRemoved', (name: string, deviceId: DeviceId) => {
       this.emit('sourceRemoved', name, deviceId);
-    });
-    fileTransfer.on('fileTransferComplete', (fileName, txid) => {
-      this.emit('fileTransferComplete', fileName, txid);
     });
   }
 }
@@ -256,7 +256,7 @@ export class FileTransfer extends Service<FileTransferData> {
    * @param {string} location Location of the file on the device.
    * @returns {Promise<Uint8Array>} Contents of the file.
    */
-  async getFile(location: string): Promise<Uint8Array> {
+  async getFile(source: Source, location: string): Promise<Uint8Array> {
     while (!this.#isAvailable) {
       await sleep(500)
     }
@@ -286,7 +286,7 @@ export class FileTransfer extends Service<FileTransferData> {
           while (this.receivedFile.isEOF() === false) {
             const bytesDownloaded = total - this.receivedFile.sizeLeft();
             const percentComplete = (bytesDownloaded / total) * 100;
-            this.emit('fileTransferProgress', location.split('/').pop(), this.txid, {
+            this.emit('fileTransferProgress', source, location.split('/').pop(), this.txid, {
               sizeLeft: this.receivedFile.sizeLeft(),
               total: txinfo.size,
               bytesDownloaded: bytesDownloaded,
@@ -297,7 +297,7 @@ export class FileTransfer extends Service<FileTransferData> {
             await sleep(200);
           }
           Logger.debug(`Download complete.`);
-          this.emit('fileTransferComplete', location.split('/').pop(), this.#txid)
+          this.emit('fileTransferComplete', source, location.split('/').pop(), this.#txid)
           resolve(true);
         });
       } catch (err) {

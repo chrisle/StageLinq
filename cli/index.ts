@@ -165,12 +165,12 @@ async function main() {
 
   if (stageLinq.fileTransfer) {
 
-    stageLinq.fileTransfer.on('fileTransferProgress', (file, txid, progress) => {
-      console.log(`[FILETRANSFER] {${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
+    stageLinq.fileTransfer.on('fileTransferProgress', (source, file, txid, progress) => {
+      console.log(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
     });
 
-    stageLinq.fileTransfer.on('fileTransferComplete', (file, txid) => {
-      console.log(`[FILETRANSFER] Complete {${txid}} ${file}`);
+    stageLinq.fileTransfer.on('fileTransferComplete', (source, file, txid) => {
+      console.log(`[FILETRANSFER] Complete ${source.name} id:{${txid}} ${file}`);
     });
 
     stageLinq.fileTransfer.on('newSource', (_source: Source) => {
@@ -181,8 +181,8 @@ async function main() {
       console.log(`[FILETRANSFER] Source Removed: ${sourceName} on ${deviceId.string}`);
     });
 
-    stageLinq.databases.on('dbDownloaded', (_source: Source) => {
-      console.log(`[FILETRANSFER] Database Downloaded: (${_source.name})`);
+    stageLinq.databases.on('dbDownloaded', (source: Source) => {
+      console.log(`[FILETRANSFER] Database Downloaded: (${source.name})`);
     });
 
   }

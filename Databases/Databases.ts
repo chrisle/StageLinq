@@ -38,7 +38,7 @@ export class Databases extends EventEmitter {
     const dbPath = getTempFilePath(`${source.deviceId.string}/${source.name}/m.db`);
     Logger.debug(`Reading database ${source.deviceId.string}/${source.name}`);
 
-    const file = await source.service.getFile(source.database.location);
+    const file = await source.service.getFile(source, source.database.location);
     Logger.debug(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
 
