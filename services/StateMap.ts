@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
-import { ServiceMessage, MessageId, StageLinqValueObj } from '../types';
+import { ServiceMessage, StageLinqValueObj } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
@@ -126,13 +126,6 @@ export class StateMap extends Service<StateData> {
     }
   }
 
-  protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<StateData> {
-    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`)
-    //sleep(500)
-    assert(socket);
-    //this.emit('newDevice', this)
-    return
-  }
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
     assert(this.deviceId);

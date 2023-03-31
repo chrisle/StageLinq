@@ -81,14 +81,6 @@ export class FileTransfer extends Service<FileTransferData> {
     return this.#txid;
   }
 
-
-
-  protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<FileTransferData> {
-    assert((socket));
-    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`)
-    return
-  }
-
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<FileTransferData> {
 
     const check = ctx.getString(4);
@@ -129,12 +121,8 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(ctx.readUInt8() === 0x1);
         assert(ctx.isEOF());
 
-        //if (sources.length) {
         Logger.silly(`getting sources for `, this.deviceId.string);
-
-        //this.getSources(sources, socket);
         this.updateSources(sources);
-        //}
 
         return {
           id: messageId,

@@ -202,9 +202,4 @@ export class BeatInfo extends Service<BeatData> {
 		}
 	}
 
-	protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<BeatData> {
-		assert((socket));
-		Logger.silly(`${messageId} to ${serviceName} from ${deviceId.string}`)
-		return
-	}
 }

@@ -187,13 +187,17 @@ export abstract class Service<T> extends EventEmitter {
 		if (!this.isBufferedService) {
 			const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket);
 			this.messageHandler(parsedData);
-
 		};
 
 		if (await this.subMessageTest(ctx.peek(20))) {
 
 			const messageId = ctx.readUInt32();
-			ctx.seek(16) // DeviceID
+			const token = ctx.read(16) // DeviceID
+			if (!this.deviceId) {
+				const deviceId = new DeviceId(token);
+				Logger.silent(`${this.name} adding DeviceId: ${deviceId.string}`)
+				this.deviceId = deviceId
+			}
 			//peak at network string length then rewind and read string
 			const stringLength = ctx.readUInt32();
 			ctx.seek(-4);
@@ -209,11 +213,7 @@ export abstract class Service<T> extends EventEmitter {
 			if (this.device) {
 				this.device.parent.emit('newService', this.device, this)
 			}
-
 			this.emit('newDevice', this);
-			const parsedData = this.parseServiceData(messageId, this.deviceId, serviceName, socket);
-			this.messageHandler(parsedData);
-
 		}
 
 		try {
@@ -294,8 +294,6 @@ export abstract class Service<T> extends EventEmitter {
 		await service.deleteDevice(deviceId);
 		assert(!service.hasDevice(deviceId));
 	}
-
-	protected abstract parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<T>;
 
 	protected abstract parseData(ctx: ReadContext, socket: Socket): ServiceMessage<T>;
 

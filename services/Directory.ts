@@ -30,16 +30,6 @@ export class Directory extends Service<DirectoryData> {
   protected readonly isBufferedService = false;
   protected timeAlive: number;
 
-  protected parseServiceData(
-    messageId: number,
-    deviceId: DeviceId,
-    serviceName: string,
-    socket: Socket
-  ): ServiceMessage<DirectoryData> {
-    assert(socket);
-    Logger.silly(`${MessageId[messageId]} to ${serviceName} from ${deviceId.string}`);
-    return;
-  }
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
 

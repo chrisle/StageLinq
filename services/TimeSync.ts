@@ -1,5 +1,4 @@
 
-import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
@@ -85,7 +84,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     //     await this.write(ctx, this.socket);
     // };
 
-    protected parseData(p_ctx: ReadContext): ServiceMessage<TimeSyncData> {
+    protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<TimeSyncData> {
         const timestamp = this.getTimeStamp();
         const size = p_ctx.readUInt32();
 
@@ -104,7 +103,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             return {
                 id: id,
                 deviceId: this.deviceId,
-                socket: this.socket,
+                socket: socket,
                 message: {
                     msgs: msgs,
                     timestamp: timestamp,
@@ -145,11 +144,5 @@ export class TimeSynchronization extends Service<TimeSyncData> {
         }
     }
 
-    protected parseServiceData(messageId: number, deviceId: DeviceId, serviceName: string, socket: Socket): ServiceMessage<TimeSyncData> {
-        assert((socket));
-        Logger.silly(`${messageId} to ${serviceName} from ${deviceId.string}`)
-        //this.emit('newDevice', this)
-        return
-    }
 }
 
