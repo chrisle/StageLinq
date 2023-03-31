@@ -118,7 +118,7 @@ export class StageLinq extends EventEmitter {
    */
   async connect() {
     //  Initialize Discovery agent
-    await this.discovery.init(this.options.actingAs);
+    await this.discovery.listen(this.options.actingAs);
 
     //Directory is required
     const directory = new Services.DirectoryHandler(this, Services.Directory.name)

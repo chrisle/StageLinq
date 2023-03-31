@@ -26,6 +26,7 @@ export declare interface Discovery {
     on(event: 'newDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
     on(event: 'updatedDiscoveryDevice', listener: (info: DiscoveryMessage) => void): this;
     on(event: 'announcing', listener: (info: DiscoveryMessage) => void): this;
+    on(event: 'listening', listener: () => void): this;
 }
 
 export class Discovery extends EventEmitter {
@@ -96,13 +97,14 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-     * Initialize Discovery 
+     * Start Discovery Listener
      * @param {DiscoveryMessageOptions} options 
      */
-    async init(options: DiscoveryMessageOptions) {
+    async listen(options: DiscoveryMessageOptions) {
         this.options = options;
         this.deviceId = new DeviceId(options.token)
 
+        this.emit('listening');
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
             if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.token)) {//&& deviceIdFromBuff(connectionInfo.token) !== deviceIdFromBuff(this.options.token)) {

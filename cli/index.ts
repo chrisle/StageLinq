@@ -11,7 +11,6 @@ require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
 });
 
-
 function progressBar(size: number, bytes: number, total: number): string {
   const progress = Math.ceil((bytes / total) * 10)
   let progressArrary = new Array<string>(size);
@@ -61,14 +60,14 @@ async function main() {
 
   console.log('Starting CLI');
   const stageLinqOptions: StageLinqOptions = {
-    downloadDbSources: true,
+    downloadDbSources: false,
     maxRetries: 3,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
       ServiceList.StateMap,
       ServiceList.BeatInfo,
       ServiceList.FileTransfer,
-      //ServiceList.TimeSynchronization, TODO Implement TimeSync Fully
+      //ServiceList.TimeSynchronization, //TODO Implement TimeSync fully
     ],
   }
 
@@ -99,6 +98,14 @@ async function main() {
   // });
 
 
+  stageLinq.discovery.on('listening', () => {
+    console.log(`[DISCOVERY] Listening`)
+  });
+
+  stageLinq.discovery.on('announcing', (info) => {
+    console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
+  });
+
   stageLinq.discovery.on('newDiscoveryDevice', (info) => {
     console.log(`[DISCOVERY] New Device ${Buffer.from(info.token).toString('hex')} ${info.source} ${info.software.name} ${info.software.version}`)
   });
@@ -107,9 +114,7 @@ async function main() {
     console.log(`[DISCOVERY] Updated Device ${Buffer.from(info.token).toString('hex')} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
   });
 
-  stageLinq.discovery.on('announcing', (info) => {
-    console.log(`[DISCOVERY] Broadcasting Announce ${Buffer.from(info.token).toString('hex')} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
-  });
+
 
 
   stageLinq.devices.on('newDevice', (device) => {
@@ -173,8 +178,8 @@ async function main() {
       console.log(`[FILETRANSFER] Complete ${source.name} id:{${txid}} ${file}`);
     });
 
-    stageLinq.fileTransfer.on('newSource', (_source: Source) => {
-      console.log(`[FILETRANSFER] Source Available: (${_source.name})`);
+    stageLinq.fileTransfer.on('newSource', (source: Source) => {
+      console.log(`[FILETRANSFER] Source Available: (${source.name})`);
     });
 
     stageLinq.fileTransfer.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
