@@ -24,9 +24,10 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 	private _devices: Map<string, Service<T>> = new Map();
 
 	/**
-	 * 
-	 * @param parent 
-	 * @param serviceName 
+	 * ServiceHandler Abstract Class
+	 * @constructor
+	 * @param {StageLinq} parent 
+	 * @param {string} serviceName 
 	 */
 
 	constructor(parent: InstanceType<typeof StageLinq>, serviceName: string) {
@@ -36,26 +37,56 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 		this.parent.services[serviceName] = this;
 	}
 
+	/**
+	 * Check if Service Handler has Device
+	 * @param {DeviceId} deviceId 
+	 * @returns {boolean}
+	 */
 	hasDevice(deviceId: DeviceId): boolean {
 		return this._devices.has(deviceId.string)
 	}
 
+	/**
+	 * Get an attached device from Service Handler
+	 * @param {DeviceId} deviceId 
+	 * @returns {Service<T>}
+	 */
 	getDevice(deviceId: DeviceId): Service<T> {
 		return this._devices.get(deviceId.string);
 	}
 
+	/**
+	 * Get all attached devices from Service Handler
+	 * @returns {Service<T>[]}
+	 */
 	getDevices(): Service<T>[] {
 		return [...this._devices.values()]
 	}
 
+	/**
+	 * Add a Device to Service Handler
+	 * @param {DeviceId} deviceId 
+	 * @param {Service<T>} service 
+	 */
 	addDevice(deviceId: DeviceId, service: Service<T>) {
 		this._devices.set(deviceId.string, service)
 	}
 
+	/**
+	 * Remove a Device from Service Handler 
+	 * @param {DeviceId} deviceId 
+	 */
 	deleteDevice(deviceId: DeviceId) {
 		this._devices.delete(deviceId.string)
 	}
 
+	/**
+	 * Start new service factory function
+	 * @param {Service<T>} ctor 
+	 * @param {StageLinq} parent 
+	 * @param {DeviceId} deviceId 
+	 * @returns {Service<T>}
+	 */
 	async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
 		new(_parent: InstanceType<typeof StageLinq>, _serviceHandler?: any, _deviceId?: DeviceId): T;
 	}, parent?: InstanceType<typeof StageLinq>, deviceId?: DeviceId): Promise<T> {
@@ -94,6 +125,12 @@ export abstract class Service<T> extends EventEmitter {
 
 	private messageBuffer: Buffer = null;
 
+	/**
+	 * Service Abstract Class
+	 * @param {StageLinq} parent 
+	 * @param {ServiceHandler<T>} serviceHandler 
+	 * @param {DeviceId} deviceId 
+	 */
 	constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: InstanceType<typeof ServiceHandler>, deviceId?: DeviceId) {
 		super();
 		this.parent = parent;
@@ -102,6 +139,10 @@ export abstract class Service<T> extends EventEmitter {
 		this.device = (deviceId ? this.parent.devices.device(deviceId) : null);
 	}
 
+	/**
+	 * Creates a new Net.Server for Service
+	 * @returns {Server}
+	 */
 	async createServer(): Promise<Server> {
 		return await new Promise((resolve, reject) => {
 
@@ -141,11 +182,18 @@ export abstract class Service<T> extends EventEmitter {
 		});
 	}
 
+	/**
+	 * Start Service Listener
+	 * @returns {Promise<AddressInfo>}
+	 */
 	async listen(): Promise<AddressInfo> {
 		const server = await this.createServer();
 		return server.address() as net.AddressInfo;
 	}
 
+	/**
+	 * Close Server
+	 */
 	closeServer() {
 		assert(this.server);
 		try {
@@ -169,8 +217,12 @@ export abstract class Service<T> extends EventEmitter {
 		}
 	}
 
+	/**
+	 * Handle incoming Data from Server Socket
+	 * @param {Buffer} data 
+	 * @param {Socket} socket 
+	 */
 	private async dataHandler(data: Buffer, socket: Socket) {
-
 		// Concantenate messageBuffer with current data
 		let buffer: Buffer = null;
 		if (this.messageBuffer && this.messageBuffer.length > 0) {
@@ -246,6 +298,12 @@ export abstract class Service<T> extends EventEmitter {
 		}
 	}
 
+	/**
+	 * Wait for a message from the wire
+	 * @param {string} eventMessage 
+	 * @param {number} messageId 
+	 * @returns {Promise<T>}
+	 */
 	async waitForMessage(eventMessage: string, messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
 			const listener = (message: ServiceMessage<T>) => {
@@ -261,14 +319,24 @@ export abstract class Service<T> extends EventEmitter {
 		});
 	}
 
-	async write(ctx: WriteContext) {
+	/**
+	 * Write a Context message to the socket
+	 * @param {WriteContext} ctx 
+	 * @returns {Promise<boolean>} true if data written
+	 */
+	async write(ctx: WriteContext): Promise<boolean> {
 		assert(ctx.isLittleEndian() === false);
 		const buf = ctx.getBuffer();
 		const written = await this.socket.write(buf);
-		return written;
+		return await written;
 	}
 
-	async writeWithLength(ctx: WriteContext) {
+	/**
+	 * Write a length-prefixed Context message to the socket
+	 * @param {WriteContext} ctx 
+	 * @returns {Promise<boolean>} true if data written
+	 */
+	async writeWithLength(ctx: WriteContext): Promise<boolean> {
 		assert(ctx.isLittleEndian() === false);
 		const newCtx = new WriteContext({ size: ctx.tell() + 4, autoGrow: false });
 		newCtx.writeUInt32(ctx.tell());
@@ -277,7 +345,16 @@ export abstract class Service<T> extends EventEmitter {
 		return await this.write(newCtx);
 	}
 
-	//	callback for timeout timer
+	//	
+	/**
+	 * Callback for server timeout timer
+	 * Runs if device doesn't conect to service server
+	 * @param {DeviceId} deviceId 
+	 * @param {string} serviceName 
+	 * @param {Server} server 
+	 * @param {StageLinq} parent 
+	 * @param {ServiceHandler} handler 
+	 */
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>, handler: ServiceHandler<T>) {
 		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
 

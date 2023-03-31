@@ -43,6 +43,7 @@ export class Discovery extends EventEmitter {
     private hasLooped: boolean = false;
 
     /**
+     * Discovery Class
      * @constructor
      * @param {StageLinq} parent StageLinq Instance
      */
@@ -52,7 +53,7 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-     * 
+     * Get ConnectionInfo
      * @param {DeviceId} deviceId 
      * @returns {ConnectionInfo}
      */
@@ -61,7 +62,7 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-     * 
+     * Set ConnectionInfo
      * @param {DeviceId} deviceId 
      * @param {ConnectionInfo} connectionInfo 
      */
@@ -127,7 +128,7 @@ export class Discovery extends EventEmitter {
 
     /**
      * Announce library to network
-     * @param {number} port 
+     * @param {number} port Port for Directory Service
      */
     async announce(port: number) {
         assert(this.socket);
@@ -168,7 +169,7 @@ export class Discovery extends EventEmitter {
     //////////// PRIVATE METHODS ///////////////
 
     /**
-     * 
+     * Broadcast Discovery Message
      * @param {Socket} socket 
      * @param {Buffer} msg 
      * @param {number} port 
@@ -179,9 +180,9 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-   * Listen for new devices on the network and callback when a new one is found.
-   * @param {DeviceDiscoveryCallback} callback Callback when new device is discovered.
-   */
+    * Listen for new devices on the network and callback when a new one is found.
+    * @param {DeviceDiscoveryCallback} callback Callback when new device is discovered.
+    */
 
     private async listenForDevices(callback: DeviceDiscoveryCallback) {
         this.socket = UDPSocket.createSocket('udp4');
@@ -201,7 +202,7 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-     * 
+     * Read Connection Info from Context
      * @param {ReadContext} ctx 
      * @param {IpAddress} address 
      * @returns {ConnectionInfo}
@@ -233,7 +234,7 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-     *
+     * Create a Discovery Message
      * @param {string} action 
      * @param {DiscoveryMessageOptions} discoveryMessageOptions 
      * @param {number} port 
@@ -271,7 +272,7 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-     * 
+     * Get list of Broadcast-enabled Network Interfaces
      * @returns {SubnetInfo[]}
      */
     private findBroadcastIPs(): SubnetInfo[] {

@@ -66,6 +66,11 @@ export class StateMapHandler extends ServiceHandler<StateData> {
   public readonly name = 'StateMap';
   public deviceTrackRegister: Map<string, string> = new Map();
 
+  /**
+   * Setup Statemap ServiceHandler
+   * @param {Service<StateData>} service 
+   * @param {DeviceId} deviceId 
+   */
   public setupService(service: Service<StateData>, deviceId: DeviceId) {
     Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
     const stateMap = service as Services.Service<StateData>;
@@ -93,6 +98,9 @@ export class StateMap extends Service<StateData> {
     this.handler = this._handler as StateMapHandler
   }
 
+  /**
+   * Subscribe to StateMap States
+   */
   public async subscribe() {
     const socket = this.socket;
     while (!this.parent.discovery.hasConnectionInfo(this.deviceId)) {
@@ -198,6 +206,11 @@ export class StateMap extends Service<StateData> {
     }
   }
 
+  /**
+   * Respond to StateMap request with rejection
+   * @param {string} state 
+   * @param {Socket} socket 
+   */
   private async sendStateResponse(state: string, socket: Socket) {
 
     const getMessage = function (): Buffer {
@@ -218,6 +231,12 @@ export class StateMap extends Service<StateData> {
     await socket.write(buffer);
   }
 
+  /**
+   * Send subcribe to state message to device
+   * @param {string} state Path/Name of the State
+   * @param {number} interval TODO clear this up
+   * @param {Socket} socket 
+   */
   private async subscribeState(state: string, interval: number, socket: Socket) {
 
     const getMessage = function (): Buffer {

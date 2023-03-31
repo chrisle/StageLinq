@@ -52,6 +52,7 @@ export class StageLinq extends EventEmitter {
   private servers: Map<string, Server> = new Map();
 
   /**
+   * Main StageLinq Class
    * @constructor
    * @param {StageLinqOptions} [options]
    */
@@ -86,15 +87,6 @@ export class StageLinq extends EventEmitter {
       }
     }
   }
-
-  ////// Getters & Setters /////////
-  // get databases() {
-  //   return this.#databases;
-  // }
-
-  // get sources() {
-  //   return this.#sources
-  // }
 
   /**
    * 
@@ -138,6 +130,7 @@ export class StageLinq extends EventEmitter {
 
   /**
    * Disconnect from the StageLinq network.
+   * Close all open Servers
    */
   async disconnect() {
     try {

@@ -32,11 +32,9 @@ export class Directory extends Service<DirectoryData> {
 
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
-
     if (ctx.sizeLeft() < 20) {
       return
     }
-
     const id = ctx.readUInt32();
     const token = ctx.read(16);
     if (!token) {
@@ -102,8 +100,9 @@ export class Directory extends Service<DirectoryData> {
   /////////// Private Methods
 
   /**
-   * 
+   * Send Service announcement with list of Service:Port
    * @param {DeviceId} deviceId 
+   * @param {Socket} socket
    */
   private async sendServiceAnnouncement(deviceId: DeviceId, socket: Socket): Promise<void> {
     const ctx = new WriteContext();
@@ -154,7 +153,7 @@ export class Directory extends Service<DirectoryData> {
   }
 
   /**
-   * 
+   * Send TimeStamp reply to Device
    * @param {Uint8Array} token Token from recepient Device
    */
   private async sendTimeStampReply(token: Uint8Array) {

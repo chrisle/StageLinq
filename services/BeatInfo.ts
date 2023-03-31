@@ -37,7 +37,7 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 	#beatRegister: Map<string, BeatData> = new Map();
 
 	/**
-	 * 
+	 * Get most recent BeatData
 	 * @param {DeviceId} [deviceId] optionally filter by DeviceId
 	 * @returns {BeatData[]}
 	 */
@@ -46,7 +46,7 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 	}
 
 	/**
-	 * 
+	 * Add BeatData for Device
 	 * @param {DeviceId} deviceId 
 	 * @param {BeatData} data 
 	 */
@@ -55,7 +55,7 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 	}
 
 	/**
-	 * 
+	 * Setup BeatInfo ServiceHandler
 	 * @param {Service<BeatData>} service 
 	 * @param {DeviceId} deviceId 
 	 */
@@ -98,7 +98,7 @@ export class BeatInfo extends Service<BeatData> {
 	}
 
 	/**
-	 * 
+	 * Get current BeatData
 	 * @returns {ServiceMessage<BeatData>}
 	 */
 	getBeatData(): ServiceMessage<BeatData> {
@@ -106,7 +106,7 @@ export class BeatInfo extends Service<BeatData> {
 	}
 
 	/**
-	 * 
+	 * Start BeatInfo
 	 * @param {BeatOptions} options 
 	 * @param {BeatCallback} [beatCB] Optional User callback
 	 */
@@ -119,7 +119,7 @@ export class BeatInfo extends Service<BeatData> {
 	}
 
 	/**
-	 * 
+	 * Send Subscribe to BeatInfo message to Device
 	 * @param {Socket} socket 
 	 */
 	private async sendBeatInfoRequest() {
