@@ -1,4 +1,7 @@
 /localdb
+/dist
+/docs
+.clinic/
 
 # Logs
 logs
@@ -81,10 +84,6 @@ typings/
 # Next.js build output
 .next
 
-# Nuxt.js build / generate output
-.nuxt
-dist
-
 # Gatsby files
 .cache/
 # Comment in the public line in if your project uses Gatsby and *not* Next.js
@@ -105,3 +104,12 @@ dist
 
 # TernJS port file
 .tern-port
+scratch.ts
+log.txt
+log.txt
+.vscode/settings.json
+version
+log.txt
+.DS_Store
+package-lock.json
+waveform.bin

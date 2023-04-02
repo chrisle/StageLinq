@@ -1,137 +1,378 @@
-import { strict as assert } from 'assert';
-import { CLIENT_TOKEN, MessageId, MESSAGE_TIMEOUT } from '../common';
+import { EventEmitter } from 'events';
+import { Logger } from '../LogEmitter';
+import { MessageId, MESSAGE_TIMEOUT } from '../types';
+import { DeviceId, Device } from '../devices'
 import { ReadContext } from '../utils/ReadContext';
+import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
-import * as tcp from '../utils/tcp';
-import * as EventEmitter from 'events';
-import { Controller } from '../Controller';
-//import { hex } from '../utils/hex';
+import { Server, Socket, AddressInfo } from 'net';
+import * as net from 'net';
+import type { ServiceMessage } from '../types';
+import { StageLinq } from '../StageLinq';
+
+
+export declare type ServiceData = {
+	name?: string;
+	socket?: Socket;
+	deviceId?: DeviceId;
+	service?: InstanceType<typeof Service>;
+}
+
+export abstract class ServiceHandler<T> extends EventEmitter {
+	public name: string;
+	protected parent: InstanceType<typeof StageLinq>;
+	private _devices: Map<string, Service<T>> = new Map();
+
+	/**
+	 * ServiceHandler Abstract Class
+	 * @constructor
+	 * @param {StageLinq} parent 
+	 * @param {string} serviceName 
+	 */
+
+	constructor(parent: InstanceType<typeof StageLinq>, serviceName: string) {
+		super();
+		this.parent = parent;
+		this.name = serviceName;
+		this.parent.services[serviceName] = this;
+	}
+
+	/**
+	 * Check if Service Handler has Device
+	 * @param {DeviceId} deviceId 
+	 * @returns {boolean}
+	 */
+	hasDevice(deviceId: DeviceId): boolean {
+		return this._devices.has(deviceId.string)
+	}
+
+	/**
+	 * Get an attached device from Service Handler
+	 * @param {DeviceId} deviceId 
+	 * @returns {Service<T>}
+	 */
+	getDevice(deviceId: DeviceId): Service<T> {
+		return this._devices.get(deviceId.string);
+	}
+
+	/**
+	 * Get all attached devices from Service Handler
+	 * @returns {Service<T>[]}
+	 */
+	getDevices(): Service<T>[] {
+		return [...this._devices.values()]
+	}
+
+	/**
+	 * Add a Device to Service Handler
+	 * @param {DeviceId} deviceId 
+	 * @param {Service<T>} service 
+	 */
+	addDevice(deviceId: DeviceId, service: Service<T>) {
+		this._devices.set(deviceId.string, service)
+	}
+
+	/**
+	 * Remove a Device from Service Handler 
+	 * @param {DeviceId} deviceId 
+	 */
+	deleteDevice(deviceId: DeviceId) {
+		this._devices.delete(deviceId.string)
+	}
+
+	/**
+	 * Start new service factory function
+	 * @param {Service<T>} ctor 
+	 * @param {StageLinq} parent 
+	 * @param {DeviceId} deviceId 
+	 * @returns {Service<T>}
+	 */
+	async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
+		new(_parent: InstanceType<typeof StageLinq>, _serviceHandler?: any, _deviceId?: DeviceId): T;
+	}, parent?: InstanceType<typeof StageLinq>, deviceId?: DeviceId): Promise<T> {
+
+		const service = new ctor(parent, this, deviceId);
+		await service.listen();
+
+		let serverName = `${ctor.name}`;
+		if (deviceId) {
+			this.parent.devices.addService(deviceId, service)
+			serverName += deviceId.string;
+		}
+		this.setupService(service, deviceId)
+
+		this.parent.addServer(serverName, service.server);
+		return service;
+	}
+
+	protected abstract setupService(service: any, deviceId?: DeviceId): void;
+}
+
 
 export abstract class Service<T> extends EventEmitter {
-	private address: string;
-	private port: number;
-	private name: string;
-	protected controller: Controller;
-	protected connection: tcp.Connection = null;
+	public readonly name: string = "Service";
+	public readonly device: Device;
+	public deviceId: DeviceId = null;
+	public server: Server = null;
+	public serverInfo: AddressInfo;
+	public serverStatus: boolean = false;
+	public socket: Socket = null;
 
-	constructor(p_address: string, p_port: number, p_controller: Controller) {
+	protected isBufferedService: boolean = true;
+	protected parent: InstanceType<typeof StageLinq>;
+	protected _handler: ServiceHandler<T> = null;
+	protected timeout: NodeJS.Timer;
+
+	private messageBuffer: Buffer = null;
+
+	/**
+	 * Service Abstract Class
+	 * @param {StageLinq} parent 
+	 * @param {ServiceHandler<T>} serviceHandler 
+	 * @param {DeviceId} deviceId 
+	 */
+	constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: InstanceType<typeof ServiceHandler>, deviceId?: DeviceId) {
 		super();
-		this.address = p_address;
-		this.port = p_port;
-		this.name = this.constructor.name;
-		this.controller = p_controller;
+		this.parent = parent;
+		this._handler = serviceHandler as ServiceHandler<T>;
+		this.deviceId = deviceId || null;
+		this.device = (deviceId ? this.parent.devices.device(deviceId) : null);
 	}
 
-	async connect(): Promise<void> {
-		assert(!this.connection);
-		this.connection = await tcp.connect(this.address, this.port);
-		let queue: Buffer = null;
+	/**
+	 * Creates a new Net.Server for Service
+	 * @returns {Server}
+	 */
+	async createServer(): Promise<Server> {
+		return await new Promise((resolve, reject) => {
 
-		this.connection.socket.on('data', (p_data: Buffer) => {
-			let buffer: Buffer = null;
-			if (queue && queue.length > 0) {
-				buffer = Buffer.concat([queue, p_data]);
-			} else {
-				buffer = p_data;
-			}
+			const server = net.createServer((socket) => {
 
-			// FIXME: Clean up this arraybuffer confusion mess
-			const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-			const ctx = new ReadContext(arrayBuffer, false);
-			queue = null;
+				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
+				clearTimeout(this.timeout);
+				this.socket = socket;
 
-			try {
-				while (ctx.isEOF() === false) {
-					if (ctx.sizeLeft() < 4) {
-						queue = ctx.readRemainingAsNewBuffer();
-						break;
-					}
-
-					const length = ctx.readUInt32();
-					if (length <= ctx.sizeLeft()) {
-						const message = ctx.read(length);
-						// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
-						const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-						//console.info("RECV", length);
-						//hex(message);
-						const parsedData = this.parseData(new ReadContext(data, false));
-
-						// Forward parsed data to message handler
-						this.messageHandler(parsedData);
-						this.emit('message', parsedData);
-					} else {
-						ctx.seek(-4); // Rewind 4 bytes to include the length again
-						queue = ctx.readRemainingAsNewBuffer();
-						break;
+				if (this.name !== "Directory") {
+					const handler = this._handler as ServiceHandler<T>;
+					handler.emit('connection', this.name, this.deviceId)
+					if (this.deviceId) {
+						handler.addDevice(this.deviceId, this)
 					}
 				}
-			} catch (err) {
-				// FIXME: Rethrow based on the severity?
-				console.error(err);
-			}
+
+				socket.on('error', (err) => {
+					reject(err);
+				});
+
+				socket.on('data', async data => {
+					await this.dataHandler(data, socket)
+				});
+
+			}).listen(0, '0.0.0.0', () => {
+				this.serverStatus = true;
+				this.serverInfo = server.address() as net.AddressInfo;
+				this.server = server;
+				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
+				if (this.deviceId) {
+					Logger.silly(`started timer for ${this.name} for ${this.deviceId.string}`)
+					this.timeout = setTimeout(this.closeService, 5000, this.deviceId, this.name, this.server, this.parent, this._handler);
+				};
+				resolve(server);
+			});
 		});
-
-		// FIXME: Is this required for all Services?
-		const ctx = new WriteContext();
-		ctx.writeUInt32(MessageId.ServicesAnnouncement);
-		ctx.write(CLIENT_TOKEN);
-		ctx.writeNetworkStringUTF16(this.name);
-		ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
-		await this.write(ctx);
-
-		await this.init();
-
-		console.info(`Connected to service '${this.name}' at port ${this.port}`);
 	}
 
-	disconnect() {
-		assert(this.connection);
-		this.connection.destroy();
-		this.connection = null;
+	/**
+	 * Start Service Listener
+	 * @returns {Promise<AddressInfo>}
+	 */
+	async listen(): Promise<AddressInfo> {
+		const server = await this.createServer();
+		return server.address() as net.AddressInfo;
 	}
 
-	async waitForMessage(p_messageId: number): Promise<T> {
+	/**
+	 * Close Server
+	 */
+	closeServer() {
+		assert(this.server);
+		try {
+			this.server.close();
+		} catch (e) {
+			Logger.error('Error closing server', e);
+		}
+	}
+
+	private async subMessageTest(buff: Buffer): Promise<boolean> {
+		try {
+			const msg = buff.readInt32BE();
+			const deviceId = buff.slice(4);
+			if (msg === 0 && deviceId.length === 16) {
+				return true
+			} else {
+				return false
+			}
+		} catch {
+			return false
+		}
+	}
+
+	/**
+	 * Handle incoming Data from Server Socket
+	 * @param {Buffer} data 
+	 * @param {Socket} socket 
+	 */
+	private async dataHandler(data: Buffer, socket: Socket) {
+		// Concantenate messageBuffer with current data
+		let buffer: Buffer = null;
+		if (this.messageBuffer && this.messageBuffer.length > 0) {
+			buffer = Buffer.concat([this.messageBuffer, data]);
+		} else {
+			buffer = data;
+		}
+		this.messageBuffer = null
+
+		// TODO: Clean up this arraybuffer confusion mess
+		const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+		let ctx = new ReadContext(arrayBuffer, false);
+
+		if (!this.isBufferedService) {
+			const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket);
+			this.messageHandler(parsedData);
+		};
+
+		if (await this.subMessageTest(ctx.peek(20))) {
+
+			const messageId = ctx.readUInt32();
+			const token = ctx.read(16) // DeviceID
+			if (!this.deviceId) {
+				const deviceId = new DeviceId(token);
+				Logger.silent(`${this.name} adding DeviceId: ${deviceId.string}`)
+				this.deviceId = deviceId
+			}
+			//peak at network string length then rewind and read string
+			const stringLength = ctx.readUInt32();
+			ctx.seek(-4);
+
+			(assert(stringLength <= ctx.sizeLeft()));
+			const serviceName = ctx.readNetworkStringUTF16();
+
+			//make sure reading port won't overrun buffer
+			(assert(ctx.sizeLeft() >= 2));
+			ctx.readUInt16(); //read port, though we don't need it
+
+			Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${this.deviceId.string}`);
+			if (this.device) {
+				this.device.parent.emit('newService', this.device, this)
+			}
+			this.emit('newDevice', this);
+		}
+
+		try {
+			while (ctx.isEOF() === false) {
+				if (ctx.sizeLeft() < 4) {
+					this.messageBuffer = ctx.readRemainingAsNewBuffer();
+					break;
+				}
+
+				const length = ctx.readUInt32();
+				if (length <= ctx.sizeLeft()) {
+
+					const message = ctx.read(length);
+					if (!message) {
+						Logger.warn(message)
+					}
+					// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
+					const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
+					const parsedData = this.parseData(new ReadContext(data, false), socket);
+					this.messageHandler(parsedData);
+
+				} else {
+					ctx.seek(-4); // Rewind 4 bytes to include the length again
+					this.messageBuffer = ctx.readRemainingAsNewBuffer();
+					break;
+				}
+			}
+		} catch (err) {
+			Logger.error(this.name, this.deviceId.string, err);
+		}
+	}
+
+	/**
+	 * Wait for a message from the wire
+	 * @param {string} eventMessage 
+	 * @param {number} messageId 
+	 * @returns {Promise<T>}
+	 */
+	async waitForMessage(eventMessage: string, messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
-			const listener = (p_message: ServiceMessage<T>) => {
-				if (p_message.id === p_messageId) {
-					this.removeListener('message', listener);
-					resolve(p_message.message);
+			const listener = (message: ServiceMessage<T>) => {
+				if (message.id === messageId) {
+					this.removeListener(eventMessage, listener);
+					resolve(message.message);
 				}
 			};
-			this.addListener('message', listener);
+			this.addListener(eventMessage, listener);
 			setTimeout(() => {
-				reject(new Error(`Failed to receive message '${p_messageId}' on time`));
+				reject(new Error(`Failed to receive message '${messageId}' on time`));
 			}, MESSAGE_TIMEOUT);
 		});
 	}
 
-	async write(p_ctx: WriteContext) {
-		assert(p_ctx.isLittleEndian() === false);
-		assert(this.connection);
-		const buf = p_ctx.getBuffer();
-		//console.info("SEND");
-		//hex(buf);
-		const written = await this.connection.write(buf);
-		assert(written === buf.byteLength);
-		return written;
+	/**
+	 * Write a Context message to the socket
+	 * @param {WriteContext} ctx 
+	 * @returns {Promise<boolean>} true if data written
+	 */
+	async write(ctx: WriteContext): Promise<boolean> {
+		assert(ctx.isLittleEndian() === false);
+		const buf = ctx.getBuffer();
+		const written = await this.socket.write(buf);
+		return await written;
 	}
 
-	async writeWithLength(p_ctx: WriteContext) {
-		assert(p_ctx.isLittleEndian() === false);
-		assert(this.connection);
-		const newCtx = new WriteContext({ size: p_ctx.tell() + 4, autoGrow: false });
-		newCtx.writeUInt32(p_ctx.tell());
-		newCtx.write(p_ctx.getBuffer());
+	/**
+	 * Write a length-prefixed Context message to the socket
+	 * @param {WriteContext} ctx 
+	 * @returns {Promise<boolean>} true if data written
+	 */
+	async writeWithLength(ctx: WriteContext): Promise<boolean> {
+		assert(ctx.isLittleEndian() === false);
+		const newCtx = new WriteContext({ size: ctx.tell() + 4, autoGrow: false });
+		newCtx.writeUInt32(ctx.tell());
+		newCtx.write(ctx.getBuffer());
 		assert(newCtx.isEOF());
 		return await this.write(newCtx);
 	}
 
-	// FIXME: Cannot use abstract because of async; is there another way to get this?
-	protected async init() {
-		assert.fail('Implement this');
+	//	
+	/**
+	 * Callback for server timeout timer
+	 * Runs if device doesn't conect to service server
+	 * @param {DeviceId} deviceId 
+	 * @param {string} serviceName 
+	 * @param {Server} server 
+	 * @param {StageLinq} parent 
+	 * @param {ServiceHandler} handler 
+	 */
+	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>, handler: ServiceHandler<T>) {
+		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
+
+		await server.close();
+
+		const serverName = `${serviceName}${deviceId.string}`;
+		parent.deleteServer(serverName);
+
+		await handler.deleteDevice(deviceId);
+		assert(!handler.hasDevice(deviceId));
+
+		const service = parent.services[serviceName]
+		parent.devices.deleteService(deviceId, serviceName);
+		await service.deleteDevice(deviceId);
+		assert(!service.hasDevice(deviceId));
 	}
 
-	protected abstract parseData(p_ctx: ReadContext): ServiceMessage<T>;
+	protected abstract parseData(ctx: ReadContext, socket: Socket): ServiceMessage<T>;
 
-	protected abstract messageHandler(p_data: ServiceMessage<T>): void;
+	protected abstract messageHandler(data: ServiceMessage<T>): void;
 }
