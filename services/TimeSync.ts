@@ -2,7 +2,6 @@
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
 import { Service, ServiceHandler } from './Service';
-import * as Services from '../services';
 import { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
 import { Logger } from '../LogEmitter';
@@ -22,7 +21,7 @@ export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
     public setupService(service: TimeSynchronization, deviceId: DeviceId) {
         console.log(`Setting up ${service.name} for ${deviceId.string}`);
 
-        service.on('newDevice', (_service: InstanceType<typeof Services.TimeSynchronization>) => {
+        service.on('newDevice', (_service: InstanceType<typeof TimeSynchronization>) => {
             Logger.debug(`New TimeSync Device ${service.deviceId.string}`)
             _service.sendTimeSyncRequest();
         })

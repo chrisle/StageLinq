@@ -1,6 +1,6 @@
 import { ActingAsDevice, StageLinqOptions, ServiceList, ServiceMessage, Source } from '../types';
 import { DeviceId } from '../devices'
-import * as Services from '../services'
+import { StateData, StateMapDevice, BeatData, BeatInfo } from '../services';
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import * as fs from 'fs';
@@ -59,8 +59,9 @@ async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: 
 async function main() {
 
   console.log('Starting CLI');
+
   const stageLinqOptions: StageLinqOptions = {
-    downloadDbSources: false,
+    downloadDbSources: true,
     maxRetries: 3,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
@@ -114,8 +115,6 @@ async function main() {
   });
 
 
-
-
   stageLinq.devices.on('newDevice', (device) => {
     console.log(`[DEVICES] New Device ${device.deviceId.string}`)
   });
@@ -127,7 +126,7 @@ async function main() {
 
   if (stageLinq.stateMap) {
 
-    stageLinq.stateMap.on('newDevice', (service: Services.StateMapDevice) => {
+    stageLinq.stateMap.on('newDevice', (service: StateMapDevice) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
       service.subscribe();
 
@@ -140,7 +139,7 @@ async function main() {
       })
     });
 
-    stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<Services.StateData>) => {
+    stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<StateData>) => {
       console.log(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
     });
 
@@ -160,6 +159,7 @@ async function main() {
         }
       }
     });
+
     stageLinq.status.on('nowPlaying', async (status) => {
       console.log(`[STATUS] Now Playing ${status.deviceId.string}`);
     });
@@ -209,7 +209,7 @@ async function main() {
 
     //  User callback function. 
     //  Will be triggered everytime a player's beat counter crosses the resolution threshold
-    function beatCallback(bd: ServiceMessage<Services.BeatData>,) {
+    function beatCallback(bd: ServiceMessage<BeatData>,) {
       let deckBeatString = ""
       for (let i = 0; i < bd.message.deckCount; i++) {
         deckBeatString += `Deck: ${i + 1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
@@ -228,7 +228,7 @@ async function main() {
     };
 
 
-    stageLinq.beatInfo.on('newBeatInfoDevice', async (beatInfo: Services.BeatInfo) => {
+    stageLinq.beatInfo.on('newBeatInfoDevice', async (beatInfo: BeatInfo) => {
       console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
 
 
@@ -248,7 +248,7 @@ async function main() {
       if (beatMethod.useRegister) {
         beatInfo.startBeatInfo(beatOptions);
 
-        function beatFunc(beatInfo: Services.BeatInfo) {
+        function beatFunc(beatInfo: BeatInfo) {
           const beatData = beatInfo.getBeatData();
           if (beatData) beatCallback(beatData);
         }

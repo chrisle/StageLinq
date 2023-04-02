@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import * as Services from '../services';
+import { Service } from '../services';
 import { ConnectionInfo } from '../types';
 import { DeviceId } from '../devices'
 import { sleep } from '../utils';
@@ -7,7 +7,7 @@ import { sleep } from '../utils';
 
 export declare interface Devices {
   on(event: 'newDevice', listener: (device: Device) => void): this;
-  on(event: 'newService', listener: (device: Device, service: InstanceType<typeof Services.Service>) => void): this;
+  on(event: 'newService', listener: (device: Device, service: InstanceType<typeof Service>) => void): this;
 }
 
 export class Devices extends EventEmitter {
@@ -81,7 +81,7 @@ export class Devices extends EventEmitter {
    * @param {DeviceId} deviceId 
    * @param {Service} service 
    */
-  addService(deviceId: DeviceId, service: InstanceType<typeof Services.Service>) {
+  addService(deviceId: DeviceId, service: InstanceType<typeof Service>) {
     const device = this.device(deviceId)
     device.addService(service)
   }
@@ -102,7 +102,7 @@ export class Device extends EventEmitter {
   readonly parent: Devices;
   readonly deviceId: DeviceId;
   info: ConnectionInfo;
-  private services: Map<string, InstanceType<typeof Services.Service>> = new Map();
+  private services: Map<string, InstanceType<typeof Service>> = new Map();
 
   /**
    * @constructor
@@ -120,7 +120,7 @@ export class Device extends EventEmitter {
    * Add an instantiated Service
    * @param {Service} service 
    */
-  addService(service: InstanceType<typeof Services.Service>) {
+  addService(service: InstanceType<typeof Service>) {
     this.services.set(service.name, service)
   }
 

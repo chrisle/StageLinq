@@ -1,13 +1,12 @@
 import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
-import { Service, ServiceHandler } from './Service';
 import { ServiceMessage, StageLinqValueObj } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
 import { sleep } from '../utils';
-import * as Services from '../services';
+import { Service, ServiceHandler } from '../services';
 import { StageLinq } from '../StageLinq';
 import * as stagelinqConfig from '../stagelinqConfig.json';
 
@@ -48,10 +47,10 @@ const mixerStateValues = Object.values(StageLinqValueObj.mixer);
 const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 
 
-export type StateMapDevice = InstanceType<typeof Services.StateMap>
+export type StateMapDevice = InstanceType<typeof StateMap>
 
 export interface StateData {
-  service: InstanceType<typeof Services.StateMap>
+  service: InstanceType<typeof StateMap>
   name?: string;
   json?: {
     type: number;
@@ -73,14 +72,14 @@ export class StateMapHandler extends ServiceHandler<StateData> {
    */
   public setupService(service: Service<StateData>, deviceId: DeviceId) {
     Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
-    const stateMap = service as Services.Service<StateData>;
+    const stateMap = service as Service<StateData>;
     this.addDevice(deviceId, service);
 
-    stateMap.on('stateMessage', (data: ServiceMessage<Services.StateData>) => {
+    stateMap.on('stateMessage', (data: ServiceMessage<StateData>) => {
       this.emit('stateMessage', data);
     });
 
-    stateMap.on('newDevice', (service: InstanceType<typeof Services.StateMap>) => {
+    stateMap.on('newDevice', (service: InstanceType<typeof StateMap>) => {
       Logger.debug(`New StateMap Device ${service.deviceId.string}`)
       this.emit('newDevice', service);
       assert(service);
