@@ -87,11 +87,20 @@ export class StateMapHandler extends ServiceHandler<StateData> {
   }
 }
 
+/**
+ * StateMap Class
+ */
 export class StateMap extends Service<StateData> {
   public readonly name = "StateMap";
   public readonly handler: StateMapHandler;
   private hasReceivedState: boolean = false;
 
+  /**
+   * @constructor
+   * @param {StageLinq} parent 
+   * @param {StateMapHandler} serviceHandler 
+   * @param {DeviceId} deviceId 
+   */
   constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
     super(parent, serviceHandler, deviceId)
     this.handler = this._handler as StateMapHandler
