@@ -132,7 +132,8 @@ export class Player extends EventEmitter {
                       : (/ExternalMixerVolume$/.test(name)) ? { externalMixerVolume: json.value }
                         : (/Play$/.test(name)) ? { play: json.state }
                           : (/PlayerJogColor[A-D]$/.test(name)) ? { jogColor: json.color }
-                            : null;
+                            : (/DeckIsMaster]$/.test(name)) ? { deckIsMaster: json.state }
+                              : null;
 
     if (cueData) {
       this.queue[deck].push({ layer: deck, ...cueData });
@@ -205,7 +206,7 @@ export class Player extends EventEmitter {
       this.emit('trackLoaded', currentState);
 
     // If the song is actually playing emit the nowPlaying event.
-    if (result.playState) this.emit('nowPlaying', currentState);
+    if (result.deckIsMaster) this.emit('nowPlaying', currentState);
 
     // Emit that the state has changed.
     this.emit('stateChanged', currentState);

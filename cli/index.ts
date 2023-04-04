@@ -66,8 +66,8 @@ async function main() {
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
       ServiceList.StateMap,
-      ServiceList.BeatInfo,
       ServiceList.FileTransfer,
+      //ServiceList.BeatInfo,
     ],
   }
 
@@ -126,28 +126,55 @@ async function main() {
 
   if (stageLinq.stateMap) {
 
-    stageLinq.stateMap.on('newDevice', (service: StateMapDevice) => {
+
+    async function deckIsMaster(data: ServiceMessage<StateData>) {
+      if (data.message.json.state) {
+        console.warn(data.deviceId.string, data.message.name, data.message.json);
+        const deck = parseInt(data.message.name.substring(12, 13))
+        await sleep(250);
+        const track = stageLinq.status.getTrack(data.deviceId, deck)
+        console.log(`Now Playing: `, track)
+        if (stageLinq.fileTransfer && stageLinq.options.downloadDbSources) {
+          const split = track.TrackNetworkPath.substring(6).split('/')
+          const deviceId = new DeviceId(split.shift());
+          const sourceName = split.shift();
+          const path = `/${sourceName}/${split.join('/')}`
+          getTrackInfo(stageLinq, sourceName, deviceId, track.TrackNetworkPath);
+          downloadFile(stageLinq, sourceName, deviceId, path, Path.resolve(os.tmpdir()));
+        }
+      }
+    }
+
+    stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
+
+      const info = stageLinq.discovery.getConnectionInfo(service.deviceId)
+      for (let i = 1; i <= info.device.decks; i++) {
+        await stageLinq.status.addTrack(service, i);
+        service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
+      }
+
       service.subscribe();
 
+
       // To Utilize NowPlaying Status updates
-      stageLinq.status.addPlayer({
-        stateMap: service,
-        address: service.socket.remoteAddress,
-        port: service.socket.remotePort,
-        deviceId: service.deviceId,
-      })
+      // stageLinq.status.addPlayer({
+      //   stateMap: service,
+      //   address: service.socket.remoteAddress,
+      //   port: service.socket.remotePort,
+      //   deviceId: service.deviceId,
+      // })
     });
 
-    stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<StateData>) => {
-      console.log(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
-    });
+    // stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<StateData>) => {
+    //   //console.log(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
+    // });
 
 
 
     stageLinq.status.on('trackLoaded', async (status) => {
       console.log(`[STATUS] Track Loaded ${status.deviceId.string}`);
-
+      console.dir(status)
       const split = status.trackNetworkPath.substring(43).split('/')
       const sourceName = split.shift();
       const path = `/${sourceName}/${split.join('/')}`

@@ -199,6 +199,10 @@ export class StateMap extends Service<StateData> {
 
   protected messageHandler(data: ServiceMessage<StateData>): void {
 
+    if (this.listenerCount(data?.message?.name) && data?.message?.json) {
+      this.emit(data.message.name, data)
+    }
+
     if (data?.message?.interval) {
       this.sendStateResponse(data.message.name, data.socket);
     }

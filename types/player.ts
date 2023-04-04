@@ -41,4 +41,5 @@ export interface PlayerLayerState {
   songLoaded?: boolean;
   title?: string;
   trackNetworkPath?: string;
+  deckIsMaster?: boolean;
 }

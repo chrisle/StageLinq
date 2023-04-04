@@ -21,10 +21,10 @@ export enum MessageId {
 //   ClientLibrarianDevicesControllerCurrentDevice = '/Client/Librarian/DevicesController/CurrentDevice',
 //   ClientLibrarianDevicesControllerHasSDCardConnected = '/Client/Librarian/DevicesController/HasSDCardConnected',
 //   ClientLibrarianDevicesControllerHasUsbDeviceConnected = '/Client/Librarian/DevicesController/HasUsbDeviceConnected',
-  
+
 //   ClientPreferencesPlayer = '/Client/Preferences/Player',
 //   ClientPreferencesLayerB = '/Client/Preferences/LayerB',
-  
+
 //   ClientPreferencesPlayerJogColorA = '/Client/Preferences/PlayerJogColorA',
 //   ClientPreferencesPlayerJogColorB = '/Client/Preferences/PlayerJogColorB',
 //   ClientPreferencesProfileApplicationPlayerColor1 = '/Client/Preferences/Profile/Application/PlayerColor1',
@@ -39,14 +39,14 @@ export enum MessageId {
 //   ClientPreferencesProfileApplicationPlayerColor4 = '/Client/Preferences/Profile/Application/PlayerColor4',
 //   ClientPreferencesProfileApplicationPlayerColor4A = '/Client/Preferences/Profile/Application/PlayerColor4A',
 //   ClientPreferencesProfileApplicationPlayerColor4B = '/Client/Preferences/Profile/Application/PlayerColor4B',
-  
+
 //   ClientPreferencesProfileApplicationSyncMode = '/Client/Preferences/Profile/Application/SyncMode',
- 
+
 //   GUIDecksDeckActiveDeck = '/GUI/Decks/Deck/ActiveDeck',
 //   GUIViewLayerLayerB = '/GUI/ViewLayer/LayerB',
 
 //   EngineDeckCount = '/Engine/DeckCount',
- 
+
 
 //   EngineDeck1DeckIsMaster = '/Engine/Deck1/DeckIsMaster',
 
@@ -234,13 +234,13 @@ export enum MessageId {
 //   EngineDeck4TrackTrackNetworkPath = '/Engine/Deck4/Track/TrackNetworkPath',
 //   EngineDeck4TrackTrackURI = '/Engine/Deck4/Track/TrackUri',
 //   EngineDeck4TrackTrackWasPlayed = '/Engine/Deck4/Track/TrackWasPlayed',
-  
- 
+
+
 //   ClientDeck1DeckIsMaster = '/Client/Deck1/DeckIsMaster',
 //   ClientDeck2DeckIsMaster = '/Client/Deck2/DeckIsMaster',
 
 //   MixerNumberOfChannels = '/Mixer/NumberOfChannels',
-  
+
 //   MixerChannelAssignment1 = '/Mixer/ChannelAssignment1',
 //   MixerChannelAssignment2 = '/Mixer/ChannelAssignment2',
 //   MixerChannelAssignment3 = '/Mixer/ChannelAssignment3',
@@ -252,22 +252,23 @@ export enum MessageId {
 //   MixerCH4faderPosition = '/Mixer/CH4faderPosition',
 //   MixerCrossfaderPosition = '/Mixer/CrossfaderPosition',
 
-  
-  // PrivateDeck1MidiSamplePosition = '/Private/Deck1/MidiSamplePosition',
-  // PrivateDeck2MidiSamplePosition = '/Private/Deck2/MidiSamplePosition',
-  // EngineDeck1PFL = '/Engine/Deck1/PFL',
+
+// PrivateDeck1MidiSamplePosition = '/Private/Deck1/MidiSamplePosition',
+// PrivateDeck2MidiSamplePosition = '/Private/Deck2/MidiSamplePosition',
+// EngineDeck1PFL = '/Engine/Deck1/PFL',
 // }
 
 export const StageLinqValueObj = {
   player: {
-    // ClientLibrarianDevicesControllerCurrentDevice: '/Client/Librarian/DevicesController/CurrentDevice',
+    ClientLibrarianDevicesControllerCurrentDevice: '/Client/Librarian/DevicesController/CurrentDevice',
+    ClientLibrarianDevicesControllerCurrentDeviceNetworkPath: '/Client/Librarian/DevicesController/CurrentDeviceNetworkPath',
     // ClientLibrarianDevicesControllerHasSDCardConnected: '/Client/Librarian/DevicesController/HasSDCardConnected',
     // ClientLibrarianDevicesControllerHasUsbDeviceConnected: '/Client/Librarian/DevicesController/HasUsbDeviceConnected',
-    // ClientPreferencesLayerA: '/Client/Preferences/LayerA',
-    // ClientPreferencesLayerB: '/Client/Preferences/LayerB',
-    // ClientPreferencesPlayer: '/Client/Preferences/Player',
-    // ClientPreferencesPlayerJogColorA: '/Client/Preferences/PlayerJogColorA',
-    // ClientPreferencesPlayerJogColorB: '/Client/Preferences/PlayerJogColorB',
+    ClientPreferencesLayerA: '/Client/Preferences/LayerA',
+    ClientPreferencesLayerB: '/Client/Preferences/LayerB',
+    ClientPreferencesPlayer: '/Client/Preferences/Player',
+    ClientPreferencesPlayerJogColorA: '/Client/Preferences/PlayerJogColorA',
+    ClientPreferencesPlayerJogColorB: '/Client/Preferences/PlayerJogColorB',
     // ClientPreferencesProfileApplicationPlayerColor1: '/Client/Preferences/Profile/Application/PlayerColor1',
     // ClientPreferencesProfileApplicationPlayerColor1A: '/Client/Preferences/Profile/Application/PlayerColor1A',
     // ClientPreferencesProfileApplicationPlayerColor1B: '/Client/Preferences/Profile/Application/PlayerColor1B',
@@ -280,7 +281,20 @@ export const StageLinqValueObj = {
     // ClientPreferencesProfileApplicationPlayerColor4: '/Client/Preferences/Profile/Application/PlayerColor4',
     // ClientPreferencesProfileApplicationPlayerColor4A: '/Client/Preferences/Profile/Application/PlayerColor4A',
     // ClientPreferencesProfileApplicationPlayerColor4B: '/Client/Preferences/Profile/Application/PlayerColor4B',
-    // ClientPreferencesProfileApplicationSyncMode: '/Client/Preferences/Profile/Application/SyncMode',
+    ClientPreferencesProfileApplicationSyncMode: '/Client/Preferences/Profile/Application/SyncMode',
+
+    //EngineDeck1RequestUnsetSyncLead: '/Engine/Deck1/RequestUnsetSyncLead',
+    EngineDeck1SyncPlayState: '/Engine/Deck1/SyncPlayState',
+    EngineDeck2SyncPlayState: '/Engine/Deck2/SyncPlayState',
+    EngineDeck3SyncPlayState: '/Engine/Deck2/SyncPlayState',
+    EngineDeck4SyncPlayState: '/Engine/Deck2/SyncPlayState',
+    EngineDeck1DeckIsMaster: '/Engine/Deck1/DeckIsMaster',
+    EngineDeck2DeckIsMaster: '/Engine/Deck2/DeckIsMaster',
+    EngineDeck3DeckIsMaster: '/Engine/Deck3/DeckIsMaster',
+    EngineDeck4DeckIsMaster: '/Engine/Deck2/DeckIsMaster',
+
+    EngineSyncNetworkSyncType: '/Engine/Sync/Network/SyncType',
+
     EngineSyncNetworkMasterStatus: '/Engine/Sync/Network/MasterStatus',
     EngineMasterMasterTempo: '/Engine/Master/MasterTempo',
     EngineDeckCount: '/Engine/DeckCount',
@@ -464,6 +478,7 @@ export const StageLinqValueObj = {
     EngineDeck4TrackTrackNetworkPath: '/Engine/Deck4/Track/TrackNetworkPath',
     EngineDeck4TrackTrackURI: '/Engine/Deck4/Track/TrackUri',
     EngineDeck4TrackTrackWasPlayed: '/Engine/Deck4/Track/TrackWasPlayed',
+    GUIDecksDeckActiveDeck: '/GUI/Decks/Deck/ActiveDeck',
   },
   mixer: {
     MixerCH1faderPosition: '/Mixer/CH1faderPosition',
@@ -476,7 +491,7 @@ export const StageLinqValueObj = {
     MixerChannelAssignment3: '/Mixer/ChannelAssignment3',
     MixerChannelAssignment4: '/Mixer/ChannelAssignment4',
     MixerNumberOfChannels: '/Mixer/NumberOfChannels',
-    // GUIDecksDeckActiveDeck: '/GUI/Decks/Deck/ActiveDeck',
+    //GUIDecksDeckActiveDeck: '/GUI/Decks/Deck/ActiveDeck',
     // GUIViewLayerLayerB: '/GUI/ViewLayer/LayerB',
     // ClientDeck1DeckIsMaster: '/Client/Deck1/DeckIsMaster',
     // ClientDeck2DeckIsMaster: '/Client/Deck2/DeckIsMaster',
