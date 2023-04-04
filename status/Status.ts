@@ -1,7 +1,7 @@
 import EventEmitter = require("events");
 import { StageLinq } from '../StageLinq';
 import { StateData, StateMap } from '../services';
-import { Player, PlayerOptions } from '../status/Player';
+//import { Player, PlayerOptions } from '../status/Player';
 import { PlayerStatus, ServiceMessage, TrackData } from '../types';
 import { DeviceId } from '../devices'
 
@@ -18,12 +18,39 @@ export interface StatusData extends PlayerStatus {
 
 export class Status extends EventEmitter {
     readonly parent: InstanceType<typeof StageLinq>;
-    private _players: Map<string, Player> = new Map();
-    tracks: Map<string, TrackData> = new Map();
+    //private _players: Map<string, Player> = new Map();
+    private tracks: Map<string, TrackData> = new Map();
 
+    /**
+     * @constructor
+     * @param {StageLinq} parent 
+     */
     constructor(parent: InstanceType<typeof StageLinq>) {
         super();
         this.parent = parent;
+    }
+
+    /**
+     * Add a track to Status
+     * @param {StateMap} service // Instance of StateMap Service
+     * @param {number} deck Deck (layer) number
+     */
+    async addTrack(service: StateMap, deck: number,) {
+        let track = new TrackData(`/Engine/Deck${deck}/Track/`)
+        this.tracks.set(`{${service.deviceId.string}},${deck}`, track)
+        for (let item of Object.keys(track)) {
+            service.addListener(`${track.prefix}${item}`, data => this.listener(data, this))
+        }
+    }
+
+    /**
+     * Get Track Info from Status
+     * @param {DeviceId} deviceId DeviceId of the player
+     * @param {deck} deck Deck (layer) number
+     * @returns {TrackData}
+     */
+    getTrack(deviceId: DeviceId, deck: number): TrackData {
+        return this.tracks.get(`{${deviceId.string}},${deck}`);
     }
 
     private getTypedValue(data: ServiceMessage<StateData>): boolean | string | number {
@@ -46,29 +73,20 @@ export class Status extends EventEmitter {
         this.tracks.set(`{${data.deviceId.string}},${deck}`, Object.assign(track, { [property]: value }));
     }
 
-    async addTrack(service: StateMap, deck: number,) {
-        let track = new TrackData(`/Engine/Deck${deck}/Track/`)
-        this.tracks.set(`{${service.deviceId.string}},${deck}`, track)
-        for (let item of Object.keys(track)) {
-            service.addListener(`${track.prefix}${item}`, data => this.listener(data, this))
-        }
-    }
 
-    getTrack(deviceId: DeviceId, deck: number): TrackData {
-        return this.tracks.get(`{${deviceId.string}},${deck}`);
-    }
 
-    addPlayer(options: PlayerOptions) {
-        const player = new Player(options)
-        this._players.set(options.deviceId.string, player);
-        player.on("nowPlaying", (status) => {
-            this.emit("nowPlaying", status);
-        })
-        player.on("stateChanged", (status) => {
-            this.emit("stateChanged", status);
-        })
-        player.on("trackLoaded", (status) => {
-            this.emit("trackLoaded", status);
-        })
-    }
+
+    // addPlayer(options: PlayerOptions) {
+    //     const player = new Player(options)
+    //     this._players.set(options.deviceId.string, player);
+    //     player.on("nowPlaying", (status) => {
+    //         this.emit("nowPlaying", status);
+    //     })
+    //     player.on("stateChanged", (status) => {
+    //         this.emit("stateChanged", status);
+    //     })
+    //     player.on("trackLoaded", (status) => {
+    //         this.emit("trackLoaded", status);
+    //     })
+    // }
 }

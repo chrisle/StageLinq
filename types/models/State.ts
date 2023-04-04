@@ -1,5 +1,5 @@
 
-export interface ITrackData {
+interface ITrackData {
     ArtistName: string;
     Bleep: boolean;
     CuePosition: number;
@@ -36,7 +36,7 @@ export interface ITrackData {
 }
 
 export class TrackData implements Partial<ITrackData> {
-    prefix: string;
+    #prefix: string;
 
     ArtistName: string = ""
     CurrentBPM: number = 0;
@@ -51,8 +51,19 @@ export class TrackData implements Partial<ITrackData> {
     TrackNetworkPath: string = "";
     TrackURI: string = "";
 
+    /**
+     * @constructor
+     * @param {string} prefix State prefix that should proceed the property
+     */
     constructor(prefix: string) {
-        this.prefix = prefix;
+        this.#prefix = prefix;
+    }
+
+    /**
+     * Get State Prefix
+     */
+    get prefix() {
+        return this.#prefix;
     }
 }
 

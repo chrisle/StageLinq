@@ -133,6 +133,15 @@ async function main() {
         await sleep(250);
         const track = stageLinq.status.getTrack(data.deviceId, deck)
         console.log(`Now Playing: `, track)
+      }
+    }
+
+    async function songLoaded(data: ServiceMessage<StateData>) {
+      if (data.message.json.state) {
+        const deck = parseInt(data.message.name.substring(12, 13))
+        await sleep(250);
+        const track = stageLinq.status.getTrack(data.deviceId, deck)
+        console.log(`Track Loaded: `, track)
         if (stageLinq.fileTransfer && stageLinq.options.downloadDbSources) {
           const split = track.TrackNetworkPath.substring(6).split('/')
           const deviceId = new DeviceId(split.shift());
@@ -144,6 +153,7 @@ async function main() {
       }
     }
 
+
     stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
@@ -151,6 +161,7 @@ async function main() {
       for (let i = 1; i <= info.device.decks; i++) {
         await stageLinq.status.addTrack(service, i);
         service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
+        service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
       }
 
       service.subscribe();
