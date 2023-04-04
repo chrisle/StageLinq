@@ -54,14 +54,6 @@ stageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
 stageLinq.stateMap.on('newDevice', (service: StateMapDevice) => {
     console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
     service.subscribe();
-
-    // To Utilize NowPlaying Status updates
-    stageLinq.status.addPlayer({
-      stateMap: service,
-      address: service.socket.remoteAddress,
-      port: service.socket.remotePort,
-      deviceId: service.deviceId,
-    })
 });
 
 stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<StateData>) => {
@@ -72,17 +64,46 @@ stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<StateData>) =>
 ### Using NowPlaying-type updates from StageLinq.status
 
 ```ts
-stageLinq.status.on('trackLoaded', async (status) => {
-    console.log(`[STATUS] Track Loaded ${status.deviceId.string}`);
-  });
-  
-  stageLinq.status.on('nowPlaying', async (status) => {
-    console.log(`[STATUS] Now Playing ${status.deviceId.string}`);
-  });
+async function deckIsMaster(data: ServiceMessage<StateData>) {
+  if (data.message.json.state) {
+    const deck = parseInt(data.message.name.substring(12, 13))
+    await sleep(250);
+    const track = stageLinq.status.getTrack(data.deviceId, deck)
+    console.log(`Now Playing: `, track)
+  }
+}
 
-  stageLinq.status.on('stateChanged', async (status) => {
-    console.log(`[STATUS] State Changed ${status.deviceId.string}`);
-  });
+async function songLoaded(data: ServiceMessage<StateData>) {
+  if (data.message.json.state) {
+    const deck = parseInt(data.message.name.substring(12, 13))
+    await sleep(250);
+    const track = stageLinq.status.getTrack(data.deviceId, deck)
+    console.log(`Track Loaded: `, track)
+    if (stageLinq.fileTransfer && stageLinq.options.downloadDbSources) {
+      const split = track.TrackNetworkPath.substring(6).split('/')
+      const deviceId = new DeviceId(split.shift());
+      const sourceName = split.shift();
+      const path = `/${sourceName}/${split.join('/')}`
+      
+      const trackInfo = await getTrackInfo(stageLinq, sourceName, deviceId, track.TrackNetworkPath);
+      console.log('Track DB Info: ', trackInfo)
+      downloadFile(stageLinq, sourceName, deviceId, path, Path.resolve(os.tmpdir()));
+    }
+  }
+}
+
+stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
+  console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
+
+  const info = stageLinq.discovery.getConnectionInfo(service.deviceId)
+  for (let i = 1; i <= info.device.decks; i++) {
+    await stageLinq.status.addTrack(service, i);
+    service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
+    service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
+  }
+
+  service.subscribe();
+});
 ```
 
 ## FileTransfer & Databases
