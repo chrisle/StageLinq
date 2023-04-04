@@ -129,7 +129,6 @@ async function main() {
 
     async function deckIsMaster(data: ServiceMessage<StateData>) {
       if (data.message.json.state) {
-        console.warn(data.deviceId.string, data.message.name, data.message.json);
         const deck = parseInt(data.message.name.substring(12, 13))
         await sleep(250);
         const track = stageLinq.status.getTrack(data.deviceId, deck)
