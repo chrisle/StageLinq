@@ -7,7 +7,6 @@ import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import type { ServiceMessage, Source } from '../types';
 import { DeviceId } from '../devices'
-import { Socket } from 'net';
 
 
 const MAGIC_MARKER = 'fltx';
@@ -88,7 +87,7 @@ export class FileTransfer extends Service<FileTransferData> {
     return this.#txid;
   }
 
-  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<FileTransferData> {
+  protected parseData(ctx: ReadContext): ServiceMessage<FileTransferData> {
 
     const check = ctx.getString(4);
     if (check !== MAGIC_MARKER) {
@@ -106,13 +105,11 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: MessageId.RequestSources,
-          deviceId: this.deviceId,
           message: {
             service: this,
             deviceId: this.deviceId,
             txid: txId,
           },
-          socket: socket,
         };
       }
 
@@ -135,8 +132,6 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
             service: this,
             deviceId: this.deviceId,
@@ -154,14 +149,12 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
           message: {
             service: this,
             deviceId: this.deviceId,
             txid: txId,
             size: size,
           },
-          socket: socket,
         };
       }
 
@@ -169,13 +162,11 @@ export class FileTransfer extends Service<FileTransferData> {
         // End of result indication?
         return {
           id: messageId,
-          deviceId: this.deviceId,
           message: {
             service: this,
             deviceId: this.deviceId,
             txid: txId,
           },
-          socket: socket,
         };
       }
 
@@ -187,8 +178,6 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(id === 1)
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
             service: this,
             deviceId: this.deviceId,
@@ -207,8 +196,6 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
             service: this,
             deviceId: this.deviceId,
@@ -226,8 +213,6 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
             service: this,
             deviceId: this.deviceId,
@@ -245,8 +230,6 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
             service: this,
             deviceId: this.deviceId,

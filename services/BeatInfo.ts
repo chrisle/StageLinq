@@ -5,7 +5,6 @@ import { Service, ServiceHandler } from './Service';
 import { Logger } from '../LogEmitter';
 import type { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
-import { Socket } from 'net';
 import { StageLinq } from '../StageLinq';
 
 type BeatCallback = (n: BeatData) => void;
@@ -130,7 +129,7 @@ export class BeatInfo extends Service<BeatData> {
 		await this.write(ctx);
 	}
 
-	protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<BeatData> {
+	protected parseData(ctx: ReadContext): ServiceMessage<BeatData> {
 		assert(ctx.sizeLeft() > 72);
 		let id = ctx.readUInt32()
 		const clock = ctx.readUInt64();
@@ -157,8 +156,6 @@ export class BeatInfo extends Service<BeatData> {
 		}
 		return {
 			id: id,
-			deviceId: this.deviceId,
-			socket: socket,
 			message: beatMsg
 		}
 	}

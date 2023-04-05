@@ -1,4 +1,4 @@
-import { ConnectionInfo, DiscoveryMessage, Action, IpAddress, deviceTypes, } from '../types';
+import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, Action, IpAddress, Units } from '../types';
 import { DeviceId } from '../devices'
 import { Socket, RemoteInfo } from 'dgram';
 import * as UDPSocket from 'dgram';
@@ -12,13 +12,7 @@ import { StageLinq } from '../StageLinq';
 import EventEmitter = require('events');
 
 
-export interface DiscoveryMessageOptions {
-    name: string;
-    version: string;
-    source: string;
-    token: Uint8Array;
-    port?: number
-};
+
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
@@ -89,7 +83,7 @@ export class Discovery extends EventEmitter {
         this.emit('listening');
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
-            if (deviceTypes[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.deviceId)) {
+            if (Units[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.deviceId)) {
                 const device = this.parent.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);
                 Logger.silly(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
@@ -98,7 +92,7 @@ export class Discovery extends EventEmitter {
                 this.hasLooped = true;
             }
 
-            if (deviceTypes[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.deviceId) && this.parent.devices.hasNewInfo(connectionInfo.deviceId, connectionInfo)) {
+            if (Units[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.deviceId) && this.parent.devices.hasNewInfo(connectionInfo.deviceId, connectionInfo)) {
                 this.peers.set(connectionInfo.deviceId.string, connectionInfo);
                 this.parent.devices.updateDeviceInfo(connectionInfo.deviceId, connectionInfo);
                 Logger.silly(`Updated port for ${connectionInfo.deviceId.string}`);
@@ -206,8 +200,8 @@ export class Discovery extends EventEmitter {
             address: address,
         };
         connectionInfo.addressPort = [connectionInfo.address, connectionInfo.port].join(":");
-        if (deviceTypes[connectionInfo.software.name]) {
-            connectionInfo.unit = deviceTypes[connectionInfo.software.name];
+        if (Units[connectionInfo.software.name]) {
+            connectionInfo.unit = Units[connectionInfo.software.name];
         }
 
         assert(ctx.isEOF());

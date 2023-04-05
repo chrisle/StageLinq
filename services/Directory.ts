@@ -1,7 +1,7 @@
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service, ServiceHandler } from './Service';
-import { ServiceMessage, MessageId, deviceTypes } from '../types';
+import { ServiceMessage, MessageId, Units } from '../types';
 import { DeviceId } from '../devices'
 import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
@@ -111,7 +111,7 @@ export class Directory extends Service<DirectoryData> {
     let services: InstanceType<typeof Service>[] = []
     const device = await this.parent.devices.getDevice(deviceId);
     for (const serviceName of Object.keys(this.parent.services)) {
-      if (device && !!deviceTypes[device.info?.software?.name]) {
+      if (device && !!Units[device.info?.software?.name]) {
         switch (serviceName) {
           case 'FileTransfer': {
             const fileTransfer = await this.parent.services[serviceName].startServiceListener(FileTransfer, this.parent, deviceId);

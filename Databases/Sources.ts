@@ -13,7 +13,6 @@ export declare interface Sources {
   on(event: 'newSource', listener: (source: Source) => void): this;
 }
 
-
 export class Sources extends EventEmitter {
   private _sources: Map<string, Source> = new Map();
   public readonly parent: InstanceType<typeof StageLinq>;

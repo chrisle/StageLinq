@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
-import { ServiceMessage, StageLinqValueObj } from '../types';
+import { ServiceMessage, StateNames } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
@@ -42,8 +42,8 @@ const MAGIC_MARKER_JSON = 0x00000000;
 // const mixerStateValues = stateReducer(stagelinqConfig.mixer, '/');
 // const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 
-const playerStateValues = Object.values(StageLinqValueObj.player);
-const mixerStateValues = Object.values(StageLinqValueObj.mixer);
+const playerStateValues = Object.values(StateNames.player);
+const mixerStateValues = Object.values(StateNames.mixer);
 const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 
 
@@ -144,7 +144,7 @@ export class StateMap extends Service<StateData> {
   }
 
 
-  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
+  protected parseData(ctx: ReadContext): ServiceMessage<StateData> {
     assert(this.deviceId);
 
     const marker = ctx.getString(4);
@@ -163,8 +163,6 @@ export class StateMap extends Service<StateData> {
           const json = JSON.parse(jsonString);
           return {
             id: MAGIC_MARKER_JSON,
-            deviceId: this.deviceId,
-            socket: socket,
             message: {
               name: name,
               json: json,
@@ -184,8 +182,6 @@ export class StateMap extends Service<StateData> {
 
         return {
           id: MAGIC_MARKER_INTERVAL,
-          socket: socket,
-          deviceId: this.deviceId,
           message: {
             service: this,
             deviceId: this.deviceId,
@@ -207,7 +203,7 @@ export class StateMap extends Service<StateData> {
     }
 
     if (data?.message?.interval) {
-      this.sendStateResponse(data.message.name, data.socket);
+      this.sendStateResponse(data.message.name, data.message.service.socket);
     }
     if (data?.message?.json) {
       this.emit('stateMessage', data.message);
@@ -215,7 +211,7 @@ export class StateMap extends Service<StateData> {
 
     if (data && data.message.json && !this.hasReceivedState) {
       Logger.silent(
-        `${data.deviceId.string} ${data.message.name} => ${data.message.json ? JSON.stringify(data.message.json) : data.message.interval
+        `${data.message.deviceId.string} ${data.message.name} => ${data.message.json ? JSON.stringify(data.message.json) : data.message.interval
         }`);
       this.hasReceivedState = true;
     }

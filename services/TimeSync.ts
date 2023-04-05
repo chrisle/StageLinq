@@ -5,7 +5,7 @@ import { Service, ServiceHandler } from './Service';
 import { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
 import { Logger } from '../LogEmitter';
-import { Socket } from 'net';
+//import { Socket } from 'net';
 const { performance } = require('perf_hooks');
 
 
@@ -83,7 +83,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     //     await this.write(ctx, this.socket);
     // };
 
-    protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<TimeSyncData> {
+    protected parseData(p_ctx: ReadContext): ServiceMessage<TimeSyncData> {
         const timestamp = this.getTimeStamp();
         const size = p_ctx.readUInt32();
 
@@ -101,8 +101,8 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             };
             return {
                 id: id,
-                deviceId: this.deviceId,
-                socket: socket,
+                //deviceId: this.deviceId,
+                //socket: socket,
                 message: {
                     msgs: msgs,
                     timestamp: timestamp,
@@ -133,9 +133,9 @@ export class TimeSynchronization extends Service<TimeSyncData> {
                 break;
             case 2:
                 Logger.silly(msg.message)
-                const localClock = msg.message.timestamp - msg.message.msgs[0]
+                //const localClock = msg.message.timestamp - msg.message.msgs[0]
                 const remoteClock = msg.message.msgs[1] - this.remoteTime
-                Logger.silly(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))
+                //Logger.silly(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))
                 this.timeAvg(remoteClock)
                 break;
             default:
