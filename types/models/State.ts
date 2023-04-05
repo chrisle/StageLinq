@@ -1,5 +1,12 @@
 
+import { DeviceId } from "../../devices";
+
 interface ITrackData {
+    source: {
+        name: string;
+        location: DeviceId;
+        path: string;
+    }
     ArtistName: string;
     Bleep: boolean;
     CuePosition: number;
@@ -37,6 +44,11 @@ interface ITrackData {
 
 export class TrackData implements Partial<ITrackData> {
     #prefix: string;
+    #source: {
+        name: string;
+        location: DeviceId;
+        path: string;
+    } = null;
 
     ArtistName: string = ""
     CurrentBPM: number = 0;
@@ -64,6 +76,21 @@ export class TrackData implements Partial<ITrackData> {
      */
     get prefix() {
         return this.#prefix;
+    }
+
+    get source() {
+        if (this.TrackNetworkPath) {
+            const split = this.TrackNetworkPath.substring(6).split('/')
+            const deviceId = new DeviceId(split.shift());
+            const sourceName = split.shift();
+            const path = `/${sourceName}/${split.join('/')}`
+            this.#source = {
+                name: sourceName,
+                location: deviceId,
+                path: path,
+            }
+        }
+        return this.#source
     }
 }
 

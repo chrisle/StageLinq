@@ -145,14 +145,9 @@ async function main() {
         console.log(`Track Loaded: `, track)
 
         if (stageLinq.fileTransfer && stageLinq.options.downloadDbSources) {
-          const split = track.TrackNetworkPath.substring(6).split('/')
-          const deviceId = new DeviceId(split.shift());
-          const sourceName = split.shift();
-          const path = `/${sourceName}/${split.join('/')}`
-
-          const trackInfo = await getTrackInfo(stageLinq, sourceName, deviceId, track.TrackNetworkPath);
+          const trackInfo = await getTrackInfo(stageLinq, track.source.name, track.source.location, track.TrackNetworkPath);
           console.log('Track DB Info: ', trackInfo)
-          downloadFile(stageLinq, sourceName, deviceId, path, Path.resolve(os.tmpdir()));
+          downloadFile(stageLinq, track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
         }
       }
     }
@@ -160,8 +155,7 @@ async function main() {
     stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
-      const info = stageLinq.devices.device(service.deviceId).info
-      for (let i = 1; i <= info.unit.decks; i++) {
+      for (let i = 1; i <= stageLinq.devices.device(service.deviceId).deckCount(); i++) {
         service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
         service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
       }

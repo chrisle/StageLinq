@@ -47,11 +47,7 @@ async function main() {
             const track = stageLinq.status.getTrack(data.deviceId, deck)
 
             if (stageLinq.options.downloadDbSources) {
-                const split = track.TrackNetworkPath.substring(6).split('/')
-                const deviceId = new DeviceId(split.shift());
-                const sourceName = split.shift();
-                const path = `/${sourceName}/${split.join('/')}`
-                downloadFile(stageLinq, sourceName, deviceId, path, Path.resolve(os.tmpdir()));
+                downloadFile(stageLinq, track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
             }
 
             console.log(`Now Playing: `, track) //Or however you consume it
@@ -61,8 +57,7 @@ async function main() {
 
     stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
 
-        const info = stageLinq.devices.device(service.deviceId).info
-        for (let i = 1; i <= info.unit.decks; i++) {
+        for (let i = 1; i <= stageLinq.devices.device(service.deviceId).deckCount(); i++) {
             service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
         }
 

@@ -11,11 +11,34 @@ Rather than searching out devices via discovery, we are able to have devices ini
 
 * Allows connections from devices we couldn't use previously (i.e. x1800/x1850 mixers).
 
+## Notes on Terminilogy
+
+An effort has been made to standardize the syntax used in the library, and to be consitent with the syntax Denon uses (when they have, in fact, been consistent themselves).
+
+### Physical & Network
+| Syntax | Description | Example |
+| --- | --- | --- |
+| Unit | A discrete physical player, controller, or mixer | SC600, PRIME4, X1850 |
+| Device | A unique StageLinq network entity, represented by a DeviceId | _See DeviceId_
+| Service | An instance of a particular Service endpoint | StateMap, FileTransfer, BeatInfo |
+| DeviceId | The GUID representing a StageLinq Device. | 12345678-1234-1234-1234-123456789ABC |
+
+### Software & States
+| Syntax | Description | Example |
+| --- | --- | --- |
+| Deck (1..4) | A singular music-playing instance on a Unit | An SC5000 has 2 Decks, A PRIME4 has 4 Decks |
+| Layer (A..B) | For switching between two Decks on a Unit | Layer A is Deck 1, Layer B is Deck 2 |
+| Track | A music file loaded on a Deck | |
+| Song | Sometimes used interchangabley with Track in some State names | |
+
+
+
+
 ## Implementing Selected Services
 We can choose which services to implement by including them in the `StageLinqOptions` parameter passed to Stagelinq on initialization. 
 ```ts 
 const stageLinqOptions: StageLinqOptions = {
-  downloadDbSources: false,
+  downloadDbSources: true,
   maxRetries: 3,
   actingAs: ActingAsDevice.StageLinqJS,
   services: [
@@ -26,8 +49,18 @@ const stageLinqOptions: StageLinqOptions = {
 }
 ```
 
+## Starting StageLinq
+
+StageLinq is started as it was previously:
+```ts
+const stageLinq = new StageLinq(stageLinqOptions);
+
+await stageLinq.connect();
+```
+
 
 ## Discovery
+Discovery emits a number of messages which may be helpful when debugging.
 
 ```ts
 stageLinq.discovery.on('listening', () => {
@@ -45,7 +78,38 @@ stageLinq.discovery.on('newDiscoveryDevice', (info) => {
 stageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
   console.log(`[DISCOVERY] Updated Device ${info.deviceId.string} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
 });
-  ```
+```
+
+`updatedDiscoveryDevice` is emitted when a Device is broadcasting a new Directory port, which is indicative of a reset. The Device should automatically reconnect without any action required from the user.
+
+Discovery offers a few methods for getting ConnectionInfos for Devices on the network:
+```ts
+/**
+ * Get ConnectionInfo
+ * @param {DeviceId} deviceId 
+ * @returns {ConnectionInfo}
+ */
+public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {
+    return this.peers.get(deviceId.string);
+}
+
+/**
+ * Get list of devices
+ * @returns {string[]} An array of DeviceId strings
+ */
+public getDeviceList(): string[] {
+    return [...this.peers.keys()]
+}
+
+/**
+ * Get array of device ConnectionInfos
+ * @returns {ConnectionInfo[]} An array of ConnectionInfos
+ */
+public getDevices(): ConnectionInfo[] {
+    return [...this.peers.values()]
+}
+```
+
 
 
 
@@ -56,38 +120,33 @@ stageLinq.stateMap.on('newDevice', (service: StateMapDevice) => {
     service.subscribe();
 });
 
-stageLinq.stateMap.on('stateMessage', async (data: ServiceMessage<StateData>) => {
-    console.log(`[STATEMAP] ${data.deviceId.string} ${data.message.name} => ${JSON.stringify(data.message.json)}`);
+stageLinq.stateMap.on('stateMessage', async (data: StateData) => {
+    console.log(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
   });
 ```
 
 ### Using NowPlaying-type updates from StageLinq.status
 
 ```ts
-async function deckIsMaster(data: ServiceMessage<StateData>) {
-  if (data.message.json.state) {
-    const deck = parseInt(data.message.name.substring(12, 13))
+async function deckIsMaster(data: StateData) {
+  if (data.json.state) {
+    const deck = parseInt(data.name.substring(12, 13))
     await sleep(250);
     const track = stageLinq.status.getTrack(data.deviceId, deck)
     console.log(`Now Playing: `, track)
   }
 }
 
-async function songLoaded(data: ServiceMessage<StateData>) {
-  if (data.message.json.state) {
-    const deck = parseInt(data.message.name.substring(12, 13))
+async function songLoaded(data: StateData) {
+  if (data.json.state) {
+    const deck = parseInt(data.name.substring(12, 13))
     await sleep(250);
     const track = stageLinq.status.getTrack(data.deviceId, deck)
     console.log(`Track Loaded: `, track)
     if (stageLinq.fileTransfer && stageLinq.options.downloadDbSources) {
-      const split = track.TrackNetworkPath.substring(6).split('/')
-      const deviceId = new DeviceId(split.shift());
-      const sourceName = split.shift();
-      const path = `/${sourceName}/${split.join('/')}`
-      
-      const trackInfo = await getTrackInfo(stageLinq, sourceName, deviceId, track.TrackNetworkPath);
+      const trackInfo = await getTrackInfo(stageLinq, track.source.name, track.source.location, track.TrackNetworkPath);
       console.log('Track DB Info: ', trackInfo)
-      downloadFile(stageLinq, sourceName, deviceId, path, Path.resolve(os.tmpdir()));
+      downloadFile(stageLinq, track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
     }
   }
 }
@@ -95,9 +154,8 @@ async function songLoaded(data: ServiceMessage<StateData>) {
 stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
   console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
-  const info = stageLinq.discovery.getConnectionInfo(service.deviceId)
-  for (let i = 1; i <= info.device.decks; i++) {
-    await stageLinq.status.addTrack(service, i);
+  const info = stageLinq.devices.device(service.deviceId).info
+  for (let i = 1; i <= info.unit.decks; i++) {
     service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
     service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
   }
@@ -129,7 +187,9 @@ stageLinq.databases.on('dbDownloaded', (source: Source) => {
   console.log(`[FILETRANSFER] Database Downloaded: (${source.name})`);
 });
 ```
+
 ## BeatInfo
+
 ```ts
 const beatOptions = {
   // Resolution for triggering callback
@@ -142,12 +202,12 @@ const beatOptions = {
 
 //  User callback function. 
 //  Will be triggered everytime a player's beat counter crosses the resolution threshold
-function beatCallback(bd: ServiceMessage<BeatData>,) {
+function beatCallback(bd: BeatData,) {
   let deckBeatString = ""
-  for (let i = 0; i < bd.message.deckCount; i++) {
-    deckBeatString += `Deck: ${i + 1} Beat: ${bd.message.deck[i].beat.toFixed(3)}/${bd.message.deck[i].totalBeats.toFixed(0)} `
+  for (let i = 0; i < bd.deckCount; i++) {
+    deckBeatString += `Deck: ${i + 1} Beat: ${bd.deck[i].beat.toFixed(3)}/${bd.deck[i].totalBeats.toFixed(0)} `
   }
-  console.log(`[BEATINFO] ${bd.deviceId.string} clock: ${bd.message.clock} ${deckBeatString}`);
+  console.log(`[BEATINFO] ${bd.deviceId.string} clock: ${bd.clock} ${deckBeatString}`);
 }
 
 ////  callback is optional, BeatInfo messages can be consumed by: 

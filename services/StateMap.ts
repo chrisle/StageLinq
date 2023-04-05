@@ -80,8 +80,7 @@ export class StateMapHandler extends ServiceHandler<StateData> {
 
     stateMap.on('newDevice', (service: StateMap) => {
       Logger.debug(`New StateMap Device ${service.deviceId.string}`)
-      const info = this.parent.devices.device(service.deviceId).info;
-      for (let i = 1; i <= info.unit.decks; i++) {
+      for (let i = 1; i <= this.parent.devices.device(service.deviceId).deckCount(); i++) {
         this.parent.status.addDeck(service, i);
       }
       this.emit('newDevice', service);
