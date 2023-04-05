@@ -50,7 +50,8 @@ const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 export type StateMapDevice = InstanceType<typeof StateMap>
 
 export interface StateData {
-  service: InstanceType<typeof StateMap>
+  service: StateMap;
+  deviceId: DeviceId;
   name?: string;
   json?: {
     type: number;
@@ -166,8 +167,9 @@ export class StateMap extends Service<StateData> {
             socket: socket,
             message: {
               name: name,
-              service: this,
               json: json,
+              service: this,
+              deviceId: this.deviceId,
             },
           };
         } catch (err) {
@@ -185,8 +187,9 @@ export class StateMap extends Service<StateData> {
           socket: socket,
           deviceId: this.deviceId,
           message: {
-            name: name,
             service: this,
+            deviceId: this.deviceId,
+            name: name,
             interval: interval,
           },
         };
@@ -200,14 +203,14 @@ export class StateMap extends Service<StateData> {
   protected messageHandler(data: ServiceMessage<StateData>): void {
 
     if (this.listenerCount(data?.message?.name) && data?.message?.json) {
-      this.emit(data.message.name, data)
+      this.emit(data.message.name, data.message)
     }
 
     if (data?.message?.interval) {
       this.sendStateResponse(data.message.name, data.socket);
     }
     if (data?.message?.json) {
-      this.emit('stateMessage', data);
+      this.emit('stateMessage', data.message);
     }
 
     if (data && data.message.json && !this.hasReceivedState) {

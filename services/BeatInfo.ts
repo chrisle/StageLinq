@@ -8,7 +8,7 @@ import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { StageLinq } from '../StageLinq';
 
-type BeatCallback = (n: ServiceMessage<BeatData>) => void;
+type BeatCallback = (n: BeatData) => void;
 
 type BeatOptions = {
 	everyNBeats: number,
@@ -22,6 +22,8 @@ interface deckBeatData {
 }
 
 export interface BeatData {
+	service: BeatInfo;
+	deviceId: DeviceId;
 	clock: bigint;
 	deckCount: number;
 	deck: deckBeatData[];
@@ -29,7 +31,7 @@ export interface BeatData {
 
 export declare interface BeatInfoHandler {
 	on(event: 'newBeatInfoDevice', listener: (device: Service<BeatData>) => void): this;
-	on(event: 'beatMsg', listener: (beatData: ServiceMessage<BeatData>, device: Service<BeatData>) => void): this;
+	on(event: 'beatMsg', listener: (beatData: BeatData, device: Service<BeatData>) => void): this;
 }
 
 export class BeatInfoHandler extends ServiceHandler<BeatData> {
@@ -83,7 +85,7 @@ export class BeatInfo extends Service<BeatData> {
 
 	private _userBeatCallback: BeatCallback = null;
 	private _userBeatOptions: BeatOptions = null;
-	private _currentBeatData: ServiceMessage<BeatData> = null;
+	private _currentBeatData: BeatData = null;
 	isBufferedService: boolean = true;
 
 	/**
@@ -99,9 +101,9 @@ export class BeatInfo extends Service<BeatData> {
 
 	/**
 	 * Get current BeatData
-	 * @returns {ServiceMessage<BeatData>}
+	 * @returns {BeatData}
 	 */
-	getBeatData(): ServiceMessage<BeatData> {
+	getBeatData(): BeatData {
 		return this._currentBeatData;
 	}
 
@@ -147,6 +149,8 @@ export class BeatInfo extends Service<BeatData> {
 		}
 		assert(ctx.isEOF())
 		const beatMsg = {
+			service: this,
+			deviceId: this.deviceId,
 			clock: clock,
 			deckCount: deckCount,
 			deck: deck,
@@ -171,11 +175,11 @@ export class BeatInfo extends Service<BeatData> {
 
 		if (data && data.message) {
 			if (!this._currentBeatData) {
-				this._currentBeatData = data;
+				this._currentBeatData = data.message;
 				this.handler.setBeatData(this.deviceId, data.message);
-				this.emit('beatMessage', data);
+				this.emit('beatMessage', data.message);
 				if (this._userBeatCallback) {
-					this._userBeatCallback(data);
+					this._userBeatCallback(data.message);
 				}
 			}
 
@@ -184,7 +188,7 @@ export class BeatInfo extends Service<BeatData> {
 			for (let i = 0; i < data.message.deckCount; i++) {
 				if (resCheck(
 					this._userBeatOptions.everyNBeats,
-					this._currentBeatData.message.deck[i].beat,
+					this._currentBeatData.deck[i].beat,
 					data.message.deck[i].beat)) {
 					hasUpdated = true;
 				}
@@ -194,10 +198,10 @@ export class BeatInfo extends Service<BeatData> {
 
 				this.emit('beatMessage', data);
 				if (this._userBeatCallback) {
-					this._userBeatCallback(data);
+					this._userBeatCallback(data.message);
 				}
 			}
-			this._currentBeatData = data;
+			this._currentBeatData = data.message;
 			this.handler.setBeatData(this.deviceId, data.message);
 		}
 	}

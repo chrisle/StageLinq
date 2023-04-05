@@ -1,4 +1,4 @@
-import { ActingAsDevice, StageLinqOptions, ServiceList, ServiceMessage } from '../types';
+import { ActingAsDevice, StageLinqOptions, ServiceList } from '../types';
 import { DeviceId } from '../devices'
 import { StateData, StateMapDevice } from '../services';
 import { sleep } from '../utils/sleep';
@@ -33,15 +33,16 @@ async function main() {
                 const filePath = `${dest}/${path.split('/').pop()}`
                 fs.writeFileSync(filePath, Buffer.from(data));
             }
+            console.log(`Downloaded ${path}`)
         } catch (e) {
             console.error(`Could not download ${path}`);
             console.error(e)
         }
     }
 
-    async function deckIsMaster(data: ServiceMessage<StateData>) {
-        if (data.message.json.state) {
-            const deck = parseInt(data.message.name.substring(12, 13))
+    async function deckIsMaster(data: StateData) {
+        if (data.json.state) {
+            const deck = parseInt(data.name.substring(12, 13))
             await sleep(250);
             const track = stageLinq.status.getTrack(data.deviceId, deck)
 

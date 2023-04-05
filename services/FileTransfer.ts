@@ -14,7 +14,16 @@ const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
 // TODO: Strongly type this for all possible messages?
-type FileTransferData = any;
+export interface FileTransferData {
+  service: FileTransfer;
+  deviceId: DeviceId;
+  txid: number;
+  size?: number;
+  offset?: number;
+  sources?: string[];
+  data?: Buffer;
+
+}
 
 enum MessageId {
   TimeCode = 0x0,
@@ -50,8 +59,8 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
    * @param {Service<FileTransfer>} service 
    * @param {DeviceId} deviceId 
    */
-  public setupService(service: Service<FileTransferData>, deviceId: DeviceId) {
-    const fileTransfer = service as FileTransfer;
+  public setupService(service: Service<FileTransfer>, deviceId: DeviceId) {
+    const fileTransfer = service as Service<FileTransfer>;
     Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.string}`);
     this.addDevice(deviceId, service);
     fileTransfer.on('fileTransferProgress', (source, fileName, txid, progress) => {
@@ -101,6 +110,8 @@ export class FileTransfer extends Service<FileTransferData> {
           id: MessageId.RequestSources,
           deviceId: this.deviceId,
           message: {
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
           },
           socket: socket,
@@ -129,6 +140,8 @@ export class FileTransfer extends Service<FileTransferData> {
           deviceId: this.deviceId,
           socket: socket,
           message: {
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
             sources: sources,
           },
@@ -145,8 +158,10 @@ export class FileTransfer extends Service<FileTransferData> {
           id: messageId,
           deviceId: this.deviceId,
           message: {
-            size: size,
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
+            size: size,
           },
           socket: socket,
         };
@@ -157,7 +172,11 @@ export class FileTransfer extends Service<FileTransferData> {
         return {
           id: messageId,
           deviceId: this.deviceId,
-          message: null,
+          message: {
+            service: this,
+            deviceId: this.deviceId,
+            txid: txId,
+          },
           socket: socket,
         };
       }
@@ -173,8 +192,10 @@ export class FileTransfer extends Service<FileTransferData> {
           deviceId: this.deviceId,
           socket: socket,
           message: {
-            size: filesize,
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
+            size: filesize,
           },
         };
       }
@@ -191,6 +212,8 @@ export class FileTransfer extends Service<FileTransferData> {
           deviceId: this.deviceId,
           socket: socket,
           message: {
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
             data: ctx.readRemainingAsNewBuffer(),
             offset: offset,
@@ -207,7 +230,11 @@ export class FileTransfer extends Service<FileTransferData> {
           id: messageId,
           deviceId: this.deviceId,
           socket: socket,
-          message: null,
+          message: {
+            service: this,
+            deviceId: this.deviceId,
+            txid: txId,
+          },
         };
       }
 
@@ -222,7 +249,11 @@ export class FileTransfer extends Service<FileTransferData> {
           id: messageId,
           deviceId: this.deviceId,
           socket: socket,
-          message: null,
+          message: {
+            service: this,
+            deviceId: this.deviceId,
+            txid: txId,
+          },
         };
       }
 
@@ -240,7 +271,7 @@ export class FileTransfer extends Service<FileTransferData> {
       this.receivedFile.write(data.message.data);
     }
     if (data && data.id === MessageId.RequestSources) {
-      this.sendNoSourcesReply(data);
+      this.sendNoSourcesReply(data.message);
     }
   }
 
@@ -267,7 +298,7 @@ export class FileTransfer extends Service<FileTransferData> {
     if (txinfo) {
       this.receivedFile = new WriteContext({ size: txinfo.size });
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
-      const total = parseInt(txinfo.size);
+      const total = txinfo.size;
 
       if (total === 0) {
         Logger.warn(`${location} doesn't exist or is a streaming file`);
@@ -464,10 +495,10 @@ export class FileTransfer extends Service<FileTransferData> {
    * Reply to Devices requesting our sources
    * @param {FileTransferData} data 
    */
-  private async sendNoSourcesReply(data: FileTransferData) {
+  private async sendNoSourcesReply(message: FileTransferData) {
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(data.message.txid);
+    ctx.writeUInt32(message.txid);
     ctx.writeUInt32(0x3);
     ctx.writeUInt32(0x0);
     ctx.writeUInt16(257);

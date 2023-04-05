@@ -89,6 +89,7 @@ export interface StageLinqOptions {
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
 	services?: ServiceList[];
+	connectToMixer?: boolean
 }
 
 type deviceType = {
@@ -113,6 +114,6 @@ export const deviceTypes: deviceType = {
 	NH08: { name: 'MIXSTREAMPRO', type: 'CONTROLLER', decks: 2 },
 	NH09: { name: 'MIXSTREAMPROPLUS', type: 'CONTROLLER', decks: 2 },
 	NH10: { name: 'MIXSTREAMPROGO', type: 'CONTROLLER', decks: 2 },
-	JM08: { name: 'DN-X1800Prime', type: 'MIXER', decks: 0 },
-	JM10: { name: 'DN-X1850Prime', type: 'MIXER', decks: 0 },
+	//JM08: { name: 'DN-X1800Prime', type: 'MIXER', decks: 0 },
+	//JM10: { name: 'DN-X1850Prime', type: 'MIXER', decks: 0 },
 }
