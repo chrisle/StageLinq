@@ -1,4 +1,4 @@
-import { DbConnection } from '../../Databases';
+import { DbConnection } from '../../Sources';
 import { FileTransfer } from '../../services';
 import { DeviceId } from '../../devices/DeviceId';
 
@@ -8,15 +8,14 @@ export interface Source {
     deviceId: DeviceId;
     service: FileTransfer;
     database: {
-        location: string;
         size: number;
-        connection?: DbConnection;
-        remote?: {
+        remote: {
             location: string,
-            device: string,
+            device: DeviceId,
         },
         local?: {
             path: string,
+            connection: DbConnection;
         }
     };
 }

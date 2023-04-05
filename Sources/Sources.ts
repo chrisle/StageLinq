@@ -3,6 +3,9 @@ import { Source } from '../types';
 import { DeviceId } from '../devices'
 import { StageLinq } from '../StageLinq';
 import { Logger } from '../LogEmitter';
+import * as fs from 'fs';
+import { DbConnection } from './DbConnection';
+import { getTempFilePath } from '../utils';
 
 
 export declare interface Sources {
@@ -11,6 +14,8 @@ export declare interface Sources {
    * @event newSource
    */
   on(event: 'newSource', listener: (source: Source) => void): this;
+  on(event: 'sourceRemoved', listener: (sourceName: string, deviceId: DeviceId) => void): this;
+  on(event: 'dbDownloaded', listener: (source: Source) => void): this;
 }
 
 export class Sources extends EventEmitter {
@@ -76,6 +81,7 @@ export class Sources extends EventEmitter {
    */
   setSource(source: Source) {
     this._sources.set(`${source.deviceId.string}${source.name}`, source);
+    this.emit('newSource', source);
   }
 
   /**
@@ -85,6 +91,7 @@ export class Sources extends EventEmitter {
    */
   deleteSource(sourceName: string, deviceId: DeviceId) {
     this._sources.delete(`${deviceId.string}${sourceName}`)
+    this.emit('sourceRemoved', sourceName, deviceId);
   }
 
   /**
@@ -104,6 +111,24 @@ export class Sources extends EventEmitter {
       Logger.error(err);
       throw new Error(err);
     }
+  }
+  async downloadDb(source: Source) {
+
+    Logger.debug(`downloadDb request for ${source.name}`);
+    const dbPath = getTempFilePath(`${source.deviceId.string}/${source.name}/m.db`);
+    Logger.debug(`Reading database ${source.deviceId.string}/${source.name}`);
+
+    const file = await source.service.getFile(source, source.database.remote.location);
+    Logger.debug(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
+    fs.writeFileSync(dbPath, Buffer.from(file));
+
+    source.database.local = {
+      path: dbPath,
+      connection: new DbConnection(dbPath)
+    };
+    this.setSource(source);
+    Logger.debug(`Downloaded ${source.deviceId.string}/${source.name} to ${dbPath}`);
+    this.emit('dbDownloaded', source);
   }
 }
 

@@ -30,7 +30,7 @@ async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: 
   }
   try {
     const source = stageLinq.sources.getSource(sourceName, deviceId);
-    const connection = source.database.connection;
+    const connection = source.database.local.connection;
     const result = await connection.getTrackInfo(trackName);
     return result;
   } catch (e) {
@@ -142,11 +142,11 @@ async function main() {
         const deck = parseInt(data.name.substring(12, 13))
         await sleep(250);
         const track = stageLinq.status.getTrack(data.deviceId, deck)
-        console.log(`Track Loaded: `, track)
+        console.log(`[STATUS] Track Loaded: `, track)
 
         if (stageLinq.fileTransfer && stageLinq.options.downloadDbSources) {
           const trackInfo = await getTrackInfo(stageLinq, track.source.name, track.source.location, track.TrackNetworkPath);
-          console.log('Track DB Info: ', trackInfo)
+          console.log('[STATUS] Track DB Info: ', trackInfo)
           downloadFile(stageLinq, track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
         }
       }
@@ -180,17 +180,19 @@ async function main() {
       console.log(`[FILETRANSFER] Complete ${source.name} id:{${txid}} ${file}`);
     });
 
-    stageLinq.fileTransfer.on('newSource', (source: Source) => {
-      console.log(`[FILETRANSFER] Source Available: (${source.name})`);
+    stageLinq.sources.on('newSource', (source: Source) => {
+      console.log(`[SOURCES] Source Available: (${source.name})`);
     });
 
-    stageLinq.fileTransfer.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
-      console.log(`[FILETRANSFER] Source Removed: ${sourceName} on ${deviceId.string}`);
+    stageLinq.sources.on('dbDownloaded', (source: Source) => {
+      console.log(`[SOURCES] Database Downloaded: (${source.name})`);
     });
 
-    stageLinq.databases.on('dbDownloaded', (source: Source) => {
-      console.log(`[FILETRANSFER] Database Downloaded: (${source.name})`);
+    stageLinq.sources.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
+      console.log(`[SOURCES] Source Removed: ${sourceName} on ${deviceId.string}`);
     });
+
+
 
   }
 

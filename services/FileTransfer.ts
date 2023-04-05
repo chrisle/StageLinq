@@ -44,8 +44,6 @@ export interface FileTransferProgress {
 export declare interface FileTransfer {
   on(event: 'fileTransferProgress', listener: (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => void): this;
   on(event: 'fileTransferComplete', listener: (source: Source, fileName: string, txid: number) => void): this;
-  on(event: 'newSource', listener: (source: Source) => void): this;
-  on(event: 'sourceRemoved', listener: (sourceName: string, deviceId: DeviceId) => void): this;
 }
 
 export class FileTransferHandler extends ServiceHandler<FileTransfer> {
@@ -344,7 +342,7 @@ export class FileTransfer extends Service<FileTransferData> {
     const newSources = sources.filter(source => !currentSourceNames.includes(source));
     for (const source of markedForDelete) {
       this.parent.sources.deleteSource(source.name, source.deviceId)
-      this.emit('sourceRemoved', source.name, source.deviceId);
+
     }
 
     if (newSources.length) {
@@ -373,20 +371,19 @@ export class FileTransfer extends Service<FileTransferData> {
             deviceId: this.deviceId,
             service: this,
             database: {
-              location: database,
               size: fstatMessage.size,
               remote: {
                 location: database,
-                device: this.deviceId.string,
+                device: this.deviceId,
               }
             }
           }
           this.parent.sources.setSource(thisSource);
-          this.emit('newSource', thisSource);
+
           result.push(thisSource);
 
           if (this.parent.options.downloadDbSources) {
-            this.parent.databases.downloadDb(thisSource);
+            this.parent.sources.downloadDb(thisSource);
           }
           break;
         }

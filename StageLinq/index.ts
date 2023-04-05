@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { ActingAsDevice, StageLinqOptions } from '../types';
 import { Devices } from '../devices'
-import { Databases, Sources } from '../Databases';
+import { Sources } from '../Sources';
 import * as Services from '../services';
 import { Status } from '../status/Status';
 import { AddressInfo, Server } from 'net';
@@ -36,7 +36,7 @@ export class StageLinq extends EventEmitter {
   public readonly beatInfo: Services.BeatInfoHandler = null;
   public readonly timeSync: Services.TimeSynchronizationHandler = null;
 
-  public readonly databases: Databases = null;
+  //public readonly databases: Databases = null;
   public readonly sources: Sources = null;
   public readonly status: Status = null;
 
@@ -51,7 +51,7 @@ export class StageLinq extends EventEmitter {
   constructor(options?: StageLinqOptions) {
     super();
     this.options = options || DEFAULT_OPTIONS;
-    this.databases = new Databases(this);
+    //this.databases = new Databases(this);
     this.sources = new Sources(this);
     this.status = new Status(this);
 
