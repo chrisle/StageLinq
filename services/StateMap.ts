@@ -5,7 +5,6 @@ import { ServiceMessage, StateNames } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
-import { sleep } from '../utils';
 import { Service, ServiceHandler } from '../services';
 import { StageLinq } from '../StageLinq';
 import * as stagelinqConfig from '../stagelinqConfig.json';
@@ -112,14 +111,11 @@ export class StateMap extends Service<StateData> {
    */
   public async subscribe() {
     const socket = this.socket;
-    while (!this.parent.devices.hasDevice(this.deviceId)) {
-      await sleep(200);
-    }
 
     Logger.silly(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.string}`);
-    const connectionInfo = this.parent.devices.device(this.deviceId).info;
 
-    switch (connectionInfo?.unit?.type) {
+
+    switch (this.device.info.unit?.type) {
       case "PLAYER": {
         for (let state of playerStateValues) {
           await this.subscribeState(state, 0, socket);

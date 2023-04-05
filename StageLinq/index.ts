@@ -15,7 +15,7 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
   downloadDbSources: true,
 };
 
-export interface ServiceHandlers {
+interface ServiceHandlers {
   [key: string]: InstanceType<typeof Services.ServiceHandler>;
 }
 

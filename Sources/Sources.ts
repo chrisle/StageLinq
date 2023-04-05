@@ -20,13 +20,13 @@ export declare interface Sources {
 
 export class Sources extends EventEmitter {
   private _sources: Map<string, Source> = new Map();
-  public readonly parent: InstanceType<typeof StageLinq>;
+  public readonly parent: StageLinq;
 
   /**
    * @constructor
    * @param {StageLinq} parent 
    */
-  constructor(parent: InstanceType<typeof StageLinq>) {
+  constructor(parent: StageLinq) {
     super();
     this.parent = parent;
   }

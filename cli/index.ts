@@ -71,7 +71,7 @@ async function main() {
     ],
   }
 
-  const stageLinq = new StageLinq(stageLinqOptions);
+  const stageLinq = await new StageLinq(stageLinqOptions);
 
 
   stageLinq.logger.on('error', (...args: any) => {
@@ -124,6 +124,9 @@ async function main() {
     console.log(`[DEVICES] New ${service.name} Service on ${device.deviceId.string} port ${service.serverInfo.port}`)
   });
 
+  if (!stageLinq.stateMap) console.warn('no StateMap!', stageLinq.stateMap)
+  if (!stageLinq.fileTransfer) console.warn('no fileTransfer!', stageLinq.fileTransfer)
+  if (!stageLinq.beatInfo) console.warn('no beatInfo!', stageLinq.beatInfo)
 
   if (stageLinq.stateMap) {
 
@@ -155,7 +158,8 @@ async function main() {
     stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
-      for (let i = 1; i <= stageLinq.devices.device(service.deviceId).deckCount(); i++) {
+
+      for (let i = 1; i <= service.device.deckCount(); i++) {
         service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
         service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
       }

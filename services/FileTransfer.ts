@@ -267,9 +267,10 @@ export class FileTransfer extends Service<FileTransferData> {
    * @returns {Promise<Uint8Array>} Contents of the file.
    */
   async getFile(source: Source, location: string): Promise<Uint8Array> {
-    while (!this.#isAvailable) {
-      await sleep(500)
-    }
+    // while (!this.#isAvailable) {
+    //   await sleep(500)
+    // }
+    await this.isAvailable();
     this.#isAvailable = false;
     assert(this.receivedFile === null);
     await this.requestFileTransferId(location);

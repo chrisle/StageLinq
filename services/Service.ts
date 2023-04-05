@@ -355,7 +355,7 @@ export abstract class Service<T> extends EventEmitter {
 	 * @param {StageLinq} parent 
 	 * @param {ServiceHandler} handler 
 	 */
-	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: InstanceType<typeof StageLinq>, handler: ServiceHandler<T>) {
+	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server, parent: StageLinq, handler: ServiceHandler<T>) {
 		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
 
 		await server.close();
