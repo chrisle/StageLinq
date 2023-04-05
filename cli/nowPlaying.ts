@@ -1,6 +1,6 @@
 import { ActingAsDevice, StageLinqOptions, ServiceList } from '../types';
 import { DeviceId } from '../devices'
-import { StateData, StateMapDevice } from '../services';
+import { StateData, StateMap } from '../services';
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import * as fs from 'fs';
@@ -59,11 +59,10 @@ async function main() {
     }
 
 
-    stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
+    stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
 
-        const info = stageLinq.discovery.getConnectionInfo(service.deviceId)
+        const info = stageLinq.devices.device(service.deviceId).info
         for (let i = 1; i <= info.unit.decks; i++) {
-            await stageLinq.status.addTrack(service, i);
             service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
         }
 

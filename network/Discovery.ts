@@ -63,26 +63,8 @@ export class Discovery extends EventEmitter {
     }
 
     /**
-     * Set ConnectionInfo
-     * @param {DeviceId} deviceId 
-     * @param {ConnectionInfo} connectionInfo 
-     */
-    public setConnectionInfo(deviceId: DeviceId, connectionInfo: ConnectionInfo) {
-        this.peers.set(deviceId.string, connectionInfo);
-    }
-
-    /**
-     * 
-     * @param {DeviceId} deviceId 
-     * @returns {boolean} 
-     */
-    public hasConnectionInfo(deviceId: DeviceId): boolean {
-        return this.peers.has(deviceId.string);
-    }
-
-    /**
      * Get list of devices
-     * @returns {string[]}
+     * @returns {string[]} An array of DeviceId strings
      */
     public getDeviceList(): string[] {
         return [...this.peers.keys()]
@@ -90,7 +72,7 @@ export class Discovery extends EventEmitter {
 
     /**
      * Get array of device ConnectionInfos
-     * @returns {ConnectionInfo[]}
+     * @returns {ConnectionInfo[]} An array of ConnectionInfos
      */
     public getDevices(): ConnectionInfo[] {
         return [...this.peers.values()]

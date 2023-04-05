@@ -94,7 +94,7 @@ export class BeatInfo extends Service<BeatData> {
 	 * @param {BeatInfoHandler} serviceHandler 
 	 * @param {DeviceId} [deviceId] 
 	 */
-	constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
+	constructor(parent: StageLinq, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
 		super(parent, serviceHandler, deviceId)
 		this.handler = this._handler as BeatInfoHandler
 	}

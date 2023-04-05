@@ -19,19 +19,6 @@ export class Status extends EventEmitter {
     }
 
     /**
-     * Add a track to Status
-     * @param {StateMap} service // Instance of StateMap Service
-     * @param {number} deck Deck (layer) number
-     */
-    async addTrack(service: StateMap, deck: number,) {
-        let track = new TrackData(`/Engine/Deck${deck}/Track/`)
-        this.tracks.set(`{${service.deviceId.string}},${deck}`, track)
-        for (let item of Object.keys(track)) {
-            service.addListener(`${track.prefix}${item}`, data => this.listener(data, this))
-        }
-    }
-
-    /**
      * Get Track Info from Status
      * @param {DeviceId} deviceId DeviceId of the player
      * @param {deck} deck Deck (layer) number
@@ -39,6 +26,27 @@ export class Status extends EventEmitter {
      */
     getTrack(deviceId: DeviceId, deck: number): TrackData {
         return this.tracks.get(`{${deviceId.string}},${deck}`);
+    }
+
+    /**
+     * Add a Deck for Status to monitor
+     * @param {StateMap} service // Instance of StateMap Service
+     * @param {number} deck Deck (layer) number
+     */
+    async addDeck(service: StateMap, deck: number) {
+        let track = new TrackData(`/Engine/Deck${deck}/Track/`)
+        this.tracks.set(`{${service.deviceId.string}},${deck}`, track)
+        for (let item of Object.keys(track)) {
+            service.addListener(`${track.prefix}${item}`, data => this.listener(data, this))
+        }
+    }
+
+    private listener(data: StateData, status: Status) {
+        const deck = parseInt(data.name.substring(12, 13))
+        const property = data.name.split('/').pop()
+        const value = this.getTypedValue(data);
+        const track = status.tracks.get(`{${data.deviceId.string}},${deck}`)
+        this.tracks.set(`{${data.deviceId.string}},${deck}`, Object.assign(track, { [property]: value }));
     }
 
     private getTypedValue(data: StateData): boolean | string | number {
@@ -52,13 +60,4 @@ export class Status extends EventEmitter {
             return data.json.value as number
         }
     }
-
-    private listener(data: StateData, status: Status) {
-        const deck = parseInt(data.name.substring(12, 13))
-        const property = data.name.split('/').pop()
-        const value = this.getTypedValue(data);
-        const track = status.tracks.get(`{${data.deviceId.string}},${deck}`)
-        this.tracks.set(`{${data.deviceId.string}},${deck}`, Object.assign(track, { [property]: value }));
-    }
-
 }

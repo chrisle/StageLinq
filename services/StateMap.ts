@@ -47,8 +47,6 @@ const mixerStateValues = Object.values(StageLinqValueObj.mixer);
 const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 
 
-export type StateMapDevice = InstanceType<typeof StateMap>
-
 export interface StateData {
   service: StateMap;
   deviceId: DeviceId;
@@ -80,10 +78,13 @@ export class StateMapHandler extends ServiceHandler<StateData> {
       this.emit('stateMessage', data);
     });
 
-    stateMap.on('newDevice', (service: InstanceType<typeof StateMap>) => {
+    stateMap.on('newDevice', (service: StateMap) => {
       Logger.debug(`New StateMap Device ${service.deviceId.string}`)
+      const info = this.parent.devices.device(service.deviceId).info;
+      for (let i = 1; i <= info.unit.decks; i++) {
+        this.parent.status.addDeck(service, i);
+      }
       this.emit('newDevice', service);
-      assert(service);
     })
   }
 }
@@ -102,7 +103,7 @@ export class StateMap extends Service<StateData> {
    * @param {StateMapHandler} serviceHandler 
    * @param {DeviceId} deviceId 
    */
-  constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
+  constructor(parent: StageLinq, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
     super(parent, serviceHandler, deviceId)
     this.handler = this._handler as StateMapHandler
   }

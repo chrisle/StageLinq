@@ -1,6 +1,6 @@
 import { ActingAsDevice, StageLinqOptions, ServiceList, Source } from '../types';
 import { DeviceId } from '../devices'
-import { StateData, StateMapDevice, BeatData, BeatInfo } from '../services';
+import { StateData, StateMap, BeatData, BeatInfo } from '../services';
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import { Logger } from '../LogEmitter';
@@ -157,12 +157,11 @@ async function main() {
       }
     }
 
-    stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
+    stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
-      const info = stageLinq.discovery.getConnectionInfo(service.deviceId)
+      const info = stageLinq.devices.device(service.deviceId).info
       for (let i = 1; i <= info.unit.decks; i++) {
-        await stageLinq.status.addTrack(service, i);
         service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
         service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
       }

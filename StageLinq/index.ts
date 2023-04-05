@@ -1,8 +1,8 @@
 import { Discovery } from '../network';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions, ConnectionInfo, ServiceMessage } from '../types';
-import { Devices, DeviceId } from '../devices'
+import { ActingAsDevice, StageLinqOptions } from '../types';
+import { Devices } from '../devices'
 import { Databases, Sources } from '../Databases';
 import * as Services from '../services';
 import { Status } from '../status/Status';
@@ -19,14 +19,6 @@ export interface ServiceHandlers {
   [key: string]: InstanceType<typeof Services.ServiceHandler>;
 }
 
-export declare interface StageLinq {
-  on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
-  on(event: 'newStateMapDevice', listener: (deviceId: DeviceId, service: InstanceType<typeof Services.StateMap>) => void): this;
-  on(event: 'stateMessage', listener: (message: ServiceMessage<Services.StateData>) => void): this;
-  on(event: 'connection', listener: (serviceName: string, deviceId: DeviceId) => void): this;
-  on(event: 'fileProgress', listener: (path: string, total: number, bytesDownloaded: number, percentComplete: number) => void): this;
-}
-
 /**
  * Main StageLinq class.
  */
@@ -39,16 +31,16 @@ export class StageLinq extends EventEmitter {
   public readonly logger: Logger = Logger.instance;
   public readonly discovery: Discovery = new Discovery(this);
 
-  public readonly stateMap: InstanceType<typeof Services.StateMapHandler> = null;
-  public readonly fileTransfer: InstanceType<typeof Services.FileTransferHandler> = null;
-  public readonly beatInfo: InstanceType<typeof Services.BeatInfoHandler> = null;
-  public readonly timeSync: InstanceType<typeof Services.TimeSynchronizationHandler> = null;
+  public readonly stateMap: Services.StateMapHandler = null;
+  public readonly fileTransfer: Services.FileTransferHandler = null;
+  public readonly beatInfo: Services.BeatInfoHandler = null;
+  public readonly timeSync: Services.TimeSynchronizationHandler = null;
 
   public readonly databases: Databases = null;
   public readonly sources: Sources = null;
   public readonly status: Status = null;
 
-  private directory: InstanceType<typeof Services.Directory> = null;
+  private directory: Services.Directory = null;
   private servers: Map<string, Server> = new Map();
 
   /**

@@ -30,7 +30,7 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 	 * @param {string} serviceName 
 	 */
 
-	constructor(parent: InstanceType<typeof StageLinq>, serviceName: string) {
+	constructor(parent: StageLinq, serviceName: string) {
 		super();
 		this.parent = parent;
 		this.name = serviceName;
@@ -119,7 +119,7 @@ export abstract class Service<T> extends EventEmitter {
 	public socket: Socket = null;
 
 	protected isBufferedService: boolean = true;
-	protected parent: InstanceType<typeof StageLinq>;
+	protected parent: StageLinq;
 	protected _handler: ServiceHandler<T> = null;
 	protected timeout: NodeJS.Timer;
 
@@ -131,7 +131,7 @@ export abstract class Service<T> extends EventEmitter {
 	 * @param {ServiceHandler<T>} serviceHandler 
 	 * @param {DeviceId} deviceId 
 	 */
-	constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: InstanceType<typeof ServiceHandler>, deviceId?: DeviceId) {
+	constructor(parent: StageLinq, serviceHandler: InstanceType<typeof ServiceHandler>, deviceId?: DeviceId) {
 		super();
 		this.parent = parent;
 		this._handler = serviceHandler as ServiceHandler<T>;
