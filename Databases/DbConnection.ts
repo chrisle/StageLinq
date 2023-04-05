@@ -1,5 +1,5 @@
 import Database = require('better-sqlite3');
-import { Track } from '../types';
+import { TrackDBEntry } from '../types';
 import { Logger } from '../LogEmitter';
 import { inflate } from 'zlib'
 
@@ -53,8 +53,8 @@ export class DbConnection {
    * @param {string} _trackPath Path of track on the source's filesystem.
    * @returns {Promise<Track>}
    */
-  async getTrackInfo(_trackPath: string): Promise<Track> {
-    let result: Track[];
+  async getTrackInfo(_trackPath: string): Promise<TrackDBEntry> {
+    let result: TrackDBEntry[];
 
     //console.dir(_trackPath.split('/'))
     const trackPath = _trackPath.split('/').slice(5, _trackPath.length).join('/')

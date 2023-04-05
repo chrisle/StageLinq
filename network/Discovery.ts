@@ -78,7 +78,7 @@ export class Discovery extends EventEmitter {
      */
     async listen(options: DiscoveryMessageOptions) {
         this.options = options;
-        this.deviceId = new DeviceId(options.token)
+        this.deviceId = options.deviceId
 
         this.emit('listening');
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
@@ -219,7 +219,7 @@ export class Discovery extends EventEmitter {
         const msg: DiscoveryMessage = {
             action: action,
             port: port || 0,
-            deviceId: new DeviceId(discoveryMessageOptions.token),
+            deviceId: discoveryMessageOptions.deviceId,
             software: {
                 name: discoveryMessageOptions.name,
                 version: discoveryMessageOptions.version

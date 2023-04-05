@@ -107,7 +107,7 @@ export class Directory extends Service<DirectoryData> {
   private async sendServiceAnnouncement(deviceId: DeviceId, socket: Socket): Promise<void> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.ServicesRequest);
-    ctx.write(this.parent.options.actingAs.token);
+    ctx.write(this.parent.options.actingAs.deviceId.array);
     let services: InstanceType<typeof Service>[] = []
     const device = await this.parent.devices.getDevice(deviceId);
     for (const serviceName of Object.keys(this.parent.services)) {
@@ -141,7 +141,7 @@ export class Directory extends Service<DirectoryData> {
 
     for (const service of services) {
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
-      ctx.write(this.parent.options.actingAs.token);
+      ctx.write(this.parent.options.actingAs.deviceId.array);
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
       Logger.debug(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
@@ -160,7 +160,7 @@ export class Directory extends Service<DirectoryData> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.TimeStamp);
     ctx.write(token);
-    ctx.write(this.parent.options.actingAs.token);
+    ctx.write(this.parent.options.actingAs.deviceId.array);
     ctx.writeUInt64(0n);
     const message = ctx.getBuffer();
     assert(message.length === 44);

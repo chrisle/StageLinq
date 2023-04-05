@@ -1,10 +1,11 @@
 import { version } from '../package.json';
+import { DeviceId } from '../devices/DeviceId';
 
 export interface DiscoveryMessageOptions {
     name: string;
     version: string;
     source: string;
-    token: Uint8Array;
+    deviceId: DeviceId;
     port?: number
 };
 
@@ -38,35 +39,35 @@ export const ActingAsDevice: { [name: string]: DiscoveryMessageOptions } = {
         name: 'stagelinqjs',
         version: version,
         source: 'SLJS',
-        token: Tokens.Listen
+        deviceId: new DeviceId(Tokens.Listen)
     },
 
     NowPlaying: {
         name: 'nowplaying',
         version: '2.2.0',
         source: 'np2',
-        token: Tokens.Listen
+        deviceId: new DeviceId(Tokens.Listen)
     },
 
     Sc6000_1: {
         name: 'sc6000',
         version: '2.3.1',
         source: 'JP13',
-        token: Tokens.Sc6000_1
+        deviceId: new DeviceId(Tokens.Sc6000_1)
     },
 
     Sc6000_2: {
         name: 'sc6000',
         version: '2.3.1',
         source: 'JP13',
-        token: Tokens.Sc6000_2
+        deviceId: new DeviceId(Tokens.Sc6000_2)
     },
 
     Resolume: {
         name: 'resolume',
         version: '10.0.0',
         source: 'res',
-        token: Tokens.Resolume
+        deviceId: new DeviceId(Tokens.Resolume)
     }
 
 }

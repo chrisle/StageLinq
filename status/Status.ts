@@ -1,13 +1,13 @@
 import EventEmitter = require("events");
 import { StageLinq } from '../StageLinq';
 import { StateData, StateMap } from '../services';
-import { TrackData } from '../types';
+import { Track } from '../types';
 import { DeviceId } from '../devices'
 
 
 export class Status extends EventEmitter {
     readonly parent: InstanceType<typeof StageLinq>;
-    private tracks: Map<string, TrackData> = new Map();
+    private tracks: Map<string, Track> = new Map();
 
     /**
      * @constructor
@@ -24,7 +24,7 @@ export class Status extends EventEmitter {
      * @param {deck} deck Deck (layer) number
      * @returns {TrackData}
      */
-    getTrack(deviceId: DeviceId, deck: number): TrackData {
+    getTrack(deviceId: DeviceId, deck: number): Track {
         return this.tracks.get(`{${deviceId.string}},${deck}`);
     }
 
@@ -34,7 +34,7 @@ export class Status extends EventEmitter {
      * @param {number} deck Deck (layer) number
      */
     async addDeck(service: StateMap, deck: number) {
-        let track = new TrackData(`/Engine/Deck${deck}/Track/`)
+        let track = new Track(`/Engine/Deck${deck}/Track/`)
         this.tracks.set(`{${service.deviceId.string}},${deck}`, track)
         for (let item of Object.keys(track)) {
             service.addListener(`${track.prefix}${item}`, data => this.listener(data, this))

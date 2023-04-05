@@ -5,7 +5,6 @@ import { Service, ServiceHandler } from './Service';
 import { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
 import { Logger } from '../LogEmitter';
-//import { Socket } from 'net';
 const { performance } = require('perf_hooks');
 
 
@@ -39,7 +38,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     public async sendTimeSyncRequest() {
         const ctx = new WriteContext();
         ctx.write(new Uint8Array([0x0, 0x0, 0x0, 0x0]));
-        ctx.write(this.parent.options.actingAs.token);
+        ctx.write(this.parent.options.actingAs.deviceId.array);
         ctx.write(new Uint8Array([0x0]));
         ctx.writeFixedSizedString('TimeSynchronization');
         await this.write(ctx);
@@ -88,8 +87,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
         const size = p_ctx.readUInt32();
 
         if (size === 0) {
-            const token = p_ctx.read(16);
-            const deviceId = new DeviceId(token)
+            const deviceId = new DeviceId(p_ctx.read(16))
             const svcName = p_ctx.readNetworkStringUTF16();
             const svcPort = p_ctx.readUInt16();
             console.log(deviceId.string, svcName, svcPort)
@@ -101,8 +99,6 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             };
             return {
                 id: id,
-                //deviceId: this.deviceId,
-                //socket: socket,
                 message: {
                     msgs: msgs,
                     timestamp: timestamp,
