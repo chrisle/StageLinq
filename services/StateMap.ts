@@ -112,14 +112,14 @@ export class StateMap extends Service<StateData> {
    */
   public async subscribe() {
     const socket = this.socket;
-    while (!this.parent.discovery.hasConnectionInfo(this.deviceId)) {
+    while (!this.parent.devices.hasDevice(this.deviceId)) {
       await sleep(200);
     }
 
     Logger.silly(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.string}`);
-    const thisPeer = this.parent.discovery.getConnectionInfo(this.deviceId);
+    const connectionInfo = this.parent.devices.device(this.deviceId).info;
 
-    switch (thisPeer?.device?.type) {
+    switch (connectionInfo?.unit?.type) {
       case "PLAYER": {
         for (let state of playerStateValues) {
           await this.subscribeState(state, 0, socket);

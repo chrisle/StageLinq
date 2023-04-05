@@ -55,7 +55,7 @@ export class Directory extends Service<DirectoryData> {
             this.timeAlive = Number(timeAlive / (1000n * 1000n * 1000n));
           }
 
-          if (deviceInfo && deviceInfo.device && deviceInfo.device.type === 'MIXER') {
+          if (deviceInfo && deviceInfo.unit && deviceInfo.unit.type === 'MIXER') {
             this.sendTimeStampReply(token);
           }
           break;

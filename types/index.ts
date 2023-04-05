@@ -12,7 +12,6 @@ export * from './models';
 
 
 export interface DiscoveryMessage {
-	token: Uint8Array;
 	deviceId?: DeviceId;
 	source: string;
 	action: string;
@@ -32,7 +31,7 @@ export enum DeviceType {
 
 export interface ConnectionInfo extends DiscoveryMessage {
 	address: IpAddress;
-	device?: {
+	unit?: {
 		name: string,
 		type: string,
 		decks: number

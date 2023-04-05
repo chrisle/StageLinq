@@ -62,7 +62,7 @@ async function main() {
     stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
 
         const info = stageLinq.discovery.getConnectionInfo(service.deviceId)
-        for (let i = 1; i <= info.device.decks; i++) {
+        for (let i = 1; i <= info.unit.decks; i++) {
             await stageLinq.status.addTrack(service, i);
             service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
         }

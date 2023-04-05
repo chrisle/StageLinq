@@ -213,7 +213,7 @@ export class Discovery extends EventEmitter {
         }
 
         const connectionInfo: ConnectionInfo = {
-            token: ctx.read(16),
+            deviceId: new DeviceId(ctx.read(16)),
             source: ctx.readNetworkStringUTF16(),
             action: ctx.readNetworkStringUTF16(),
             software: {
@@ -223,10 +223,9 @@ export class Discovery extends EventEmitter {
             port: ctx.readUInt16(),
             address: address,
         };
-        connectionInfo.deviceId = new DeviceId(connectionInfo.token)
         connectionInfo.addressPort = [connectionInfo.address, connectionInfo.port].join(":");
         if (deviceTypes[connectionInfo.software.name]) {
-            connectionInfo.device = deviceTypes[connectionInfo.software.name];
+            connectionInfo.unit = deviceTypes[connectionInfo.software.name];
         }
 
         assert(ctx.isEOF());
@@ -250,7 +249,6 @@ export class Discovery extends EventEmitter {
                 version: discoveryMessageOptions.version
             },
             source: discoveryMessageOptions.source,
-            token: discoveryMessageOptions.token,
         };
         return msg;
     }
@@ -263,7 +261,7 @@ export class Discovery extends EventEmitter {
     private writeDiscoveryMessage(message: DiscoveryMessage): Buffer {
         const ctx = new WriteContext();
         ctx.writeFixedSizedString(DISCOVERY_MESSAGE_MARKER);
-        ctx.write(message.token);
+        ctx.write(message.deviceId.array);
         ctx.writeNetworkStringUTF16(message.source);
         ctx.writeNetworkStringUTF16(message.action);
         ctx.writeNetworkStringUTF16(message.software.name);

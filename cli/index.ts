@@ -67,7 +67,7 @@ async function main() {
     services: [
       ServiceList.StateMap,
       ServiceList.FileTransfer,
-      //ServiceList.BeatInfo,
+      ServiceList.BeatInfo,
     ],
   }
 
@@ -161,7 +161,7 @@ async function main() {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
       const info = stageLinq.discovery.getConnectionInfo(service.deviceId)
-      for (let i = 1; i <= info.device.decks; i++) {
+      for (let i = 1; i <= info.unit.decks; i++) {
         await stageLinq.status.addTrack(service, i);
         service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
         service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);

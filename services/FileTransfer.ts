@@ -13,7 +13,6 @@ import { Socket } from 'net';
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
-// TODO: Strongly type this for all possible messages?
 export interface FileTransferData {
   service: FileTransfer;
   deviceId: DeviceId;
@@ -22,7 +21,6 @@ export interface FileTransferData {
   offset?: number;
   sources?: string[];
   data?: Buffer;
-
 }
 
 enum MessageId {
