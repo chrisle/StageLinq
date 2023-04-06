@@ -1,18 +1,18 @@
-import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, Action, IpAddress, Units } from '../types';
-import { DeviceId } from '../devices'
-import { Socket, RemoteInfo } from 'dgram';
-import * as UDPSocket from 'dgram';
-import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER, ANNOUNCEMENT_INTERVAL } from '../types/common';
-import { strict as assert } from 'assert';
-import { sleep, WriteContext, ReadContext } from '../utils';
-import { networkInterfaces } from 'os';
-import { subnet, SubnetInfo } from 'ip';
+import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
+import { strict as assert } from 'assert';
+import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, Action, IpAddress, Units } from '../types';
+import { sleep, WriteContext, ReadContext } from '../utils';
+import { DeviceId } from '../devices'
+import { Socket, RemoteInfo, createSocket } from 'dgram';
+import { subnet, SubnetInfo } from 'ip';
+import { networkInterfaces } from 'os';
 import { StageLinq } from '../StageLinq';
-import EventEmitter = require('events');
 
 
-
+const ANNOUNCEMENT_INTERVAL = 1000;
+const LISTEN_PORT = 51337;
+const DISCOVERY_MESSAGE_MARKER = 'airD';
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
@@ -24,27 +24,21 @@ export declare interface Discovery {
 }
 
 export class Discovery extends EventEmitter {
-    public parent: InstanceType<typeof StageLinq>;
-
     private socket: Socket;
     private address: IpAddress;
     private broadcastAddress: IpAddress;
     private options: DiscoveryMessageOptions = null;
     private peers: Map<string, ConnectionInfo> = new Map();
     private deviceId: DeviceId = null
-
-
     private announceTimer: NodeJS.Timer;
     private hasLooped: boolean = false;
 
     /**
      * Discovery Class
      * @constructor
-     * @param {StageLinq} parent StageLinq Instance
      */
-    constructor(parent: InstanceType<typeof StageLinq>) {
+    constructor() {
         super();
-        this.parent = parent;
     }
 
     /**
@@ -83,8 +77,8 @@ export class Discovery extends EventEmitter {
         this.emit('listening');
         await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
-            if (Units[connectionInfo.software.name] && !this.parent.devices.hasDevice(connectionInfo.deviceId)) {
-                const device = this.parent.devices.addDevice(connectionInfo);
+            if (Units[connectionInfo.software.name] && !StageLinq.devices.hasDevice(connectionInfo.deviceId)) {
+                const device = StageLinq.devices.addDevice(connectionInfo);
                 this.peers.set(device.deviceId.string, connectionInfo);
                 Logger.silly(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
                 this.emit('newDiscoveryDevice', connectionInfo);
@@ -92,9 +86,9 @@ export class Discovery extends EventEmitter {
                 this.hasLooped = true;
             }
 
-            if (Units[connectionInfo.software.name] && this.parent.devices.hasDevice(connectionInfo.deviceId) && this.parent.devices.hasNewInfo(connectionInfo.deviceId, connectionInfo)) {
+            if (Units[connectionInfo.software.name] && StageLinq.devices.hasDevice(connectionInfo.deviceId) && StageLinq.devices.hasNewInfo(connectionInfo.deviceId, connectionInfo)) {
                 this.peers.set(connectionInfo.deviceId.string, connectionInfo);
-                this.parent.devices.updateDeviceInfo(connectionInfo.deviceId, connectionInfo);
+                StageLinq.devices.updateDeviceInfo(connectionInfo.deviceId, connectionInfo);
                 Logger.silly(`Updated port for ${connectionInfo.deviceId.string}`);
                 this.emit('updatedDiscoveryDevice', connectionInfo);
             }
@@ -110,7 +104,7 @@ export class Discovery extends EventEmitter {
         this.socket.setBroadcast(true);
         const discoveryMessage = this.createDiscoveryMessage(Action.Login, this.options, port);
         while (!this.hasLooped) {
-            await sleep(500);
+            await sleep(250);
         }
         const ips = this.findBroadcastIPs()
         const address = ips.filter(ip => {
@@ -160,7 +154,7 @@ export class Discovery extends EventEmitter {
     */
 
     private async listenForDevices(callback: DeviceDiscoveryCallback) {
-        this.socket = UDPSocket.createSocket('udp4');
+        this.socket = createSocket('udp4');
         this.socket.on('message', (announcement: Uint8Array, remote: RemoteInfo) => {
             const ctx = new ReadContext(announcement.buffer, false);
             const result = this.readConnectionInfo(ctx, remote.address);

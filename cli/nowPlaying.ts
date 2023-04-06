@@ -12,7 +12,6 @@ async function main() {
 
     const stageLinqOptions: StageLinqOptions = {
         downloadDbSources: true,
-        maxRetries: 3,
         actingAs: ActingAsDevice.NowPlaying,
         services: [
             ServiceList.StateMap,
@@ -22,13 +21,13 @@ async function main() {
 
     const stageLinq = new StageLinq(stageLinqOptions);
 
-    async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
-        while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
+    async function downloadFile(sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
+        while (!StageLinq.sources.hasSource(sourceName, deviceId)) {
             await sleep(250)
         }
         try {
-            const source = stageLinq.sources.getSource(sourceName, deviceId);
-            const data = await stageLinq.sources.downloadFile(source, path);
+            const source = StageLinq.sources.getSource(sourceName, deviceId);
+            const data = await StageLinq.sources.downloadFile(source, path);
             if (dest && data) {
                 const filePath = `${dest}/${path.split('/').pop()}`
                 fs.writeFileSync(filePath, Buffer.from(data));
@@ -44,10 +43,10 @@ async function main() {
         if (data.json.state) {
             const deck = parseInt(data.name.substring(12, 13))
             await sleep(250);
-            const track = stageLinq.status.getTrack(data.deviceId, deck)
+            const track = StageLinq.status.getTrack(data.deviceId, deck)
 
-            if (stageLinq.options.downloadDbSources) {
-                downloadFile(stageLinq, track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
+            if (StageLinq.options.downloadDbSources) {
+                downloadFile(track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
             }
 
             console.log(`Now Playing: `, track) //Or however you consume it

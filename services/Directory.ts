@@ -1,16 +1,18 @@
+import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
-import { ReadContext } from '../utils/ReadContext';
-import { Service, } from './Service';
+import { ReadContext, WriteContext, sleep } from '../utils';
 import { ServiceMessage, MessageId, Units } from '../types';
 import { DeviceId } from '../devices'
-import { sleep } from '../utils/sleep';
 import { Socket } from 'net';
-import { strict as assert } from 'assert';
-import { WriteContext } from '../utils/WriteContext';
-import { FileTransfer } from './FileTransfer';
-import { StateMap } from './StateMap';
-import { BeatInfo } from './BeatInfo';
-//import { TimeSynchronization } from './TimeSync';
+import { StageLinq } from '../StageLinq';
+import {
+  Service,
+  StateMap,
+  FileTransfer,
+  BeatInfo,
+  TimeSynchronization,
+} from '../services'
+
 
 export interface DirectoryData {
   deviceId: string;
@@ -35,7 +37,7 @@ export class Directory extends Service<DirectoryData> {
     }
 
     this.deviceId = new DeviceId(token);
-    const deviceInfo = this.parent.discovery.getConnectionInfo(this.deviceId);
+    const deviceInfo = StageLinq.discovery.getConnectionInfo(this.deviceId);
 
     assert(this.socket)
     try {
@@ -100,30 +102,30 @@ export class Directory extends Service<DirectoryData> {
   private async sendServiceAnnouncement(deviceId: DeviceId, socket: Socket): Promise<void> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.ServicesRequest);
-    ctx.write(this.parent.options.actingAs.deviceId.array);
+    ctx.write(StageLinq.options.actingAs.deviceId.array);
     let services: InstanceType<typeof Service>[] = []
-    const device = await this.parent.devices.getDevice(deviceId);
-    for (const serviceName of this.parent.options.services) {
+    const device = await StageLinq.devices.getDevice(deviceId);
+    for (const serviceName of StageLinq.options.services) {
       if (device && !!Units[device.info?.software?.name]) {
         switch (serviceName) {
           case 'FileTransfer': {
-            const fileTransfer = await this.parent.startServiceListener(FileTransfer, deviceId)
+            const fileTransfer = await StageLinq.startServiceListener(FileTransfer, deviceId)
             services.push(fileTransfer);
             break;
           }
           case 'StateMap': {
-            const stateMap = await this.parent.startServiceListener(StateMap, deviceId)
+            const stateMap = await StageLinq.startServiceListener(StateMap, deviceId)
             services.push(stateMap);
             break;
           }
           case 'BeatInfo': {
-            const beatInfo = await this.parent.startServiceListener(BeatInfo, deviceId)
+            const beatInfo = await StageLinq.startServiceListener(BeatInfo, deviceId)
             services.push(beatInfo);
             break;
           }
           case 'TimeSynchronization': {
-            //const timeSync = await this.parent.services[serviceName].startServiceListener(TimeSynchronization, this.parent, deviceId);
-            //services.push(timeSync);
+            const timeSync = await StageLinq.startServiceListener(TimeSynchronization, deviceId)
+            services.push(timeSync);
             break;
           }
           default:
@@ -134,7 +136,7 @@ export class Directory extends Service<DirectoryData> {
 
     for (const service of services) {
       ctx.writeUInt32(MessageId.ServicesAnnouncement);
-      ctx.write(this.parent.options.actingAs.deviceId.array);
+      ctx.write(StageLinq.options.actingAs.deviceId.array);
       ctx.writeNetworkStringUTF16(service.name);
       ctx.writeUInt16(service.serverInfo.port);
       Logger.debug(`${deviceId.string} Created new ${service.name} on port ${service.serverInfo.port}`);
@@ -153,7 +155,7 @@ export class Directory extends Service<DirectoryData> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.TimeStamp);
     ctx.write(token);
-    ctx.write(this.parent.options.actingAs.deviceId.array);
+    ctx.write(StageLinq.options.actingAs.deviceId.array);
     ctx.writeUInt64(0n);
     const message = ctx.getBuffer();
     assert(message.length === 44);

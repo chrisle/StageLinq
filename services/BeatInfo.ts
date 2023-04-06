@@ -1,11 +1,9 @@
 import { strict as assert } from 'assert';
-import { ReadContext } from '../utils/ReadContext';
-import { WriteContext } from '../utils/WriteContext';
+import { ReadContext, WriteContext } from '../utils';
 import { Service } from './Service';
 import type { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
-import { StageLinq } from '../StageLinq';
-import EventEmitter = require('events');
+import { EventEmitter } from 'events';
 
 
 type BeatCallback = (n: BeatData) => void;
@@ -45,13 +43,11 @@ export class BeatInfo extends Service<BeatData> {
 
 	/**
 	 * @constructor
-	 * @param {StageLinq} parent 
-	 * @param {BeatInfoHandler} serviceHandler 
 	 * @param {DeviceId} [deviceId] 
 	 */
 
-	constructor(parent: StageLinq, deviceId: DeviceId) {
-		super(parent, deviceId)
+	constructor(deviceId: DeviceId) {
+		super(deviceId)
 		BeatInfo.#instances.set(this.deviceId.string, this)
 		this.addListener('connection', () => BeatInfo.instanceListener('newDevice', this))
 		this.addListener('beatMessage', (data: BeatData) => BeatInfo.instanceListener('beatMessage', data))

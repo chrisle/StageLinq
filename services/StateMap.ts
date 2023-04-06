@@ -1,20 +1,22 @@
+import { EventEmitter } from 'events';
+import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
-import { ReadContext } from '../utils/ReadContext';
-import { WriteContext } from '../utils/WriteContext';
+import { ReadContext, WriteContext } from '../utils';
 import { ServiceMessage, StateNames } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
-import { Logger } from '../LogEmitter';
 import { Service } from '../services';
 import { StageLinq } from '../StageLinq';
 import * as stagelinqConfig from '../stagelinqConfig.json';
-import EventEmitter = require('events');
+
 
 export type Player = typeof stagelinqConfig.player;
 export type PlayerDeck = typeof stagelinqConfig.playerDeck;
 export type Mixer = typeof stagelinqConfig.mixer;
 
 const MAGIC_MARKER = 'smaa';
+const MAGIC_MARKER_INTERVAL = 0x000007d2;
+const MAGIC_MARKER_JSON = 0x00000000;
 
 enum Action {
   request = 0x000007d2,
@@ -27,8 +29,7 @@ enum Result {
   inquire = 0x00000064
 }
 
-const MAGIC_MARKER_INTERVAL = 0x000007d2;
-const MAGIC_MARKER_JSON = 0x00000000;
+
 
 // function stateReducer(obj: any, prefix: string): string[] {
 //   const entries = Object.entries(obj)
@@ -74,11 +75,11 @@ export class StateMap extends Service<StateData> {
    * @param {StateMapHandler} serviceHandler 
    * @param {DeviceId} deviceId 
    */
-  constructor(parent: StageLinq, deviceId?: DeviceId) {
-    super(parent, deviceId)
+  constructor(deviceId?: DeviceId) {
+    super(deviceId)
     StateMap.#instances.set(this.deviceId.string, this)
     this.addListener('newDevice', (service: StateMap) => StateMap.instanceListener('newDevice', service))
-    this.addListener('newDevice', (service: StateMap) => this.parent.status.addDecks(service))
+    this.addListener('newDevice', (service: StateMap) => StageLinq.status.addDecks(service))
     this.addListener('stateMessage', (data: StateData) => StateMap.instanceListener('stateMessage', data))
   }
 

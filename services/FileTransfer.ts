@@ -1,16 +1,14 @@
-import { DOWNLOAD_TIMEOUT } from '../types';
-import { Logger } from '../LogEmitter';
-import { ReadContext } from '../utils/ReadContext';
-import { Service } from './Service';
-import { sleep } from '../utils/sleep';
+import { EventEmitter } from 'events';
 import { strict as assert } from 'assert';
-import { WriteContext } from '../utils/WriteContext';
+import { Logger } from '../LogEmitter';
+import { ReadContext, WriteContext, sleep } from '../utils';
+import { Service } from './Service';
 import type { ServiceMessage, Source } from '../types';
 import { DeviceId } from '../devices'
 import { StageLinq } from '../StageLinq';
-import EventEmitter = require('events');
 
 
+const DOWNLOAD_TIMEOUT = 60000; // in ms
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
@@ -57,8 +55,8 @@ export class FileTransfer extends Service<FileTransferData> {
   #txid: number = 1;
   #isAvailable: boolean = true;
 
-  constructor(parent: StageLinq, deviceId?: DeviceId) {
-    super(parent, deviceId)
+  constructor(deviceId?: DeviceId) {
+    super(deviceId)
     FileTransfer.#instances.set(this.deviceId.string, this)
     this.addListener('newDevice', (service: FileTransfer) => FileTransfer.fileTransferListener('newDevice', service))
     this.addListener('newSource', (source: Source) => FileTransfer.fileTransferListener('newSource', source))
@@ -334,14 +332,14 @@ export class FileTransfer extends Service<FileTransferData> {
    * @param {string[]} sources  an array of current sources from device
    */
   async updateSources(sources: string[]) {
-    const currentSources = this.parent.sources.getSources(this.deviceId);
+    const currentSources = StageLinq.sources.getSources(this.deviceId);
     const currentSourceNames = currentSources.map(source => source.name);
 
     //When a source is disconnected, devices send a new SourceLocations message that excludes the removed source
     const markedForDelete = currentSources.filter(item => !sources.includes(item.name));
     const newSources = sources.filter(source => !currentSourceNames.includes(source));
     for (const source of markedForDelete) {
-      this.parent.sources.deleteSource(source.name, source.deviceId)
+      StageLinq.sources.deleteSource(source.name, source.deviceId)
 
     }
 
@@ -378,12 +376,12 @@ export class FileTransfer extends Service<FileTransferData> {
               }
             }
           }
-          this.parent.sources.setSource(thisSource);
+          StageLinq.sources.setSource(thisSource);
           this.emit('newSource', thisSource)
           result.push(thisSource);
 
-          if (this.parent.options.downloadDbSources) {
-            this.parent.sources.downloadDb(thisSource);
+          if (StageLinq.options.downloadDbSources) {
+            StageLinq.sources.downloadDb(thisSource);
           }
           break;
         }

@@ -1,4 +1,4 @@
-import EventEmitter = require("events");
+import { EventEmitter } from 'events';
 import { StageLinq } from '../StageLinq';
 import { StateData, StateMap } from '../services';
 import { Track } from '../types';
@@ -6,16 +6,13 @@ import { DeviceId } from '../devices'
 
 
 export class Status extends EventEmitter {
-    readonly parent: InstanceType<typeof StageLinq>;
     private tracks: Map<string, Track> = new Map();
 
     /**
      * @constructor
-     * @param {StageLinq} parent 
      */
-    constructor(parent: InstanceType<typeof StageLinq>) {
+    constructor() {
         super();
-        this.parent = parent;
     }
 
     /**
@@ -42,7 +39,7 @@ export class Status extends EventEmitter {
     }
 
     async addDecks(service: StateMap) {
-        for (let i = 1; i <= this.parent.devices.device(service.deviceId).deckCount(); i++) {
+        for (let i = 1; i <= StageLinq.devices.device(service.deviceId).deckCount(); i++) {
             this.addDeck(service, i);
         }
     }

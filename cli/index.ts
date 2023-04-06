@@ -24,12 +24,12 @@ function progressBar(size: number, bytes: number, total: number): string {
   return `[${progressArrary.join('')}]`
 }
 
-async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, trackName: string) {
-  while (!stageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
+async function getTrackInfo(sourceName: string, deviceId: DeviceId, trackName: string) {
+  while (!StageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
     await sleep(1000);
   }
   try {
-    const source = stageLinq.sources.getSource(sourceName, deviceId);
+    const source = StageLinq.sources.getSource(sourceName, deviceId);
     const connection = source.database.local.connection;
     const result = await connection.getTrackInfo(trackName);
     return result;
@@ -38,13 +38,13 @@ async function getTrackInfo(stageLinq: StageLinq, sourceName: string, deviceId: 
   }
 }
 
-async function downloadFile(stageLinq: StageLinq, sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
-  while (!stageLinq.sources.hasSource(sourceName, deviceId)) {
+async function downloadFile(sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
+  while (!StageLinq.sources.hasSource(sourceName, deviceId)) {
     await sleep(250)
   }
   try {
-    const source = stageLinq.sources.getSource(sourceName, deviceId);
-    const data = await stageLinq.sources.downloadFile(source, path);
+    const source = StageLinq.sources.getSource(sourceName, deviceId);
+    const data = await StageLinq.sources.downloadFile(source, path);
     if (dest && data) {
       const filePath = `${dest}/${path.split('/').pop()}`
       fs.writeFileSync(filePath, Buffer.from(data));
@@ -62,7 +62,6 @@ async function main() {
 
   const stageLinqOptions: StageLinqOptions = {
     downloadDbSources: true,
-    maxRetries: 3,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
       ServiceList.StateMap,
@@ -98,28 +97,28 @@ async function main() {
   // });
 
 
-  stageLinq.discovery.on('listening', () => {
+  StageLinq.discovery.on('listening', () => {
     console.log(`[DISCOVERY] Listening`)
   });
 
-  stageLinq.discovery.on('announcing', (info) => {
+  StageLinq.discovery.on('announcing', (info) => {
     console.log(`[DISCOVERY] Broadcasting Announce ${info.deviceId.string} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
   });
 
-  stageLinq.discovery.on('newDiscoveryDevice', (info) => {
+  StageLinq.discovery.on('newDiscoveryDevice', (info) => {
     console.log(`[DISCOVERY] New Device ${info.deviceId.string} ${info.source} ${info.software.name} ${info.software.version}`)
   });
 
-  stageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
+  StageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
     console.log(`[DISCOVERY] Updated Device ${info.deviceId.string} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
   });
 
 
-  stageLinq.devices.on('newDevice', (device) => {
+  StageLinq.devices.on('newDevice', (device) => {
     Logger.debug(`[DEVICES] New Device ${device.deviceId.string}`)
   });
 
-  stageLinq.devices.on('newService', (device, service) => {
+  StageLinq.devices.on('newService', (device, service) => {
     console.log(`[DEVICES] New ${service.name} Service on ${device.deviceId.string} port ${service.serverInfo.port}`)
   });
 
@@ -130,7 +129,7 @@ async function main() {
       if (data.json.state) {
         const deck = parseInt(data.name.substring(12, 13))
         await sleep(250);
-        const track = stageLinq.status.getTrack(data.deviceId, deck)
+        const track = StageLinq.status.getTrack(data.deviceId, deck)
         console.log(`Now Playing: `, track)
       }
     }
@@ -139,13 +138,13 @@ async function main() {
       if (data.json.state) {
         const deck = parseInt(data.name.substring(12, 13))
         await sleep(250);
-        const track = stageLinq.status.getTrack(data.deviceId, deck)
+        const track = StageLinq.status.getTrack(data.deviceId, deck)
         console.log(`[STATUS] Track Loaded: `, track)
 
-        if (stageLinqOptions.services.includes(ServiceList.FileTransfer) && stageLinq.options.downloadDbSources) {
-          const trackInfo = await getTrackInfo(stageLinq, track.source.name, track.source.location, track.TrackNetworkPath);
+        if (stageLinqOptions.services.includes(ServiceList.FileTransfer) && StageLinq.options.downloadDbSources) {
+          const trackInfo = await getTrackInfo(track.source.name, track.source.location, track.TrackNetworkPath);
           console.log('[STATUS] Track DB Info: ', trackInfo)
-          downloadFile(stageLinq, track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
+          downloadFile(track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
         }
       }
     }
@@ -170,9 +169,6 @@ async function main() {
 
   if (stageLinqOptions.services.includes(ServiceList.FileTransfer)) {
 
-    FileTransfer.emitter.on('newSource', (source) => {
-      console.warn(`NEW FileTransfer static Source! ${source.name}`)
-    })
 
     FileTransfer.emitter.on('fileTransferProgress', (source, file, txid, progress) => {
       console.log(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
@@ -182,15 +178,15 @@ async function main() {
       console.log(`[FILETRANSFER] Complete ${source.name} id:{${txid}} ${file}`);
     });
 
-    stageLinq.sources.on('newSource', (source: Source) => {
+    StageLinq.sources.on('newSource', (source: Source) => {
       console.log(`[SOURCES] Source Available: (${source.name})`);
     });
 
-    stageLinq.sources.on('dbDownloaded', (source: Source) => {
+    StageLinq.sources.on('dbDownloaded', (source: Source) => {
       console.log(`[SOURCES] Database Downloaded: (${source.name})`);
     });
 
-    stageLinq.sources.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
+    StageLinq.sources.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
       console.log(`[SOURCES] Source Removed: ${sourceName} on ${deviceId.string}`);
     });
 
@@ -230,17 +226,10 @@ async function main() {
     };
 
     BeatInfo.emitter.on('newDevice', async (beatInfo: BeatInfo) => {
-      console.log(`[STATICBEATINFO] New Device ${beatInfo.deviceId.string}`)
-      //beatInfo
-      //});
-
-      //stageLinq.beatInfo.on('newDevice', async (beatInfo: BeatInfo) => {
-      //console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
-
+      console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
 
       if (beatMethod.useCallback) {
         beatInfo.startBeatInfo(beatOptions, beatCallback);
-        console.warn(BeatInfo.getInstances())
       }
 
       if (beatMethod.useEvent) {

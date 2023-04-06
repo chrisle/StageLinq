@@ -1,31 +1,17 @@
 
-import { ReadContext } from '../utils/ReadContext';
-import { WriteContext } from '../utils/WriteContext';
-import { Service } from './Service';
+import { Logger } from '../LogEmitter';
+import { performance } from 'perf_hooks';
+import { ReadContext, WriteContext } from '../utils';
 import { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
-import { Logger } from '../LogEmitter';
-const { performance } = require('perf_hooks');
+import { Service } from './Service';
+import { StageLinq } from '../StageLinq';
 
 
 export interface TimeSyncData {
     msgs: bigint[],
     timestamp: bigint,
 }
-
-
-// export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
-//     public name: string = 'TimeSync'
-
-//     public setupService(service: TimeSynchronization, deviceId: DeviceId) {
-//         console.log(`Setting up ${service.name} for ${deviceId.string}`);
-
-//         service.on('newDevice', (_service: InstanceType<typeof TimeSynchronization>) => {
-//             Logger.debug(`New TimeSync Device ${service.deviceId.string}`)
-//             _service.sendTimeSyncRequest();
-//         })
-//     }
-// }
 
 export class TimeSynchronization extends Service<TimeSyncData> {
     public readonly name = "TimeSynchronization"
@@ -38,7 +24,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     public async sendTimeSyncRequest() {
         const ctx = new WriteContext();
         ctx.write(new Uint8Array([0x0, 0x0, 0x0, 0x0]));
-        ctx.write(this.parent.options.actingAs.deviceId.array);
+        ctx.write(StageLinq.options.actingAs.deviceId.array);
         ctx.write(new Uint8Array([0x0]));
         ctx.writeFixedSizedString('TimeSynchronization');
         await this.write(ctx);

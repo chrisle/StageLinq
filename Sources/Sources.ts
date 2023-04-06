@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { Source } from '../types';
 import { DeviceId } from '../devices'
-import { StageLinq } from '../StageLinq';
 import { Logger } from '../LogEmitter';
 import * as fs from 'fs';
 import { DbConnection } from './DbConnection';
@@ -20,15 +19,13 @@ export declare interface Sources {
 
 export class Sources extends EventEmitter {
   private _sources: Map<string, Source> = new Map();
-  public readonly parent: StageLinq;
 
   /**
    * @constructor
    * @param {StageLinq} parent 
    */
-  constructor(parent: StageLinq) {
+  constructor() {
     super();
-    this.parent = parent;
   }
 
   /** 

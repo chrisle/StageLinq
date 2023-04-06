@@ -4,13 +4,12 @@ import { Logger } from '../LogEmitter';
 import { ActingAsDevice, StageLinqOptions } from '../types';
 import { Devices, DeviceId } from '../devices'
 import { Sources } from '../Sources';
-import * as Services from '../services';
+import { Service, Directory } from '../services';
 import { Status } from '../status/Status';
 import { AddressInfo, Server } from 'net';
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
-  maxRetries: 3,
   actingAs: ActingAsDevice.StageLinqJS,
   downloadDbSources: true,
 };
@@ -19,18 +18,15 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
  * Main StageLinq class.
  */
 export class StageLinq extends EventEmitter {
+  static options: StageLinqOptions;
+  static readonly devices = new Devices();
+  static readonly discovery: Discovery = new Discovery();
+  static readonly sources: Sources = new Sources();;
+  static readonly status: Status = new Status();
+  static directory: Directory = null;
+  static servers: Map<string, Server> = new Map();
 
-  public options: StageLinqOptions;
-
-  public readonly devices = new Devices();
   public readonly logger: Logger = Logger.instance;
-  public readonly discovery: Discovery = new Discovery(this);
-
-  public readonly sources: Sources = null;
-  public readonly status: Status = null;
-
-  private directory: Services.Directory = null;
-  private servers: Map<string, Server> = new Map();
 
   /**
    * Main StageLinq Class
@@ -39,34 +35,46 @@ export class StageLinq extends EventEmitter {
    */
   constructor(options?: StageLinqOptions) {
     super();
-    this.options = options || DEFAULT_OPTIONS;
-    this.sources = new Sources(this);
-    this.status = new Status(this);
+    StageLinq.options = options || DEFAULT_OPTIONS;
   }
 
   /**
-   * 
+   * Service Constructor Factory Function
+   * @param {Service<T>} Service
+   * @param {DeviceId} deviceId 
+   * @returns {Promise<Service<T>>}
+   */
+  static async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
+    new(_deviceId?: DeviceId): T;
+  }, deviceId?: DeviceId): Promise<T> {
+    const service = new ctor(deviceId);
+    await service.listen();
+    return service;
+  }
+
+  /**
+   * Add a Server to the Server Register
    * @param {string} serverName 
    * @param {Server} server 
    */
-  addServer(serverName: string, server: Server) {
-    this.servers.set(serverName, server);
+  static addServer(serverName: string, server: Server) {
+    StageLinq.servers.set(serverName, server);
   }
 
   /**
-   * 
+   * Remove a Server from the Server Register
    * @param {string} serverName 
    */
-  deleteServer(serverName: string) {
-    this.servers.delete(serverName);
+  static deleteServer(serverName: string) {
+    StageLinq.servers.delete(serverName);
   }
 
   /**
-   * 
+   * Get All Servers
    * @returns {IterableIterator<[string, Server]>}
    */
-  private getServers() {
-    return this.servers.entries();
+  private static getServers() {
+    return StageLinq.servers.entries();
   }
 
   /**
@@ -74,21 +82,13 @@ export class StageLinq extends EventEmitter {
    */
   async connect() {
     //  Initialize Discovery agent
-    await this.discovery.listen(this.options.actingAs);
+    await StageLinq.discovery.listen(StageLinq.options.actingAs);
 
     //Directory is required
-    this.directory = await this.startServiceListener(Services.Directory);
+    StageLinq.directory = await StageLinq.startServiceListener(Directory);
 
     //  Announce myself with Directory port
-    await this.discovery.announce(this.directory.serverInfo.port);
-  }
-
-  async startServiceListener<T extends InstanceType<typeof Services.Service>>(ctor: {
-    new(parent: InstanceType<typeof StageLinq>, _deviceId?: DeviceId): T;
-  }, deviceId?: DeviceId): Promise<T> {
-    const service = new ctor(this, deviceId);
-    await service.listen();
-    return service;
+    await StageLinq.discovery.announce(StageLinq.directory.serverInfo.port);
   }
 
   /**
@@ -98,13 +98,13 @@ export class StageLinq extends EventEmitter {
   async disconnect() {
     try {
       Logger.warn('disconnecting');
-      const servers = this.getServers();
+      const servers = StageLinq.getServers();
       for (let [serviceName, server] of servers) {
         const addressInfo = server.address() as AddressInfo;
         console.log(`Closing ${serviceName} server port ${addressInfo.port}`);
         await server.close;
       }
-      await this.discovery.unannounce();
+      await StageLinq.discovery.unannounce();
     } catch (e) {
       throw new Error(e);
     }
