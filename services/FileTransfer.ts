@@ -7,6 +7,8 @@ import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import type { ServiceMessage, Source } from '../types';
 import { DeviceId } from '../devices'
+import { StageLinq } from '../StageLinq';
+import EventEmitter = require('events');
 
 
 const MAGIC_MARKER = 'fltx';
@@ -81,12 +83,35 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
 export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
   private receivedFile: WriteContext = null;
+  static #instances: Map<string, FileTransfer> = new Map()
+  static readonly emitter: EventEmitter = new EventEmitter();
   #txid: number = 1;
   #isAvailable: boolean = true;
 
+  constructor(parent: StageLinq, serviceHandler: FileTransferHandler, deviceId?: DeviceId) {
+    super(parent, serviceHandler, deviceId)
+    //this.handler = this._handler as FileTransferHandler
+    FileTransfer.addInstance(this)
+    this.addListener('newSource', (source: Source) => FileTransfer.fileTransferListener('newSource', source))
+  }
   // TODO need better txId to handle concurrent transfers
   public get txid() {
     return this.#txid;
+  }
+
+  private static addInstance(service: FileTransfer) {
+    FileTransfer.#instances.set(service.deviceId.string, service)
+  }
+  private static fileTransferListener(eventName: string, ...args: any) {
+    FileTransfer.emitter.emit(eventName, ...args)
+  }
+
+  static getInstance(deviceId: DeviceId): FileTransfer {
+    return FileTransfer.#instances.get(deviceId.string)
+  }
+
+  static getInstances(): string[] {
+    return [...FileTransfer.#instances.keys()]
   }
 
   protected parseData(ctx: ReadContext): ServiceMessage<FileTransferData> {
@@ -384,7 +409,7 @@ export class FileTransfer extends Service<FileTransferData> {
             }
           }
           this.parent.sources.setSource(thisSource);
-
+          this.emit('newSource', thisSource)
           result.push(thisSource);
 
           if (this.parent.options.downloadDbSources) {

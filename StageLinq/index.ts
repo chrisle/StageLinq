@@ -19,6 +19,8 @@ interface ServiceHandlers {
   [key: string]: InstanceType<typeof Services.ServiceHandler>;
 }
 
+
+
 /**
  * Main StageLinq class.
  */
@@ -35,8 +37,8 @@ export class StageLinq extends EventEmitter {
   public readonly fileTransfer: Services.FileTransferHandler = null;
   public readonly beatInfo: Services.BeatInfoHandler = null;
   //public readonly timeSync: Services.TimeSynchronizationHandler = null;
+  public static FileTransfer: Services.FileTransfer
 
-  //public readonly databases: Databases = null;
   public readonly sources: Sources = null;
   public readonly status: Status = null;
 

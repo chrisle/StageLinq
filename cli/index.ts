@@ -1,6 +1,6 @@
 import { ActingAsDevice, StageLinqOptions, ServiceList, Source } from '../types';
 import { DeviceId } from '../devices'
-import { StateData, StateMap, BeatData, BeatInfo } from '../services';
+import { StateData, StateMap, BeatData, BeatInfo, FileTransfer } from '../services';
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import { Logger } from '../LogEmitter';
@@ -61,7 +61,7 @@ async function main() {
   console.log('Starting CLI');
 
   const stageLinqOptions: StageLinqOptions = {
-    downloadDbSources: true,
+    downloadDbSources: false,
     maxRetries: 3,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
@@ -170,6 +170,12 @@ async function main() {
 
   if (stageLinq.fileTransfer) {
 
+    //StageLinq.FileTransfer.
+
+    FileTransfer.emitter.on('newSource', (source) => {
+      console.warn(`NEW FileTransfer static Source! ${source.name}`)
+    })
+
     stageLinq.fileTransfer.on('fileTransferProgress', (source, file, txid, progress) => {
       console.log(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
     });
@@ -180,6 +186,7 @@ async function main() {
 
     stageLinq.sources.on('newSource', (source: Source) => {
       console.log(`[SOURCES] Source Available: (${source.name})`);
+      //console.warn(FileTransfer.getInstances())
     });
 
     stageLinq.sources.on('dbDownloaded', (source: Source) => {
