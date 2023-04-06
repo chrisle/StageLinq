@@ -58,6 +58,11 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
     const fileTransfer = service as Service<FileTransfer>;
     Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.string}`);
     this.addDevice(deviceId, service);
+    fileTransfer.on('newDevice', (service: FileTransfer) => {
+      Logger.debug(`New FileTransfer Device ${service.deviceId.string}`)
+      this.emit('newDevice', service);
+    })
+
     fileTransfer.on('fileTransferProgress', (source, fileName, txid, progress) => {
       this.emit('fileTransferProgress', source, fileName, txid, progress);
     });
@@ -75,7 +80,6 @@ export class FileTransferHandler extends ServiceHandler<FileTransfer> {
 
 export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
-
   private receivedFile: WriteContext = null;
   #txid: number = 1;
   #isAvailable: boolean = true;

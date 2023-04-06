@@ -29,8 +29,8 @@ export interface BeatData {
 }
 
 export declare interface BeatInfoHandler {
-	on(event: 'newBeatInfoDevice', listener: (device: Service<BeatData>) => void): this;
-	on(event: 'beatMsg', listener: (beatData: BeatData, device: Service<BeatData>) => void): this;
+	on(event: 'newDevice', listener: (device: Service<BeatData>) => void): this;
+	on(event: 'beatMessage', listener: (beatData: BeatData, device: Service<BeatData>) => void): this;
 }
 
 export class BeatInfoHandler extends ServiceHandler<BeatData> {
@@ -66,10 +66,10 @@ export class BeatInfoHandler extends ServiceHandler<BeatData> {
 		this.addDevice(deviceId, service);
 
 		beatInfo.server.on("connection", () => {
-			this.emit('newBeatInfoDevice', beatInfo)
+			this.emit('newDevice', beatInfo)
 		});
 		beatInfo.on('beatMessage', (message: ServiceMessage<BeatData>) => {
-			this.emit('beatMsg', message, beatInfo)
+			this.emit('beatMessage', message, beatInfo)
 		})
 	}
 }
@@ -82,10 +82,10 @@ export class BeatInfo extends Service<BeatData> {
 	public readonly name = "BeatInfo";
 	public readonly handler: BeatInfoHandler;
 
-	private _userBeatCallback: BeatCallback = null;
-	private _userBeatOptions: BeatOptions = null;
-	private _currentBeatData: BeatData = null;
-	isBufferedService: boolean = true;
+	#userBeatCallback: BeatCallback = null;
+	#userBeatOptions: BeatOptions = null;
+	#currentBeatData: BeatData = null;
+	protected isBufferedService: boolean = true;
 
 	/**
 	 * @constructor
@@ -103,7 +103,7 @@ export class BeatInfo extends Service<BeatData> {
 	 * @returns {BeatData}
 	 */
 	getBeatData(): BeatData {
-		return this._currentBeatData;
+		return this.#currentBeatData;
 	}
 
 	/**
@@ -113,9 +113,9 @@ export class BeatInfo extends Service<BeatData> {
 	 */
 	public startBeatInfo(options: BeatOptions, beatCB?: BeatCallback) {
 		if (beatCB) {
-			this._userBeatCallback = beatCB;
+			this.#userBeatCallback = beatCB;
 		}
-		this._userBeatOptions = options;
+		this.#userBeatOptions = options;
 		this.sendBeatInfoRequest();
 	}
 
@@ -170,37 +170,45 @@ export class BeatInfo extends Service<BeatData> {
 				|| (Math.floor(prevBeat / res) - Math.floor(currentBeat / res) >= 1)
 		}
 
-		if (data && data.message) {
-			if (!this._currentBeatData) {
-				this._currentBeatData = data.message;
-				this.handler.setBeatData(this.deviceId, data.message);
-				this.emit('beatMessage', data.message);
-				if (this._userBeatCallback) {
-					this._userBeatCallback(data.message);
-				}
-			}
-
-			let hasUpdated = false;
-
-			for (let i = 0; i < data.message.deckCount; i++) {
-				if (resCheck(
-					this._userBeatOptions.everyNBeats,
-					this._currentBeatData.deck[i].beat,
-					data.message.deck[i].beat)) {
-					hasUpdated = true;
-				}
-			}
-
-			if (hasUpdated) {
-
-				this.emit('beatMessage', data);
-				if (this._userBeatCallback) {
-					this._userBeatCallback(data.message);
-				}
-			}
-			this._currentBeatData = data.message;
-			this.handler.setBeatData(this.deviceId, data.message);
+		if (!data || !data.message) {
+			return
 		}
+
+		//if (data && data.message) {
+		if (!this.#currentBeatData) {
+			this.#currentBeatData = data.message;
+			this.handler.setBeatData(this.deviceId, data.message);
+			if (this.listenerCount('beatMessage')) {
+				this.emit('beatMessage', data.message);
+			}
+			if (this.#userBeatCallback) {
+				this.#userBeatCallback(data.message);
+			}
+
+		}
+
+		let hasUpdated = false;
+
+		for (let i = 0; i < data.message.deckCount; i++) {
+			if (resCheck(
+				this.#userBeatOptions.everyNBeats,
+				this.#currentBeatData.deck[i].beat,
+				data.message.deck[i].beat)) {
+				hasUpdated = true;
+			}
+		}
+
+		if (hasUpdated) {
+			if (this.listenerCount('beatMessage')) {
+				this.emit('beatMessage', data);
+			}
+			if (this.#userBeatCallback) {
+				this.#userBeatCallback(data.message);
+			}
+		}
+		this.#currentBeatData = data.message;
+		this.handler.setBeatData(this.deviceId, data.message);
 	}
+	//}
 
 }

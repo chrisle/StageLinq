@@ -20,7 +20,7 @@ export declare type ServiceData = {
 
 export abstract class ServiceHandler<T> extends EventEmitter {
 	public name: string;
-	protected parent: InstanceType<typeof StageLinq>;
+	protected parent: StageLinq;
 	private _devices: Map<string, Service<T>> = new Map();
 
 	/**
@@ -34,7 +34,7 @@ export abstract class ServiceHandler<T> extends EventEmitter {
 		super();
 		this.parent = parent;
 		this.name = serviceName;
-		this.parent.services[serviceName] = this;
+		this.parent.addService(this);
 	}
 
 	/**
@@ -117,6 +117,7 @@ export abstract class Service<T> extends EventEmitter {
 	public serverInfo: AddressInfo;
 	public serverStatus: boolean = false;
 	public socket: Socket = null;
+	static instances: Map<string, InstanceType<typeof Service>> = new Map();
 
 	protected isBufferedService: boolean = true;
 	protected parent: StageLinq;

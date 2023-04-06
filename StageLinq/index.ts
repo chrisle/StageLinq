@@ -25,7 +25,7 @@ interface ServiceHandlers {
 export class StageLinq extends EventEmitter {
 
   public options: StageLinqOptions;
-  public services: ServiceHandlers = {};
+  #services: ServiceHandlers = {};
 
   public readonly devices = new Devices();
   public readonly logger: Logger = Logger.instance;
@@ -34,7 +34,7 @@ export class StageLinq extends EventEmitter {
   public readonly stateMap: Services.StateMapHandler = null;
   public readonly fileTransfer: Services.FileTransferHandler = null;
   public readonly beatInfo: Services.BeatInfoHandler = null;
-  public readonly timeSync: Services.TimeSynchronizationHandler = null;
+  //public readonly timeSync: Services.TimeSynchronizationHandler = null;
 
   //public readonly databases: Databases = null;
   public readonly sources: Sources = null;
@@ -51,7 +51,6 @@ export class StageLinq extends EventEmitter {
   constructor(options?: StageLinqOptions) {
     super();
     this.options = options || DEFAULT_OPTIONS;
-    //this.databases = new Databases(this);
     this.sources = new Sources(this);
     this.status = new Status(this);
 
@@ -71,13 +70,25 @@ export class StageLinq extends EventEmitter {
           break;
         }
         case "TimeSynchronization": {
-          this.timeSync = new Services.TimeSynchronizationHandler(this, service);
+          new Services.TimeSynchronizationHandler(this, service);
           break;
         }
         default:
           break;
       }
     }
+  }
+
+  get services() {
+    return this.#services
+  }
+
+  get timeSync() {
+    return this.#services['TimeSynchronization'] as Services.TimeSynchronizationHandler || null
+  }
+
+  addService(serviceHandler: InstanceType<typeof Services.ServiceHandler>) {
+    this.#services[serviceHandler.name] = serviceHandler;
   }
 
   /**

@@ -73,7 +73,6 @@ async function main() {
 
   const stageLinq = await new StageLinq(stageLinqOptions);
 
-
   stageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
   });
@@ -124,12 +123,8 @@ async function main() {
     console.log(`[DEVICES] New ${service.name} Service on ${device.deviceId.string} port ${service.serverInfo.port}`)
   });
 
-  if (!stageLinq.stateMap) console.warn('no StateMap!', stageLinq.stateMap)
-  if (!stageLinq.fileTransfer) console.warn('no fileTransfer!', stageLinq.fileTransfer)
-  if (!stageLinq.beatInfo) console.warn('no beatInfo!', stageLinq.beatInfo)
 
   if (stageLinq.stateMap) {
-
 
     async function deckIsMaster(data: StateData) {
       if (data.json.state) {
@@ -157,7 +152,6 @@ async function main() {
 
     stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
-
 
       for (let i = 1; i <= service.device.deckCount(); i++) {
         service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
@@ -196,8 +190,6 @@ async function main() {
       console.log(`[SOURCES] Source Removed: ${sourceName} on ${deviceId.string}`);
     });
 
-
-
   }
 
 
@@ -234,7 +226,7 @@ async function main() {
     };
 
 
-    stageLinq.beatInfo.on('newBeatInfoDevice', async (beatInfo: BeatInfo) => {
+    stageLinq.beatInfo.on('newDevice', async (beatInfo: BeatInfo) => {
       console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
 
 
@@ -244,7 +236,7 @@ async function main() {
 
       if (beatMethod.useEvent) {
         beatInfo.startBeatInfo(beatOptions);
-        stageLinq.beatInfo.on('beatMsg', (bd) => {
+        stageLinq.beatInfo.on('beatMessage', (bd) => {
           if (bd) {
             beatCallback(bd);
           }
