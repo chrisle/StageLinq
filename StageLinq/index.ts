@@ -2,7 +2,7 @@ import { Discovery } from '../network';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { ActingAsDevice, StageLinqOptions } from '../types';
-import { Devices } from '../devices'
+import { Devices, DeviceId } from '../devices'
 import { Sources } from '../Sources';
 import * as Services from '../services';
 import { Status } from '../status/Status';
@@ -15,29 +15,16 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
   downloadDbSources: true,
 };
 
-interface ServiceHandlers {
-  [key: string]: InstanceType<typeof Services.ServiceHandler>;
-}
-
-
-
 /**
  * Main StageLinq class.
  */
 export class StageLinq extends EventEmitter {
 
   public options: StageLinqOptions;
-  #services: ServiceHandlers = {};
 
   public readonly devices = new Devices();
   public readonly logger: Logger = Logger.instance;
   public readonly discovery: Discovery = new Discovery(this);
-
-  public readonly stateMap: Services.StateMapHandler = null;
-  public readonly fileTransfer: Services.FileTransferHandler = null;
-  public readonly beatInfo: Services.BeatInfoHandler = null;
-  //public readonly timeSync: Services.TimeSynchronizationHandler = null;
-  public static FileTransfer: Services.FileTransfer
 
   public readonly sources: Sources = null;
   public readonly status: Status = null;
@@ -55,42 +42,6 @@ export class StageLinq extends EventEmitter {
     this.options = options || DEFAULT_OPTIONS;
     this.sources = new Sources(this);
     this.status = new Status(this);
-
-    //TODO make this into factory function?
-    for (let service of this.options.services) {
-      switch (service) {
-        case "StateMap": {
-          this.stateMap = new Services.StateMapHandler(this, service);
-          break;
-        }
-        case "FileTransfer": {
-          this.fileTransfer = new Services.FileTransferHandler(this, service);
-          break;
-        }
-        case "BeatInfo": {
-          this.beatInfo = new Services.BeatInfoHandler(this, service);
-          break;
-        }
-        case "TimeSynchronization": {
-          new Services.TimeSynchronizationHandler(this, service);
-          break;
-        }
-        default:
-          break;
-      }
-    }
-  }
-
-  get services() {
-    return this.#services
-  }
-
-  get timeSync() {
-    return this.#services['TimeSynchronization'] as Services.TimeSynchronizationHandler || null
-  }
-
-  addService(serviceHandler: InstanceType<typeof Services.ServiceHandler>) {
-    this.#services[serviceHandler.name] = serviceHandler;
   }
 
   /**
@@ -126,11 +77,18 @@ export class StageLinq extends EventEmitter {
     await this.discovery.listen(this.options.actingAs);
 
     //Directory is required
-    const directory = new Services.DirectoryHandler(this, Services.Directory.name)
-    this.directory = await directory.startServiceListener(Services.Directory, this);
+    this.directory = await this.startServiceListener(Services.Directory);
 
     //  Announce myself with Directory port
     await this.discovery.announce(this.directory.serverInfo.port);
+  }
+
+  async startServiceListener<T extends InstanceType<typeof Services.Service>>(ctor: {
+    new(parent: InstanceType<typeof StageLinq>, _deviceId?: DeviceId): T;
+  }, deviceId?: DeviceId): Promise<T> {
+    const service = new ctor(this, deviceId);
+    await service.listen();
+    return service;
   }
 
   /**

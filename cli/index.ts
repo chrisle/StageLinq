@@ -61,7 +61,7 @@ async function main() {
   console.log('Starting CLI');
 
   const stageLinqOptions: StageLinqOptions = {
-    downloadDbSources: false,
+    downloadDbSources: true,
     maxRetries: 3,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
@@ -124,7 +124,7 @@ async function main() {
   });
 
 
-  if (stageLinq.stateMap) {
+  if (stageLinqOptions.services.includes(ServiceList.StateMap)) {
 
     async function deckIsMaster(data: StateData) {
       if (data.json.state) {
@@ -142,7 +142,7 @@ async function main() {
         const track = stageLinq.status.getTrack(data.deviceId, deck)
         console.log(`[STATUS] Track Loaded: `, track)
 
-        if (stageLinq.fileTransfer && stageLinq.options.downloadDbSources) {
+        if (stageLinqOptions.services.includes(ServiceList.FileTransfer) && stageLinq.options.downloadDbSources) {
           const trackInfo = await getTrackInfo(stageLinq, track.source.name, track.source.location, track.TrackNetworkPath);
           console.log('[STATUS] Track DB Info: ', trackInfo)
           downloadFile(stageLinq, track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
@@ -150,7 +150,7 @@ async function main() {
       }
     }
 
-    stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
+    StateMap.emitter.on('newDevice', async (service: StateMap) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
       for (let i = 1; i <= service.device.deckCount(); i++) {
@@ -161,32 +161,29 @@ async function main() {
       service.subscribe();
     });
 
-    stageLinq.stateMap.on('stateMessage', async (data: StateData) => {
-      Logger.debug(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
+    StateMap.emitter.on('stateMessage', async (data: StateData) => {
+      console.log(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
     });
 
   }
 
 
-  if (stageLinq.fileTransfer) {
-
-    //StageLinq.FileTransfer.
+  if (stageLinqOptions.services.includes(ServiceList.FileTransfer)) {
 
     FileTransfer.emitter.on('newSource', (source) => {
       console.warn(`NEW FileTransfer static Source! ${source.name}`)
     })
 
-    stageLinq.fileTransfer.on('fileTransferProgress', (source, file, txid, progress) => {
+    FileTransfer.emitter.on('fileTransferProgress', (source, file, txid, progress) => {
       console.log(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
     });
 
-    stageLinq.fileTransfer.on('fileTransferComplete', (source, file, txid) => {
+    FileTransfer.emitter.on('fileTransferComplete', (source, file, txid) => {
       console.log(`[FILETRANSFER] Complete ${source.name} id:{${txid}} ${file}`);
     });
 
     stageLinq.sources.on('newSource', (source: Source) => {
       console.log(`[SOURCES] Source Available: (${source.name})`);
-      //console.warn(FileTransfer.getInstances())
     });
 
     stageLinq.sources.on('dbDownloaded', (source: Source) => {
@@ -200,7 +197,7 @@ async function main() {
   }
 
 
-  if (stageLinq.beatInfo) {
+  if (stageLinqOptions.services.includes(ServiceList.BeatInfo)) {
 
     //  User Options
     const beatOptions = {
@@ -232,18 +229,24 @@ async function main() {
       useRegister: false,
     };
 
+    BeatInfo.emitter.on('newDevice', async (beatInfo: BeatInfo) => {
+      console.log(`[STATICBEATINFO] New Device ${beatInfo.deviceId.string}`)
+      //beatInfo
+      //});
 
-    stageLinq.beatInfo.on('newDevice', async (beatInfo: BeatInfo) => {
-      console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
+      //stageLinq.beatInfo.on('newDevice', async (beatInfo: BeatInfo) => {
+      //console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
 
 
       if (beatMethod.useCallback) {
         beatInfo.startBeatInfo(beatOptions, beatCallback);
+        console.warn(BeatInfo.getInstances())
       }
 
       if (beatMethod.useEvent) {
         beatInfo.startBeatInfo(beatOptions);
-        stageLinq.beatInfo.on('beatMessage', (bd) => {
+        BeatInfo.emitter.on('beatMessage', (bd) => {
+
           if (bd) {
             beatCallback(bd);
           }

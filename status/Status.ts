@@ -41,6 +41,12 @@ export class Status extends EventEmitter {
         }
     }
 
+    async addDecks(service: StateMap) {
+        for (let i = 1; i <= this.parent.devices.device(service.deviceId).deckCount(); i++) {
+            this.addDeck(service, i);
+        }
+    }
+
     private listener(data: StateData, status: Status) {
         const deck = parseInt(data.name.substring(12, 13))
         const property = data.name.split('/').pop()

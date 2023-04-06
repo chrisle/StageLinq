@@ -1,7 +1,7 @@
 import { DOWNLOAD_TIMEOUT } from '../types';
 import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
-import { Service, ServiceHandler } from './Service';
+import { Service } from './Service';
 import { sleep } from '../utils/sleep';
 import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
@@ -48,37 +48,6 @@ export declare interface FileTransfer {
   on(event: 'fileTransferComplete', listener: (source: Source, fileName: string, txid: number) => void): this;
 }
 
-export class FileTransferHandler extends ServiceHandler<FileTransfer> {
-  public readonly name = "FileTransfer"
-
-  /**
-   * 
-   * @param {Service<FileTransfer>} service 
-   * @param {DeviceId} deviceId 
-   */
-  public setupService(service: Service<FileTransfer>, deviceId: DeviceId) {
-    const fileTransfer = service as Service<FileTransfer>;
-    Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.string}`);
-    this.addDevice(deviceId, service);
-    fileTransfer.on('newDevice', (service: FileTransfer) => {
-      Logger.debug(`New FileTransfer Device ${service.deviceId.string}`)
-      this.emit('newDevice', service);
-    })
-
-    fileTransfer.on('fileTransferProgress', (source, fileName, txid, progress) => {
-      this.emit('fileTransferProgress', source, fileName, txid, progress);
-    });
-    fileTransfer.on('fileTransferComplete', (source, fileName, txid) => {
-      this.emit('fileTransferComplete', source, fileName, txid);
-    });
-    fileTransfer.on('newSource', (source: Source) => {
-      this.emit('newSource', source);
-    });
-    fileTransfer.on('sourceRemoved', (name: string, deviceId: DeviceId) => {
-      this.emit('sourceRemoved', name, deviceId);
-    });
-  }
-}
 
 export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
@@ -88,20 +57,21 @@ export class FileTransfer extends Service<FileTransferData> {
   #txid: number = 1;
   #isAvailable: boolean = true;
 
-  constructor(parent: StageLinq, serviceHandler: FileTransferHandler, deviceId?: DeviceId) {
-    super(parent, serviceHandler, deviceId)
-    //this.handler = this._handler as FileTransferHandler
-    FileTransfer.addInstance(this)
+  constructor(parent: StageLinq, deviceId?: DeviceId) {
+    super(parent, deviceId)
+    FileTransfer.#instances.set(this.deviceId.string, this)
+    this.addListener('newDevice', (service: FileTransfer) => FileTransfer.fileTransferListener('newDevice', service))
     this.addListener('newSource', (source: Source) => FileTransfer.fileTransferListener('newSource', source))
+    this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => FileTransfer.fileTransferListener('newSource', name, deviceId))
+    this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => FileTransfer.fileTransferListener('fileTransferProgress', source, fileName, txid, progress))
+    this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => FileTransfer.fileTransferListener('fileTransferComplete', source, fileName, txid))
   }
   // TODO need better txId to handle concurrent transfers
   public get txid() {
     return this.#txid;
   }
 
-  private static addInstance(service: FileTransfer) {
-    FileTransfer.#instances.set(service.deviceId.string, service)
-  }
+
   private static fileTransferListener(eventName: string, ...args: any) {
     FileTransfer.emitter.emit(eventName, ...args)
   }

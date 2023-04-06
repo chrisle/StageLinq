@@ -1,11 +1,12 @@
 import { strict as assert } from 'assert';
 import { ReadContext } from '../utils/ReadContext';
 import { WriteContext } from '../utils/WriteContext';
-import { Service, ServiceHandler } from './Service';
-import { Logger } from '../LogEmitter';
+import { Service } from './Service';
 import type { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
 import { StageLinq } from '../StageLinq';
+import EventEmitter = require('events');
+
 
 type BeatCallback = (n: BeatData) => void;
 
@@ -28,59 +29,14 @@ export interface BeatData {
 	deck: deckBeatData[];
 }
 
-export declare interface BeatInfoHandler {
-	on(event: 'newDevice', listener: (device: Service<BeatData>) => void): this;
-	on(event: 'beatMessage', listener: (beatData: BeatData, device: Service<BeatData>) => void): this;
-}
-
-export class BeatInfoHandler extends ServiceHandler<BeatData> {
-	public name: string = 'BeatInfo';
-	#beatRegister: Map<string, BeatData> = new Map();
-
-	/**
-	 * Get most recent BeatData
-	 * @param {DeviceId} [deviceId] optionally filter by DeviceId
-	 * @returns {BeatData[]}
-	 */
-	public getBeatData(deviceId?: DeviceId): BeatData[] {
-		return (deviceId ? [this.#beatRegister.get(deviceId.string)] : [...this.#beatRegister.values()])
-	}
-
-	/**
-	 * Add BeatData for Device
-	 * @param {DeviceId} deviceId 
-	 * @param {BeatData} data 
-	 */
-	public setBeatData(deviceId: DeviceId, data: BeatData) {
-		this.#beatRegister.set(deviceId.string, data);
-	}
-
-	/**
-	 * Setup BeatInfo ServiceHandler
-	 * @param {Service<BeatData>} service 
-	 * @param {DeviceId} deviceId 
-	 */
-	public setupService(service: Service<BeatData>, deviceId: DeviceId) {
-		Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
-		const beatInfo = service as BeatInfo;
-		this.addDevice(deviceId, service);
-
-		beatInfo.server.on("connection", () => {
-			this.emit('newDevice', beatInfo)
-		});
-		beatInfo.on('beatMessage', (message: ServiceMessage<BeatData>) => {
-			this.emit('beatMessage', message, beatInfo)
-		})
-	}
-}
-
 export declare interface BeatInfo {
 	on(event: 'beatMessage', listener: (message: ServiceMessage<BeatData>) => void): this;
 }
 
 export class BeatInfo extends Service<BeatData> {
 	public readonly name = "BeatInfo";
-	public readonly handler: BeatInfoHandler;
+	static #instances: Map<string, BeatInfo> = new Map()
+	static readonly emitter: EventEmitter = new EventEmitter();
 
 	#userBeatCallback: BeatCallback = null;
 	#userBeatOptions: BeatOptions = null;
@@ -93,11 +49,24 @@ export class BeatInfo extends Service<BeatData> {
 	 * @param {BeatInfoHandler} serviceHandler 
 	 * @param {DeviceId} [deviceId] 
 	 */
-	constructor(parent: StageLinq, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
-		super(parent, serviceHandler, deviceId)
-		this.handler = this._handler as BeatInfoHandler
+
+	constructor(parent: StageLinq, deviceId: DeviceId) {
+		super(parent, deviceId)
+		BeatInfo.#instances.set(this.deviceId.string, this)
+		this.addListener('connection', () => BeatInfo.instanceListener('newDevice', this))
+		this.addListener('beatMessage', (data: BeatData) => BeatInfo.instanceListener('beatMessage', data))
 	}
 
+	private static instanceListener(eventName: string, ...args: any) {
+		BeatInfo.emitter.emit(eventName, ...args)
+	}
+	static getInstances(): string[] {
+		return [...BeatInfo.#instances.keys()]
+	}
+
+	deleteDevice(deviceId: DeviceId) {
+		BeatInfo.#instances.delete(deviceId.string)
+	}
 	/**
 	 * Get current BeatData
 	 * @returns {BeatData}
@@ -174,10 +143,8 @@ export class BeatInfo extends Service<BeatData> {
 			return
 		}
 
-		//if (data && data.message) {
 		if (!this.#currentBeatData) {
 			this.#currentBeatData = data.message;
-			this.handler.setBeatData(this.deviceId, data.message);
 			if (this.listenerCount('beatMessage')) {
 				this.emit('beatMessage', data.message);
 			}
@@ -207,8 +174,6 @@ export class BeatInfo extends Service<BeatData> {
 			}
 		}
 		this.#currentBeatData = data.message;
-		this.handler.setBeatData(this.deviceId, data.message);
 	}
-	//}
 
 }

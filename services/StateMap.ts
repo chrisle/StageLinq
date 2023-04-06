@@ -5,9 +5,10 @@ import { ServiceMessage, StateNames } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { Logger } from '../LogEmitter';
-import { Service, ServiceHandler } from '../services';
+import { Service } from '../services';
 import { StageLinq } from '../StageLinq';
 import * as stagelinqConfig from '../stagelinqConfig.json';
+import EventEmitter = require('events');
 
 export type Player = typeof stagelinqConfig.player;
 export type PlayerDeck = typeof stagelinqConfig.playerDeck;
@@ -59,41 +60,13 @@ export interface StateData {
   interval?: number;
 }
 
-export class StateMapHandler extends ServiceHandler<StateData> {
-  public readonly name = 'StateMap';
-  public deviceTrackRegister: Map<string, string> = new Map();
-
-  /**
-   * Setup Statemap ServiceHandler
-   * @param {Service<StateData>} service 
-   * @param {DeviceId} deviceId 
-   */
-  public setupService(service: Service<StateData>, deviceId: DeviceId) {
-    Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
-    const stateMap = service as Service<StateData>;
-    this.addDevice(deviceId, service);
-
-    stateMap.on('stateMessage', (data: ServiceMessage<StateData>) => {
-      this.emit('stateMessage', data);
-    });
-
-    stateMap.on('newDevice', (service: StateMap) => {
-      Logger.debug(`New StateMap Device ${service.deviceId.string}`)
-      for (let i = 1; i <= this.parent.devices.device(service.deviceId).deckCount(); i++) {
-        this.parent.status.addDeck(service, i);
-      }
-      this.emit('newDevice', service);
-    })
-  }
-}
-
 /**
  * StateMap Class
  */
 export class StateMap extends Service<StateData> {
   public readonly name = "StateMap";
-  public readonly handler: StateMapHandler;
-  private hasReceivedState: boolean = false;
+  static readonly emitter: EventEmitter = new EventEmitter();
+  static #instances: Map<string, StateMap> = new Map()
 
   /**
    * @constructor
@@ -101,9 +74,16 @@ export class StateMap extends Service<StateData> {
    * @param {StateMapHandler} serviceHandler 
    * @param {DeviceId} deviceId 
    */
-  constructor(parent: StageLinq, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
-    super(parent, serviceHandler, deviceId)
-    this.handler = this._handler as StateMapHandler
+  constructor(parent: StageLinq, deviceId?: DeviceId) {
+    super(parent, deviceId)
+    StateMap.#instances.set(this.deviceId.string, this)
+    this.addListener('newDevice', (service: StateMap) => StateMap.instanceListener('newDevice', service))
+    this.addListener('newDevice', (service: StateMap) => this.parent.status.addDecks(service))
+    this.addListener('stateMessage', (data: StateData) => StateMap.instanceListener('stateMessage', data))
+  }
+
+  private static instanceListener(eventName: string, ...args: any) {
+    StateMap.emitter.emit(eventName, ...args)
   }
 
   /**
@@ -203,13 +183,6 @@ export class StateMap extends Service<StateData> {
     }
     if (data?.message?.json) {
       this.emit('stateMessage', data.message);
-    }
-
-    if (data && data.message.json && !this.hasReceivedState) {
-      Logger.silent(
-        `${data.message.deviceId.string} ${data.message.name} => ${data.message.json ? JSON.stringify(data.message.json) : data.message.interval
-        }`);
-      this.hasReceivedState = true;
     }
   }
 

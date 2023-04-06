@@ -55,7 +55,7 @@ async function main() {
     }
 
 
-    stageLinq.stateMap.on('newDevice', async (service: StateMap) => {
+    StateMap.emitter.on('newDevice', async (service: StateMap) => {
 
         for (let i = 1; i <= service.device.deckCount(); i++) {
             service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
