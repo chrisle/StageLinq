@@ -1,343 +1,243 @@
-
-
-// // type HexColor = `#${string}`;
-
-// // interface DeviceState {
-// //     Engine: {
-// //         DeckCount: number;
-// //         Sync: {
-// //             Network: {
-// //                 MasterStatus: boolean,
-// //             },
-// //         },
-// //         Master: {
-// //             MasterTempo: number
-// //         },
-// //     },
-// //     Librarian: {
-// //         DevicesController: {
-// //             CurrentDevice: string, //type 8 can be URI net://[DEVICEID]/[SOURCENAME] ([LOCATION?]) or /media/[SOURCENAME]
-// //             HasSDCardConnected: boolean,
-// //             HasUsbDeviceConnected: boolean,
-// //         },
-// //     },
-// //     Preferences: {
-// //         LayerB: boolean,
-// //         Player: 1|2|3|4, //type 4 ENUM? 
-// //         PlayerJogColorA: HexColor, //type 16 Colour string
-// //         PlayerJogColorB: HexColor,
-// //         Profile: {
-// //             Application: {
-// //                 PlayerColor1: HexColor,
-// //                 PlayerColor1A: HexColor,
-// //                 PlayerColor1B: HexColor,
-// //                 PlayerColor2: HexColor,
-// //                 PlayerColor2A: HexColor,
-// //                 PlayerColor2B: HexColor,
-// //                 PlayerColor3: HexColor,
-// //                 PlayerColor3A: HexColor,
-// //                 PlayerColor3B: HexColor,
-// //                 PlayerColor4: HexColor,
-// //                 PlayerColor4A: HexColor,
-// //                 PlayerColor4B: HexColor,
-// //                 SyncMode: 'Tempo' | 'TempoSync' | 'Off', //type 4 ENUM
-// //             },
-// //         },
-// //     },
-// // }
-
-// // interface PlayerDeckState {
-// //     CurrentBPM: number;
-// //     ExternalMixerVolume: number;
-// //     ExternalScratchWheelTouch: boolean; 
-// //     Pads: {
-// //         View: string; //TODO Find ENUM values
-// //     },
-// //     Play: boolean;
-// //     PlayState: boolean;
-// //     //PlayStatePath: 'PlayStatePath', //NG
-// //     Speed: number;
-// //     SpeedNeutral: boolean;
-// //     SpeedOffsetDown: boolean;
-// //     SpeedOffsetUp: boolean;
-// //     SpeedRange: '4' | '8' | '10' | '20' | '50' | '100';
-// //     SpeedState: number;
-// //     SyncMode: string; //TODO find ENUM values
-// //     DeckIsMaster: boolean;
-// //     Track: {
-// //         ArtistName: string;
-// //         Bleep: boolean; 
-// //         CuePosition: number;
-// //         CurrentBPM: number;
-// //         CurrentKeyIndex: number;
-// //         CurrentLoopInPosition: number;
-// //         CurrentLoopOutPosition: number;
-// //         CurrentLoopSizeInBeats: number;
-// //         KeyLock: boolean;
-// //         LoopEnableState: boolean; 
-// //         Loop: {
-// //             QuickLoop1: boolean; 
-// //             QuickLoop2: boolean;
-// //             QuickLoop3: boolean;
-// //             QuickLoop4: boolean;
-// //             QuickLoop5: boolean;
-// //             QuickLoop6: boolean;
-// //             QuickLoop7: boolean;
-// //             QuickLoop8: boolean;
-// //         },
-// //         PlayPauseLEDState: boolean;
-// //         SampleRate: number;
-// //         SongAnalyzed: boolean;
-// //         SongLoaded: boolean;
-// //         SongName: string;
-// //         SoundSwitchGUID: string; //NG must be Analyzed? TODO check GUID
-// //         TrackBytes: number;
-// //         TrackData: boolean; 
-// //         TrackLength: number;
-// //         TrackName: string; //TODO parse formatting of URI / Location
-// //         TrackNetworkPath: string;
-// //         TrackURI: string; //NG Only streaming?
-// //         TrackWasPlayed: boolean;
-// //     }   
-// // }
-
-// // interface PlayerDeckState extends DeviceState {
-    
-// // }
-
-
-
-
-
-export const configStates = {
-    Mixer: {
-        Mixer: {
-            ChannelAssignment1: '', 
-            ChannelAssignment2: '',
-            ChannelAssignment3: '',
-            ChannelAssignment4: '',
-        },
-    },
-    Player: {
-        Client: {
-            Librarian: {
-                DevicesController: {
-                    CurrentDevice: '', //type 8 can be URI net://[DEVICEID]/[SOURCENAME] ([LOCATION?]) or /media/[SOURCENAME]
-                    HasSDCardConnected: false,
-                    HasUsbDeviceConnected: false,
-                },
-            },
-            Preferences: {
-                LayerB: false,
-                Player: '', //type 4 ENUM? 
-                PlayerJogColorA: '#FFFFFF', //type 16 Colour string
-                PlayerJogColorB: '#FFFFFF',
-                Profile: {
-                    Application: {
-                        SyncMode: '', 
-                    },
-                },
-            },
-        },   
-    }
-}
-
-
-export const PlayerStates = {
-    // Gui: {
-    //     ViewLayer: {
-    //         LayerB: 'LayerB',
-    //     },
-    //     Decks: {
-    //         Deck: {
-    //             ActiveDeck: 'ActiveDeck',
-    //         },
-    //     },
-    // },
-    Mixer: {
-        //NumberOfChannels: 'NumberOfChannels', //NG 
-        ChannelAssignment1: '', // type 8 format '{DEVICEID},1' or '{DEVICEID},2'
-        ChannelAssignment2: '',
-        ChannelAssignment3: '',
-        ChannelAssignment4: '',
-    },
-    Engine: {
-        DeckCount: 2, //type 10
-        Sync: {
-            Network: {
-                MasterStatus: false,
-            },
-        },
-        Master: {
-            MasterTempo: 120.0, //type 0
-        },
-    },
-    Client: {
-        Librarian: {
-            DevicesController: {
-                CurrentDevice: '', //type 8 can be URI net://[DEVICEID]/[SOURCENAME] ([LOCATION?]) or /media/[SOURCENAME]
-                HasSDCardConnected: false,
-                HasUsbDeviceConnected: false,
-            },
-        },
-        Preferences: {
-            LayerB: false,
-            Player: '', //type 4 ENUM? 
-            PlayerJogColorA: '#FFFFFF', //type 16 Colour string
-            PlayerJogColorB: '#FFFFFF',
-            Profile: {
-                Application: {
-                    PlayerColor1: '#FFFFFF',
-                    PlayerColor1A: '#FFFFFF',
-                    PlayerColor1B: '#FFFFFF',
-                    PlayerColor2: '#FFFFFF',
-                    PlayerColor2A: '#FFFFFF',
-                    PlayerColor2B: '#FFFFFF',
-                    PlayerColor3: '#FFFFFF',
-                    PlayerColor3A: '#FFFFFF',
-                    PlayerColor3B: '#FFFFFF',
-                    PlayerColor4: '#FFFFFF',
-                    PlayerColor4A: '#FFFFFF',
-                    PlayerColor4B: '#FFFFFF',
-                    SyncMode: '', 
-                },
-            },
-        },
-    },   
-}
-
-export const PlayerDeckStates = {
-    CurrentBPM: 120.00, //type 0 
-    ExternalMixerVolume: 1, //type 0
-    // ExternalScratchWheelTouch: false, //type 2 false?
-    // Pads: {
-    //     View: '', //type 4 ENUM? 'CUES'
-    // },
-    // Play: false,
-    PlayState: false,
-    //PlayStatePath: 'PlayStatePath', //NG
-    Speed: 1.0, //0.44444535
-    // SpeedNeutral: false,
-    // SpeedOffsetDown: false,
-    // SpeedOffsetUp: false,
-    // SpeedRange: '8', //enum
-    // SpeedState: 1.0, //type 0 signed -0.39999
-    SyncMode: 'Off', //enum: Off, Tempo, TempoSync
-    DeckIsMaster: false,
-    Track: {
-        ArtistName: '',
-        Bleep: false, //type 2 
-        CuePosition: 156.0, //type 14?
-        CurrentBPM: 120.0, 
-        CurrentKeyIndex: 0, //type 10?
-        CurrentLoopInPosition: 156.0, //type 14
-        CurrentLoopOutPosition: 156.0, //type 14
-        CurrentLoopSizeInBeats: 0, // type 14
-        // KeyLock: false,
-        // LoopEnableState: false, //type 1
-        // Loop: {
-        //     QuickLoop1: false, //type 2
-        //     QuickLoop2: false,
-        //     QuickLoop3: false,
-        //     QuickLoop4: false,
-        //     QuickLoop5: false,
-        //     QuickLoop6: false,
-        //     QuickLoop7: false,
-        //     QuickLoop8: false,
-        // },
-        // PlayPauseLEDState: false,
-        SampleRate: 44100, //type 14
-        SongAnalyzed: false,
-        SongLoaded: false,
-        SongName: '', 
-        SoundSwitchGUID: '', //NG must be Analyzed?
-        TrackBytes: 1, //type 10
-        TrackData: false, //type 3???
-        TrackLength: 1, //type 10
-        TrackName: '', // type 8 can be /media/[SOURCE]/FILEPATH....
-        TrackNetworkPath: '',
-        TrackURI: '', //NG Only streaming?
-        TrackWasPlayed: false,
-    }   
-}
-
-export const MixerStates = {
-    Mixer: {
-        CH1faderPosition: 1.27, //type 0
-        CH2faderPosition: 0.0,
-        CH3faderPosition: 0.0,
-        CH4faderPosition: 0.0,
-        CrossfaderPosition: 0.5, //type 0
-        //NumberOfChannels: 'NumberOfChannels', //NG 
-        // ChannelAssignment1: '', // type 8 format '{DEVICEID},1' or '{DEVICEID},2'
-        // ChannelAssignment2: '',
-        // ChannelAssignment3: '',
-        // ChannelAssignment4: '',
-    },
-    // Gui: {
-    //     ViewLayer: {
-    //         LayerB: 'LayerB',
-    //     },
-    //     Decks: {
-    //         Deck: {
-    //             ActiveDeck: 'ActiveDeck',
-    //         },
-    //     },
-    // },
-}
-
-//const test = new MixerStates()
-
-
-
-export const exportObj = {
-    config: {
-
-    },
+export const StateNames = {
     player: {
-        ...PlayerStates,
-    },
-    playerDeck: {
-        ...PlayerDeckStates
+        ClientLibrarianDevicesControllerCurrentDevice: '/Client/Librarian/DevicesController/CurrentDevice',
+        ClientLibrarianDevicesControllerCurrentDeviceNetworkPath: '/Client/Librarian/DevicesController/CurrentDeviceNetworkPath',
+        ClientLibrarianDevicesControllerHasSDCardConnected: '/Client/Librarian/DevicesController/HasSDCardConnected',
+        ClientLibrarianDevicesControllerHasUsbDeviceConnected: '/Client/Librarian/DevicesController/HasUsbDeviceConnected',
+        ClientPreferencesLayerA: '/Client/Preferences/LayerA',
+        ClientPreferencesLayerB: '/Client/Preferences/LayerB',
+        ClientPreferencesPlayer: '/Client/Preferences/Player',
+        ClientPreferencesPlayerJogColorA: '/Client/Preferences/PlayerJogColorA',
+        ClientPreferencesPlayerJogColorB: '/Client/Preferences/PlayerJogColorB',
+        ClientPreferencesProfileApplicationPlayerColor1: '/Client/Preferences/Profile/Application/PlayerColor1',
+        ClientPreferencesProfileApplicationPlayerColor1A: '/Client/Preferences/Profile/Application/PlayerColor1A',
+        ClientPreferencesProfileApplicationPlayerColor1B: '/Client/Preferences/Profile/Application/PlayerColor1B',
+        ClientPreferencesProfileApplicationPlayerColor2: '/Client/Preferences/Profile/Application/PlayerColor2',
+        ClientPreferencesProfileApplicationPlayerColor2A: '/Client/Preferences/Profile/Application/PlayerColor2A',
+        ClientPreferencesProfileApplicationPlayerColor2B: '/Client/Preferences/Profile/Application/PlayerColor2B',
+        ClientPreferencesProfileApplicationPlayerColor3: '/Client/Preferences/Profile/Application/PlayerColor3',
+        ClientPreferencesProfileApplicationPlayerColor3A: '/Client/Preferences/Profile/Application/PlayerColor3A',
+        ClientPreferencesProfileApplicationPlayerColor3B: '/Client/Preferences/Profile/Application/PlayerColor3B',
+        ClientPreferencesProfileApplicationPlayerColor4: '/Client/Preferences/Profile/Application/PlayerColor4',
+        ClientPreferencesProfileApplicationPlayerColor4A: '/Client/Preferences/Profile/Application/PlayerColor4A',
+        ClientPreferencesProfileApplicationPlayerColor4B: '/Client/Preferences/Profile/Application/PlayerColor4B',
+        ClientPreferencesProfileApplicationSyncMode: '/Client/Preferences/Profile/Application/SyncMode',
+
+
+        EngineDeck1SyncPlayState: '/Engine/Deck1/SyncPlayState',
+        EngineDeck2SyncPlayState: '/Engine/Deck2/SyncPlayState',
+        EngineDeck3SyncPlayState: '/Engine/Deck2/SyncPlayState',
+        EngineDeck4SyncPlayState: '/Engine/Deck2/SyncPlayState',
+        EngineDeck1DeckIsMaster: '/Engine/Deck1/DeckIsMaster',
+        EngineDeck2DeckIsMaster: '/Engine/Deck2/DeckIsMaster',
+        EngineDeck3DeckIsMaster: '/Engine/Deck3/DeckIsMaster',
+        EngineDeck4DeckIsMaster: '/Engine/Deck2/DeckIsMaster',
+
+        EngineSyncNetworkSyncType: '/Engine/Sync/Network/SyncType',
+
+        EngineSyncNetworkMasterStatus: '/Engine/Sync/Network/MasterStatus',
+        EngineMasterMasterTempo: '/Engine/Master/MasterTempo',
+        EngineDeckCount: '/Engine/DeckCount',
+        EngineDeck1CurrentBPM: '/Engine/Deck1/CurrentBPM',
+        EngineDeck1ExternalMixerVolume: '/Engine/Deck1/ExternalMixerVolume',
+        EngineDeck1ExternalScratchWheelTouch: '/Engine/Deck1/ExternalScratchWheelTouch',
+        EngineDeck1PadsView: '/Engine/Deck1/Pads/View',
+        EngineDeck1Play: '/Engine/Deck1/Play',
+        EngineDeck1PlayState: '/Engine/Deck1/PlayState',
+        EngineDeck1PlayStatePath: '/Engine/Deck1/PlayStatePath',
+        EngineDeck1Speed: '/Engine/Deck1/Speed',
+        EngineDeck1SpeedNeutral: '/Engine/Deck1/SpeedNeutral',
+        EngineDeck1SpeedOffsetDown: '/Engine/Deck1/SpeedOffsetDown',
+        EngineDeck1SpeedOffsetUp: '/Engine/Deck1/SpeedOffsetUp',
+        EngineDeck1SpeedRange: '/Engine/Deck1/SpeedRange',
+        EngineDeck1SpeedState: '/Engine/Deck1/SpeedState',
+        EngineDeck1SyncMode: '/Engine/Deck1/SyncMode',
+        EngineDeck1TrackArtistName: '/Engine/Deck1/Track/ArtistName',
+        EngineDeck1TrackBleep: '/Engine/Deck1/Track/Bleep',
+        EngineDeck1TrackCuePosition: '/Engine/Deck1/Track/CuePosition',
+        EngineDeck1TrackCurrentBPM: '/Engine/Deck1/Track/CurrentBPM',
+        EngineDeck1TrackCurrentKeyIndex: '/Engine/Deck1/Track/CurrentKeyIndex',
+        EngineDeck1TrackCurrentLoopInPosition: '/Engine/Deck1/Track/CurrentLoopInPosition',
+        EngineDeck1TrackCurrentLoopOutPosition: '/Engine/Deck1/Track/CurrentLoopOutPosition',
+        EngineDeck1TrackCurrentLoopSizeInBeats: '/Engine/Deck1/Track/CurrentLoopSizeInBeats',
+        EngineDeck1TrackKeyLock: '/Engine/Deck1/Track/KeyLock',
+        EngineDeck1TrackLoopEnableState: '/Engine/Deck1/Track/LoopEnableState',
+        EngineDeck1TrackLoopQuickLoop1: '/Engine/Deck1/Track/Loop/QuickLoop1',
+        EngineDeck1TrackLoopQuickLoop2: '/Engine/Deck1/Track/Loop/QuickLoop2',
+        EngineDeck1TrackLoopQuickLoop3: '/Engine/Deck1/Track/Loop/QuickLoop3',
+        EngineDeck1TrackLoopQuickLoop4: '/Engine/Deck1/Track/Loop/QuickLoop4',
+        EngineDeck1TrackLoopQuickLoop5: '/Engine/Deck1/Track/Loop/QuickLoop5',
+        EngineDeck1TrackLoopQuickLoop6: '/Engine/Deck1/Track/Loop/QuickLoop6',
+        EngineDeck1TrackLoopQuickLoop7: '/Engine/Deck1/Track/Loop/QuickLoop7',
+        EngineDeck1TrackLoopQuickLoop8: '/Engine/Deck1/Track/Loop/QuickLoop8',
+        EngineDeck1TrackPlayPauseLEDState: '/Engine/Deck1/Track/PlayPauseLEDState',
+        EngineDeck1TrackSampleRate: '/Engine/Deck1/Track/SampleRate',
+        EngineDeck1TrackSongAnalyzed: '/Engine/Deck1/Track/SongAnalyzed',
+        EngineDeck1TrackSongLoaded: '/Engine/Deck1/Track/SongLoaded',
+        EngineDeck1TrackSongName: '/Engine/Deck1/Track/SongName',
+        EngineDeck1TrackSoundSwitchGUID: '/Engine/Deck1/Track/SoundSwitchGuid',
+        EngineDeck1TrackTrackBytes: '/Engine/Deck1/Track/TrackBytes',
+        EngineDeck1TrackTrackData: '/Engine/Deck1/Track/TrackData',
+        EngineDeck1TrackTrackLength: '/Engine/Deck1/Track/TrackLength',
+        EngineDeck1TrackTrackName: '/Engine/Deck1/Track/TrackName',
+        EngineDeck1TrackTrackNetworkPath: '/Engine/Deck1/Track/TrackNetworkPath',
+        EngineDeck1TrackTrackURI: '/Engine/Deck1/Track/TrackUri',
+        EngineDeck1TrackTrackWasPlayed: '/Engine/Deck1/Track/TrackWasPlayed',
+        EngineDeck2CurrentBPM: '/Engine/Deck2/CurrentBPM',
+        EngineDeck2ExternalMixerVolume: '/Engine/Deck2/ExternalMixerVolume',
+        EngineDeck2ExternalScratchWheelTouch: '/Engine/Deck2/ExternalScratchWheelTouch',
+        EngineDeck2PadsView: '/Engine/Deck2/Pads/View',
+        EngineDeck2Play: '/Engine/Deck2/Play',
+        EngineDeck2PlayState: '/Engine/Deck2/PlayState',
+        EngineDeck2PlayStatePath: '/Engine/Deck2/PlayStatePath',
+        EngineDeck2Speed: '/Engine/Deck2/Speed',
+        EngineDeck2SpeedNeutral: '/Engine/Deck2/SpeedNeutral',
+        EngineDeck2SpeedOffsetDown: '/Engine/Deck2/SpeedOffsetDown',
+        EngineDeck2SpeedOffsetUp: '/Engine/Deck2/SpeedOffsetUp',
+        EngineDeck2SpeedRange: '/Engine/Deck2/SpeedRange',
+        EngineDeck2SpeedState: '/Engine/Deck2/SpeedState',
+        EngineDeck2SyncMode: '/Engine/Deck2/SyncMode',
+        EngineDeck2TrackArtistName: '/Engine/Deck2/Track/ArtistName',
+        EngineDeck2TrackBleep: '/Engine/Deck2/Track/Bleep',
+        EngineDeck2TrackCuePosition: '/Engine/Deck2/Track/CuePosition',
+        EngineDeck2TrackCurrentBPM: '/Engine/Deck2/Track/CurrentBPM',
+        EngineDeck2TrackCurrentKeyIndex: '/Engine/Deck2/Track/CurrentKeyIndex',
+        EngineDeck2TrackCurrentLoopInPosition: '/Engine/Deck2/Track/CurrentLoopInPosition',
+        EngineDeck2TrackCurrentLoopOutPosition: '/Engine/Deck2/Track/CurrentLoopOutPosition',
+        EngineDeck2TrackCurrentLoopSizeInBeats: '/Engine/Deck2/Track/CurrentLoopSizeInBeats',
+        EngineDeck2TrackKeyLock: '/Engine/Deck2/Track/KeyLock',
+        EngineDeck2TrackLoopEnableState: '/Engine/Deck2/Track/LoopEnableState',
+        EngineDeck2TrackLoopQuickLoop1: '/Engine/Deck2/Track/Loop/QuickLoop1',
+        EngineDeck2TrackLoopQuickLoop2: '/Engine/Deck2/Track/Loop/QuickLoop2',
+        EngineDeck2TrackLoopQuickLoop3: '/Engine/Deck2/Track/Loop/QuickLoop3',
+        EngineDeck2TrackLoopQuickLoop4: '/Engine/Deck2/Track/Loop/QuickLoop4',
+        EngineDeck2TrackLoopQuickLoop5: '/Engine/Deck2/Track/Loop/QuickLoop5',
+        EngineDeck2TrackLoopQuickLoop6: '/Engine/Deck2/Track/Loop/QuickLoop6',
+        EngineDeck2TrackLoopQuickLoop7: '/Engine/Deck2/Track/Loop/QuickLoop7',
+        EngineDeck2TrackLoopQuickLoop8: '/Engine/Deck2/Track/Loop/QuickLoop8',
+        EngineDeck2TrackPlayPauseLEDState: '/Engine/Deck2/Track/PlayPauseLEDState',
+        EngineDeck2TrackSampleRate: '/Engine/Deck2/Track/SampleRate',
+        EngineDeck2TrackSongAnalyzed: '/Engine/Deck2/Track/SongAnalyzed',
+        EngineDeck2TrackSongLoaded: '/Engine/Deck2/Track/SongLoaded',
+        EngineDeck2TrackSongName: '/Engine/Deck2/Track/SongName',
+        EngineDeck2TrackSoundSwitchGUID: '/Engine/Deck2/Track/SoundSwitchGuid',
+        EngineDeck2TrackTrackBytes: '/Engine/Deck2/Track/TrackBytes',
+        EngineDeck2TrackTrackData: '/Engine/Deck2/Track/TrackData',
+        EngineDeck2TrackTrackLength: '/Engine/Deck2/Track/TrackLength',
+        EngineDeck2TrackTrackName: '/Engine/Deck2/Track/TrackName',
+        EngineDeck2TrackTrackNetworkPath: '/Engine/Deck2/Track/TrackNetworkPath',
+        EngineDeck2TrackTrackURI: '/Engine/Deck2/Track/TrackUri',
+        EngineDeck2TrackTrackWasPlayed: '/Engine/Deck2/Track/TrackWasPlayed',
+        EngineDeck3CurrentBPM: '/Engine/Deck3/CurrentBPM',
+        EngineDeck3ExternalMixerVolume: '/Engine/Deck3/ExternalMixerVolume',
+        EngineDeck3ExternalScratchWheelTouch: '/Engine/Deck3/ExternalScratchWheelTouch',
+        EngineDeck3PadsView: '/Engine/Deck3/Pads/View',
+        EngineDeck3Play: '/Engine/Deck3/Play',
+        EngineDeck3PlayState: '/Engine/Deck3/PlayState',
+        EngineDeck3PlayStatePath: '/Engine/Deck3/PlayStatePath',
+        EngineDeck3Speed: '/Engine/Deck3/Speed',
+        EngineDeck3SpeedNeutral: '/Engine/Deck3/SpeedNeutral',
+        EngineDeck3SpeedOffsetDown: '/Engine/Deck3/SpeedOffsetDown',
+        EngineDeck3SpeedOffsetUp: '/Engine/Deck3/SpeedOffsetUp',
+        EngineDeck3SpeedRange: '/Engine/Deck3/SpeedRange',
+        EngineDeck3SpeedState: '/Engine/Deck3/SpeedState',
+        EngineDeck3SyncMode: '/Engine/Deck3/SyncMode',
+        EngineDeck3TrackArtistName: '/Engine/Deck3/Track/ArtistName',
+        EngineDeck3TrackBleep: '/Engine/Deck3/Track/Bleep',
+        EngineDeck3TrackCuePosition: '/Engine/Deck3/Track/CuePosition',
+        EngineDeck3TrackCurrentBPM: '/Engine/Deck3/Track/CurrentBPM',
+        EngineDeck3TrackCurrentKeyIndex: '/Engine/Deck3/Track/CurrentKeyIndex',
+        EngineDeck3TrackCurrentLoopInPosition: '/Engine/Deck3/Track/CurrentLoopInPosition',
+        EngineDeck3TrackCurrentLoopOutPosition: '/Engine/Deck3/Track/CurrentLoopOutPosition',
+        EngineDeck3TrackCurrentLoopSizeInBeats: '/Engine/Deck3/Track/CurrentLoopSizeInBeats',
+        EngineDeck3TrackKeyLock: '/Engine/Deck3/Track/KeyLock',
+        EngineDeck3TrackLoopEnableState: '/Engine/Deck3/Track/LoopEnableState',
+        EngineDeck3TrackLoopQuickLoop1: '/Engine/Deck3/Track/Loop/QuickLoop1',
+        EngineDeck3TrackLoopQuickLoop2: '/Engine/Deck3/Track/Loop/QuickLoop2',
+        EngineDeck3TrackLoopQuickLoop3: '/Engine/Deck3/Track/Loop/QuickLoop3',
+        EngineDeck3TrackLoopQuickLoop4: '/Engine/Deck3/Track/Loop/QuickLoop4',
+        EngineDeck3TrackLoopQuickLoop5: '/Engine/Deck3/Track/Loop/QuickLoop5',
+        EngineDeck3TrackLoopQuickLoop6: '/Engine/Deck3/Track/Loop/QuickLoop6',
+        EngineDeck3TrackLoopQuickLoop7: '/Engine/Deck3/Track/Loop/QuickLoop7',
+        EngineDeck3TrackLoopQuickLoop8: '/Engine/Deck3/Track/Loop/QuickLoop8',
+        EngineDeck3TrackPlayPauseLEDState: '/Engine/Deck3/Track/PlayPauseLEDState',
+        EngineDeck3TrackSampleRate: '/Engine/Deck3/Track/SampleRate',
+        EngineDeck3TrackSongAnalyzed: '/Engine/Deck3/Track/SongAnalyzed',
+        EngineDeck3TrackSongLoaded: '/Engine/Deck3/Track/SongLoaded',
+        EngineDeck3TrackSongName: '/Engine/Deck3/Track/SongName',
+        EngineDeck3TrackSoundSwitchGUID: '/Engine/Deck3/Track/SoundSwitchGuid',
+        EngineDeck3TrackTrackBytes: '/Engine/Deck3/Track/TrackBytes',
+        EngineDeck3TrackTrackData: '/Engine/Deck3/Track/TrackData',
+        EngineDeck3TrackTrackLength: '/Engine/Deck3/Track/TrackLength',
+        EngineDeck3TrackTrackName: '/Engine/Deck3/Track/TrackName',
+        EngineDeck3TrackTrackNetworkPath: '/Engine/Deck3/Track/TrackNetworkPath',
+        EngineDeck3TrackTrackURI: '/Engine/Deck3/Track/TrackUri',
+        EngineDeck3TrackTrackWasPlayed: '/Engine/Deck3/Track/TrackWasPlayed',
+        EngineDeck4CurrentBPM: '/Engine/Deck4/CurrentBPM',
+        EngineDeck4ExternalMixerVolume: '/Engine/Deck4/ExternalMixerVolume',
+        EngineDeck4ExternalScratchWheelTouch: '/Engine/Deck4/ExternalScratchWheelTouch',
+        EngineDeck4PadsView: '/Engine/Deck4/Pads/View',
+        EngineDeck4Play: '/Engine/Deck4/Play',
+        EngineDeck4PlayState: '/Engine/Deck4/PlayState',
+        EngineDeck4PlayStatePath: '/Engine/Deck4/PlayStatePath',
+        EngineDeck4Speed: '/Engine/Deck4/Speed',
+        EngineDeck4SpeedNeutral: '/Engine/Deck4/SpeedNeutral',
+        EngineDeck4SpeedOffsetDown: '/Engine/Deck4/SpeedOffsetDown',
+        EngineDeck4SpeedOffsetUp: '/Engine/Deck4/SpeedOffsetUp',
+        EngineDeck4SpeedRange: '/Engine/Deck4/SpeedRange',
+        EngineDeck4SpeedState: '/Engine/Deck4/SpeedState',
+        EngineDeck4SyncMode: '/Engine/Deck4/SyncMode',
+        EngineDeck4TrackArtistName: '/Engine/Deck4/Track/ArtistName',
+        EngineDeck4TrackBleep: '/Engine/Deck4/Track/Bleep',
+        EngineDeck4TrackCuePosition: '/Engine/Deck4/Track/CuePosition',
+        EngineDeck4TrackCurrentBPM: '/Engine/Deck4/Track/CurrentBPM',
+        EngineDeck4TrackCurrentKeyIndex: '/Engine/Deck4/Track/CurrentKeyIndex',
+        EngineDeck4TrackCurrentLoopInPosition: '/Engine/Deck4/Track/CurrentLoopInPosition',
+        EngineDeck4TrackCurrentLoopOutPosition: '/Engine/Deck4/Track/CurrentLoopOutPosition',
+        EngineDeck4TrackCurrentLoopSizeInBeats: '/Engine/Deck4/Track/CurrentLoopSizeInBeats',
+        EngineDeck4TrackKeyLock: '/Engine/Deck4/Track/KeyLock',
+        EngineDeck4TrackLoopEnableState: '/Engine/Deck4/Track/LoopEnableState',
+        EngineDeck4TrackLoopQuickLoop1: '/Engine/Deck4/Track/Loop/QuickLoop1',
+        EngineDeck4TrackLoopQuickLoop2: '/Engine/Deck4/Track/Loop/QuickLoop2',
+        EngineDeck4TrackLoopQuickLoop3: '/Engine/Deck4/Track/Loop/QuickLoop3',
+        EngineDeck4TrackLoopQuickLoop4: '/Engine/Deck4/Track/Loop/QuickLoop4',
+        EngineDeck4TrackLoopQuickLoop5: '/Engine/Deck4/Track/Loop/QuickLoop5',
+        EngineDeck4TrackLoopQuickLoop6: '/Engine/Deck4/Track/Loop/QuickLoop6',
+        EngineDeck4TrackLoopQuickLoop7: '/Engine/Deck4/Track/Loop/QuickLoop7',
+        EngineDeck4TrackLoopQuickLoop8: '/Engine/Deck4/Track/Loop/QuickLoop8',
+        EngineDeck4TrackPlayPauseLEDState: '/Engine/Deck4/Track/PlayPauseLEDState',
+        EngineDeck4TrackSampleRate: '/Engine/Deck4/Track/SampleRate',
+        EngineDeck4TrackSongAnalyzed: '/Engine/Deck4/Track/SongAnalyzed',
+        EngineDeck4TrackSongLoaded: '/Engine/Deck4/Track/SongLoaded',
+        EngineDeck4TrackSongName: '/Engine/Deck4/Track/SongName',
+        EngineDeck4TrackSoundSwitchGUID: '/Engine/Deck4/Track/SoundSwitchGuid',
+        EngineDeck4TrackTrackBytes: '/Engine/Deck4/Track/TrackBytes',
+        EngineDeck4TrackTrackData: '/Engine/Deck4/Track/TrackData',
+        EngineDeck4TrackTrackLength: '/Engine/Deck4/Track/TrackLength',
+        EngineDeck4TrackTrackName: '/Engine/Deck4/Track/TrackName',
+        EngineDeck4TrackTrackNetworkPath: '/Engine/Deck4/Track/TrackNetworkPath',
+        EngineDeck4TrackTrackURI: '/Engine/Deck4/Track/TrackUri',
+        EngineDeck4TrackTrackWasPlayed: '/Engine/Deck4/Track/TrackWasPlayed',
+        GUIDecksDeckActiveDeck: '/GUI/Decks/Deck/ActiveDeck',
     },
     mixer: {
-        ...MixerStates,
-    }
+        MixerCH1faderPosition: '/Mixer/CH1faderPosition',
+        MixerCH2faderPosition: '/Mixer/CH2faderPosition',
+        MixerCH3faderPosition: '/Mixer/CH3faderPosition',
+        MixerCH4faderPosition: '/Mixer/CH4faderPosition',
+        MixerCrossfaderPosition: '/Mixer/CrossfaderPosition',
+        MixerChannelAssignment1: '/Mixer/ChannelAssignment1',
+        MixerChannelAssignment2: '/Mixer/ChannelAssignment2',
+        MixerChannelAssignment3: '/Mixer/ChannelAssignment3',
+        MixerChannelAssignment4: '/Mixer/ChannelAssignment4',
+        MixerNumberOfChannels: '/Mixer/NumberOfChannels',
+
+    },
 }
 
 
-// console.log(JSON.stringify(exportObj));
-
-// // export const PlayerDeckTrackStates = {
-// //    ArtistName: 'ArtistName',
-// //    Bleep: 'Bleep',
-// //    CuePosition: 'CuePosition',
-// //    CurrentBPM: 'CurrentBPM',
-// //    CurrentKeyIndex: 'CurrentKeyIndex',
-// //    CurrentLoopInPosition: 'CurrentLoopInPosition',
-// //    CurrentLoopOutPosition: 'CurrentLoopOutPosition',
-// //    CurrentLoopSizeInBeats: 'CurrentLoopSizeInBeats',
-// //    KeyLock: 'KeyLock',
-// //    LoopEnableState: 'LoopEnableState',
-// //    LoopQuickLoop1: 'Loop/QuickLoop1',
-// //    LoopQuickLoop2: 'Loop/QuickLoop2',
-// //    LoopQuickLoop3: 'Loop/QuickLoop3',
-// //    LoopQuickLoop4: 'Loop/QuickLoop4',
-// //    LoopQuickLoop5: 'Loop/QuickLoop5',
-// //    LoopQuickLoop6: 'Loop/QuickLoop6',
-// //    LoopQuickLoop7: 'Loop/QuickLoop7',
-// //    LoopQuickLoop8: 'Loop/QuickLoop8',
-// //    PlayPauseLEDState: 'PlayPauseLEDState',
-// //    SampleRate: 'SampleRate',
-// //    SongAnalyzed: 'SongAnalyzed',
-// //    SongLoaded: 'SongLoaded',
-// //    SongName: 'SongName',
-// //    SoundSwitchGUID: 'SoundSwitchGuid',
-// //    TrackBytes: 'TrackBytes',
-// //    TrackData: 'TrackData',
-// //    TrackLength: 'TrackLength',
-// //    TrackName: 'TrackName',
-// //    TrackNetworkPath: 'TrackNetworkPath',
-// //    TrackURI: 'TrackUri',
-// //    TrackWasPlayed: 'TrackWasPlayed',
-// // }
+  //EngineDeck1RequestUnsetSyncLead: '/Engine/Deck1/RequestUnsetSyncLead',
+  // GUIDecksDeckActiveDeck: '/GUI/Decks/Deck/ActiveDeck',
+  // GUIViewLayerLayerB: '/GUI/ViewLayer/LayerB',
+  // ClientDeck1DeckIsMaster: '/Client/Deck1/DeckIsMaster',
+  // ClientDeck2DeckIsMaster: '/Client/Deck2/DeckIsMaster',

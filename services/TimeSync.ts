@@ -1,31 +1,16 @@
 
-import { ReadContext } from '../utils/ReadContext';
-import { WriteContext } from '../utils/WriteContext';
-import { Service, ServiceHandler } from './Service';
+import { Logger } from '../LogEmitter';
+import { performance } from 'perf_hooks';
+import { ReadContext, WriteContext } from '../utils';
 import { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
-import { Logger } from '../LogEmitter';
-import { Socket } from 'net';
-const { performance } = require('perf_hooks');
+import { Service } from './Service';
+import { StageLinq } from '../StageLinq';
 
 
 export interface TimeSyncData {
     msgs: bigint[],
     timestamp: bigint,
-}
-
-
-export class TimeSynchronizationHandler extends ServiceHandler<TimeSyncData> {
-    public name: string = 'TimeSync'
-
-    public setupService(service: TimeSynchronization, deviceId: DeviceId) {
-        console.log(`Setting up ${service.name} for ${deviceId.string}`);
-
-        service.on('newDevice', (_service: InstanceType<typeof TimeSynchronization>) => {
-            Logger.debug(`New TimeSync Device ${service.deviceId.string}`)
-            _service.sendTimeSyncRequest();
-        })
-    }
 }
 
 export class TimeSynchronization extends Service<TimeSyncData> {
@@ -39,7 +24,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     public async sendTimeSyncRequest() {
         const ctx = new WriteContext();
         ctx.write(new Uint8Array([0x0, 0x0, 0x0, 0x0]));
-        ctx.write(this.parent.options.actingAs.token);
+        ctx.write(StageLinq.options.actingAs.deviceId.array);
         ctx.write(new Uint8Array([0x0]));
         ctx.writeFixedSizedString('TimeSynchronization');
         await this.write(ctx);
@@ -83,13 +68,12 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     //     await this.write(ctx, this.socket);
     // };
 
-    protected parseData(p_ctx: ReadContext, socket: Socket): ServiceMessage<TimeSyncData> {
+    protected parseData(p_ctx: ReadContext): ServiceMessage<TimeSyncData> {
         const timestamp = this.getTimeStamp();
         const size = p_ctx.readUInt32();
 
         if (size === 0) {
-            const token = p_ctx.read(16);
-            const deviceId = new DeviceId(token)
+            const deviceId = new DeviceId(p_ctx.read(16))
             const svcName = p_ctx.readNetworkStringUTF16();
             const svcPort = p_ctx.readUInt16();
             console.log(deviceId.string, svcName, svcPort)
@@ -101,8 +85,6 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             };
             return {
                 id: id,
-                deviceId: this.deviceId,
-                socket: socket,
                 message: {
                     msgs: msgs,
                     timestamp: timestamp,
@@ -133,9 +115,9 @@ export class TimeSynchronization extends Service<TimeSyncData> {
                 break;
             case 2:
                 Logger.silly(msg.message)
-                const localClock = msg.message.timestamp - msg.message.msgs[0]
+                //const localClock = msg.message.timestamp - msg.message.msgs[0]
                 const remoteClock = msg.message.msgs[1] - this.remoteTime
-                Logger.silly(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))
+                //Logger.silly(msg.deviceId.string, localClock, remoteClock, (localClock - remoteClock))
                 this.timeAvg(remoteClock)
                 break;
             default:

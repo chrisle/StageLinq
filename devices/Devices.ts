@@ -116,6 +116,10 @@ export class Device extends EventEmitter {
     this.info = info;
   }
 
+  deckCount(): number {
+    return this.info.unit.decks
+  }
+
   /**
    * Add an instantiated Service
    * @param {Service} service 

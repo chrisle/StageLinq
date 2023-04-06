@@ -1,20 +1,26 @@
-import { DOWNLOAD_TIMEOUT } from '../types';
-import { Logger } from '../LogEmitter';
-import { ReadContext } from '../utils/ReadContext';
-import { Service, ServiceHandler } from './Service';
-import { sleep } from '../utils/sleep';
+import { EventEmitter } from 'events';
 import { strict as assert } from 'assert';
-import { WriteContext } from '../utils/WriteContext';
+import { Logger } from '../LogEmitter';
+import { ReadContext, WriteContext, sleep } from '../utils';
+import { Service } from './Service';
 import type { ServiceMessage, Source } from '../types';
 import { DeviceId } from '../devices'
-import { Socket } from 'net';
+import { StageLinq } from '../StageLinq';
 
 
+const DOWNLOAD_TIMEOUT = 60000; // in ms
 const MAGIC_MARKER = 'fltx';
 export const CHUNK_SIZE = 4096;
 
-// TODO: Strongly type this for all possible messages?
-type FileTransferData = any;
+export interface FileTransferData {
+  service: FileTransfer;
+  deviceId: DeviceId;
+  txid: number;
+  size?: number;
+  offset?: number;
+  sources?: string[];
+  data?: Buffer;
+}
 
 enum MessageId {
   TimeCode = 0x0,
@@ -38,50 +44,45 @@ export interface FileTransferProgress {
 export declare interface FileTransfer {
   on(event: 'fileTransferProgress', listener: (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => void): this;
   on(event: 'fileTransferComplete', listener: (source: Source, fileName: string, txid: number) => void): this;
-  on(event: 'newSource', listener: (source: Source) => void): this;
-  on(event: 'sourceRemoved', listener: (sourceName: string, deviceId: DeviceId) => void): this;
 }
 
-export class FileTransferHandler extends ServiceHandler<FileTransfer> {
-  public readonly name = "FileTransfer"
-
-  /**
-   * 
-   * @param {Service<FileTransfer>} service 
-   * @param {DeviceId} deviceId 
-   */
-  public setupService(service: Service<FileTransferData>, deviceId: DeviceId) {
-    const fileTransfer = service as FileTransfer;
-    Logger.debug(`Setting up ${fileTransfer.name} for ${deviceId.string}`);
-    this.addDevice(deviceId, service);
-    fileTransfer.on('fileTransferProgress', (source, fileName, txid, progress) => {
-      this.emit('fileTransferProgress', source, fileName, txid, progress);
-    });
-    fileTransfer.on('fileTransferComplete', (source, fileName, txid) => {
-      this.emit('fileTransferComplete', source, fileName, txid);
-    });
-    fileTransfer.on('newSource', (source: Source) => {
-      this.emit('newSource', source);
-    });
-    fileTransfer.on('sourceRemoved', (name: string, deviceId: DeviceId) => {
-      this.emit('sourceRemoved', name, deviceId);
-    });
-  }
-}
 
 export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
-
   private receivedFile: WriteContext = null;
+  static #instances: Map<string, FileTransfer> = new Map()
+  static readonly emitter: EventEmitter = new EventEmitter();
   #txid: number = 1;
   #isAvailable: boolean = true;
 
+  constructor(deviceId?: DeviceId) {
+    super(deviceId)
+    FileTransfer.#instances.set(this.deviceId.string, this)
+    this.addListener('newDevice', (service: FileTransfer) => FileTransfer.fileTransferListener('newDevice', service))
+    this.addListener('newSource', (source: Source) => FileTransfer.fileTransferListener('newSource', source))
+    this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => FileTransfer.fileTransferListener('newSource', name, deviceId))
+    this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => FileTransfer.fileTransferListener('fileTransferProgress', source, fileName, txid, progress))
+    this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => FileTransfer.fileTransferListener('fileTransferComplete', source, fileName, txid))
+  }
   // TODO need better txId to handle concurrent transfers
   public get txid() {
     return this.#txid;
   }
 
-  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<FileTransferData> {
+
+  private static fileTransferListener(eventName: string, ...args: any) {
+    FileTransfer.emitter.emit(eventName, ...args)
+  }
+
+  static getInstance(deviceId: DeviceId): FileTransfer {
+    return FileTransfer.#instances.get(deviceId.string)
+  }
+
+  static getInstances(): string[] {
+    return [...FileTransfer.#instances.keys()]
+  }
+
+  protected parseData(ctx: ReadContext): ServiceMessage<FileTransferData> {
 
     const check = ctx.getString(4);
     if (check !== MAGIC_MARKER) {
@@ -99,11 +100,11 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: MessageId.RequestSources,
-          deviceId: this.deviceId,
           message: {
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
           },
-          socket: socket,
         };
       }
 
@@ -126,9 +127,9 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
             sources: sources,
           },
@@ -143,12 +144,12 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
           message: {
-            size: size,
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
+            size: size,
           },
-          socket: socket,
         };
       }
 
@@ -156,9 +157,11 @@ export class FileTransfer extends Service<FileTransferData> {
         // End of result indication?
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          message: null,
-          socket: socket,
+          message: {
+            service: this,
+            deviceId: this.deviceId,
+            txid: txId,
+          },
         };
       }
 
@@ -170,11 +173,11 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(id === 1)
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
-            size: filesize,
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
+            size: filesize,
           },
         };
       }
@@ -188,9 +191,9 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
           message: {
+            service: this,
+            deviceId: this.deviceId,
             txid: txId,
             data: ctx.readRemainingAsNewBuffer(),
             offset: offset,
@@ -205,9 +208,11 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
-          message: null,
+          message: {
+            service: this,
+            deviceId: this.deviceId,
+            txid: txId,
+          },
         };
       }
 
@@ -220,9 +225,11 @@ export class FileTransfer extends Service<FileTransferData> {
 
         return {
           id: messageId,
-          deviceId: this.deviceId,
-          socket: socket,
-          message: null,
+          message: {
+            service: this,
+            deviceId: this.deviceId,
+            txid: txId,
+          },
         };
       }
 
@@ -240,7 +247,7 @@ export class FileTransfer extends Service<FileTransferData> {
       this.receivedFile.write(data.message.data);
     }
     if (data && data.id === MessageId.RequestSources) {
-      this.sendNoSourcesReply(data);
+      this.sendNoSourcesReply(data.message);
     }
   }
 
@@ -257,9 +264,10 @@ export class FileTransfer extends Service<FileTransferData> {
    * @returns {Promise<Uint8Array>} Contents of the file.
    */
   async getFile(source: Source, location: string): Promise<Uint8Array> {
-    while (!this.#isAvailable) {
-      await sleep(500)
-    }
+    // while (!this.#isAvailable) {
+    //   await sleep(500)
+    // }
+    await this.isAvailable();
     this.#isAvailable = false;
     assert(this.receivedFile === null);
     await this.requestFileTransferId(location);
@@ -267,7 +275,7 @@ export class FileTransfer extends Service<FileTransferData> {
     if (txinfo) {
       this.receivedFile = new WriteContext({ size: txinfo.size });
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
-      const total = parseInt(txinfo.size);
+      const total = txinfo.size;
 
       if (total === 0) {
         Logger.warn(`${location} doesn't exist or is a streaming file`);
@@ -324,15 +332,15 @@ export class FileTransfer extends Service<FileTransferData> {
    * @param {string[]} sources  an array of current sources from device
    */
   async updateSources(sources: string[]) {
-    const currentSources = this.parent.sources.getSources(this.deviceId);
+    const currentSources = StageLinq.sources.getSources(this.deviceId);
     const currentSourceNames = currentSources.map(source => source.name);
 
     //When a source is disconnected, devices send a new SourceLocations message that excludes the removed source
     const markedForDelete = currentSources.filter(item => !sources.includes(item.name));
     const newSources = sources.filter(source => !currentSourceNames.includes(source));
     for (const source of markedForDelete) {
-      this.parent.sources.deleteSource(source.name, source.deviceId)
-      this.emit('sourceRemoved', source.name, source.deviceId);
+      StageLinq.sources.deleteSource(source.name, source.deviceId)
+
     }
 
     if (newSources.length) {
@@ -361,20 +369,19 @@ export class FileTransfer extends Service<FileTransferData> {
             deviceId: this.deviceId,
             service: this,
             database: {
-              location: database,
               size: fstatMessage.size,
               remote: {
                 location: database,
-                device: this.deviceId.string,
+                device: this.deviceId,
               }
             }
           }
-          this.parent.sources.setSource(thisSource);
-          this.emit('newSource', thisSource);
+          StageLinq.sources.setSource(thisSource);
+          this.emit('newSource', thisSource)
           result.push(thisSource);
 
-          if (this.parent.options.downloadDbSources) {
-            this.parent.databases.downloadDb(thisSource);
+          if (StageLinq.options.downloadDbSources) {
+            StageLinq.sources.downloadDb(thisSource);
           }
           break;
         }
@@ -464,10 +471,10 @@ export class FileTransfer extends Service<FileTransferData> {
    * Reply to Devices requesting our sources
    * @param {FileTransferData} data 
    */
-  private async sendNoSourcesReply(data: FileTransferData) {
+  private async sendNoSourcesReply(message: FileTransferData) {
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(data.message.txid);
+    ctx.writeUInt32(message.txid);
     ctx.writeUInt32(0x3);
     ctx.writeUInt32(0x0);
     ctx.writeUInt16(257);

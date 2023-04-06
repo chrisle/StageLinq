@@ -1,14 +1,12 @@
 import { strict as assert } from 'assert';
-import { ReadContext } from '../utils/ReadContext';
-import { WriteContext } from '../utils/WriteContext';
-import { Service, ServiceHandler } from './Service';
-import { Logger } from '../LogEmitter';
+import { ReadContext, WriteContext } from '../utils';
+import { Service } from './Service';
 import type { ServiceMessage } from '../types';
 import { DeviceId } from '../devices'
-import { Socket } from 'net';
-import { StageLinq } from '../StageLinq';
+import { EventEmitter } from 'events';
 
-type BeatCallback = (n: ServiceMessage<BeatData>) => void;
+
+type BeatCallback = (n: BeatData) => void;
 
 type BeatOptions = {
 	everyNBeats: number,
@@ -22,55 +20,11 @@ interface deckBeatData {
 }
 
 export interface BeatData {
+	service: BeatInfo;
+	deviceId: DeviceId;
 	clock: bigint;
 	deckCount: number;
 	deck: deckBeatData[];
-}
-
-export declare interface BeatInfoHandler {
-	on(event: 'newBeatInfoDevice', listener: (device: Service<BeatData>) => void): this;
-	on(event: 'beatMsg', listener: (beatData: ServiceMessage<BeatData>, device: Service<BeatData>) => void): this;
-}
-
-export class BeatInfoHandler extends ServiceHandler<BeatData> {
-	public name: string = 'BeatInfo';
-	#beatRegister: Map<string, BeatData> = new Map();
-
-	/**
-	 * Get most recent BeatData
-	 * @param {DeviceId} [deviceId] optionally filter by DeviceId
-	 * @returns {BeatData[]}
-	 */
-	public getBeatData(deviceId?: DeviceId): BeatData[] {
-		return (deviceId ? [this.#beatRegister.get(deviceId.string)] : [...this.#beatRegister.values()])
-	}
-
-	/**
-	 * Add BeatData for Device
-	 * @param {DeviceId} deviceId 
-	 * @param {BeatData} data 
-	 */
-	public setBeatData(deviceId: DeviceId, data: BeatData) {
-		this.#beatRegister.set(deviceId.string, data);
-	}
-
-	/**
-	 * Setup BeatInfo ServiceHandler
-	 * @param {Service<BeatData>} service 
-	 * @param {DeviceId} deviceId 
-	 */
-	public setupService(service: Service<BeatData>, deviceId: DeviceId) {
-		Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
-		const beatInfo = service as BeatInfo;
-		this.addDevice(deviceId, service);
-
-		beatInfo.server.on("connection", () => {
-			this.emit('newBeatInfoDevice', beatInfo)
-		});
-		beatInfo.on('beatMessage', (message: ServiceMessage<BeatData>) => {
-			this.emit('beatMsg', message, beatInfo)
-		})
-	}
 }
 
 export declare interface BeatInfo {
@@ -79,30 +33,42 @@ export declare interface BeatInfo {
 
 export class BeatInfo extends Service<BeatData> {
 	public readonly name = "BeatInfo";
-	public readonly handler: BeatInfoHandler;
+	static #instances: Map<string, BeatInfo> = new Map()
+	static readonly emitter: EventEmitter = new EventEmitter();
 
-	private _userBeatCallback: BeatCallback = null;
-	private _userBeatOptions: BeatOptions = null;
-	private _currentBeatData: ServiceMessage<BeatData> = null;
-	isBufferedService: boolean = true;
+	#userBeatCallback: BeatCallback = null;
+	#userBeatOptions: BeatOptions = null;
+	#currentBeatData: BeatData = null;
+	protected isBufferedService: boolean = true;
 
 	/**
 	 * @constructor
-	 * @param {StageLinq} parent 
-	 * @param {BeatInfoHandler} serviceHandler 
 	 * @param {DeviceId} [deviceId] 
 	 */
-	constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: BeatInfoHandler, deviceId?: DeviceId) {
-		super(parent, serviceHandler, deviceId)
-		this.handler = this._handler as BeatInfoHandler
+
+	constructor(deviceId: DeviceId) {
+		super(deviceId)
+		BeatInfo.#instances.set(this.deviceId.string, this)
+		this.addListener('connection', () => BeatInfo.instanceListener('newDevice', this))
+		this.addListener('beatMessage', (data: BeatData) => BeatInfo.instanceListener('beatMessage', data))
 	}
 
+	private static instanceListener(eventName: string, ...args: any) {
+		BeatInfo.emitter.emit(eventName, ...args)
+	}
+	static getInstances(): string[] {
+		return [...BeatInfo.#instances.keys()]
+	}
+
+	deleteDevice(deviceId: DeviceId) {
+		BeatInfo.#instances.delete(deviceId.string)
+	}
 	/**
 	 * Get current BeatData
-	 * @returns {ServiceMessage<BeatData>}
+	 * @returns {BeatData}
 	 */
-	getBeatData(): ServiceMessage<BeatData> {
-		return this._currentBeatData;
+	getBeatData(): BeatData {
+		return this.#currentBeatData;
 	}
 
 	/**
@@ -112,9 +78,9 @@ export class BeatInfo extends Service<BeatData> {
 	 */
 	public startBeatInfo(options: BeatOptions, beatCB?: BeatCallback) {
 		if (beatCB) {
-			this._userBeatCallback = beatCB;
+			this.#userBeatCallback = beatCB;
 		}
-		this._userBeatOptions = options;
+		this.#userBeatOptions = options;
 		this.sendBeatInfoRequest();
 	}
 
@@ -128,7 +94,7 @@ export class BeatInfo extends Service<BeatData> {
 		await this.write(ctx);
 	}
 
-	protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<BeatData> {
+	protected parseData(ctx: ReadContext): ServiceMessage<BeatData> {
 		assert(ctx.sizeLeft() > 72);
 		let id = ctx.readUInt32()
 		const clock = ctx.readUInt64();
@@ -147,14 +113,14 @@ export class BeatInfo extends Service<BeatData> {
 		}
 		assert(ctx.isEOF())
 		const beatMsg = {
+			service: this,
+			deviceId: this.deviceId,
 			clock: clock,
 			deckCount: deckCount,
 			deck: deck,
 		}
 		return {
 			id: id,
-			deviceId: this.deviceId,
-			socket: socket,
 			message: beatMsg
 		}
 	}
@@ -169,37 +135,41 @@ export class BeatInfo extends Service<BeatData> {
 				|| (Math.floor(prevBeat / res) - Math.floor(currentBeat / res) >= 1)
 		}
 
-		if (data && data.message) {
-			if (!this._currentBeatData) {
-				this._currentBeatData = data;
-				this.handler.setBeatData(this.deviceId, data.message);
-				this.emit('beatMessage', data);
-				if (this._userBeatCallback) {
-					this._userBeatCallback(data);
-				}
-			}
-
-			let hasUpdated = false;
-
-			for (let i = 0; i < data.message.deckCount; i++) {
-				if (resCheck(
-					this._userBeatOptions.everyNBeats,
-					this._currentBeatData.message.deck[i].beat,
-					data.message.deck[i].beat)) {
-					hasUpdated = true;
-				}
-			}
-
-			if (hasUpdated) {
-
-				this.emit('beatMessage', data);
-				if (this._userBeatCallback) {
-					this._userBeatCallback(data);
-				}
-			}
-			this._currentBeatData = data;
-			this.handler.setBeatData(this.deviceId, data.message);
+		if (!data || !data.message) {
+			return
 		}
+
+		if (!this.#currentBeatData) {
+			this.#currentBeatData = data.message;
+			if (this.listenerCount('beatMessage')) {
+				this.emit('beatMessage', data.message);
+			}
+			if (this.#userBeatCallback) {
+				this.#userBeatCallback(data.message);
+			}
+
+		}
+
+		let hasUpdated = false;
+
+		for (let i = 0; i < data.message.deckCount; i++) {
+			if (resCheck(
+				this.#userBeatOptions.everyNBeats,
+				this.#currentBeatData.deck[i].beat,
+				data.message.deck[i].beat)) {
+				hasUpdated = true;
+			}
+		}
+
+		if (hasUpdated) {
+			if (this.listenerCount('beatMessage')) {
+				this.emit('beatMessage', data);
+			}
+			if (this.#userBeatCallback) {
+				this.#userBeatCallback(data.message);
+			}
+		}
+		this.#currentBeatData = data.message;
 	}
 
 }

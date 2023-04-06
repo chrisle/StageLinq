@@ -1,20 +1,22 @@
+import { EventEmitter } from 'events';
+import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
-import { ReadContext } from '../utils/ReadContext';
-import { WriteContext } from '../utils/WriteContext';
-import { ServiceMessage, StageLinqValueObj } from '../types';
+import { ReadContext, WriteContext } from '../utils';
+import { ServiceMessage, StateNames } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
-import { Logger } from '../LogEmitter';
-import { sleep } from '../utils';
-import { Service, ServiceHandler } from '../services';
+import { Service } from '../services';
 import { StageLinq } from '../StageLinq';
 import * as stagelinqConfig from '../stagelinqConfig.json';
+
 
 export type Player = typeof stagelinqConfig.player;
 export type PlayerDeck = typeof stagelinqConfig.playerDeck;
 export type Mixer = typeof stagelinqConfig.mixer;
 
 const MAGIC_MARKER = 'smaa';
+const MAGIC_MARKER_INTERVAL = 0x000007d2;
+const MAGIC_MARKER_JSON = 0x00000000;
 
 enum Action {
   request = 0x000007d2,
@@ -27,8 +29,7 @@ enum Result {
   inquire = 0x00000064
 }
 
-const MAGIC_MARKER_INTERVAL = 0x000007d2;
-const MAGIC_MARKER_JSON = 0x00000000;
+
 
 // function stateReducer(obj: any, prefix: string): string[] {
 //   const entries = Object.entries(obj)
@@ -42,15 +43,14 @@ const MAGIC_MARKER_JSON = 0x00000000;
 // const mixerStateValues = stateReducer(stagelinqConfig.mixer, '/');
 // const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 
-const playerStateValues = Object.values(StageLinqValueObj.player);
-const mixerStateValues = Object.values(StageLinqValueObj.mixer);
+const playerStateValues = Object.values(StateNames.player);
+const mixerStateValues = Object.values(StateNames.mixer);
 const controllerStateValues = [...playerStateValues, ...mixerStateValues];
 
 
-export type StateMapDevice = InstanceType<typeof StateMap>
-
 export interface StateData {
-  service: InstanceType<typeof StateMap>
+  service: StateMap;
+  deviceId: DeviceId;
   name?: string;
   json?: {
     type: number;
@@ -61,39 +61,13 @@ export interface StateData {
   interval?: number;
 }
 
-export class StateMapHandler extends ServiceHandler<StateData> {
-  public readonly name = 'StateMap';
-  public deviceTrackRegister: Map<string, string> = new Map();
-
-  /**
-   * Setup Statemap ServiceHandler
-   * @param {Service<StateData>} service 
-   * @param {DeviceId} deviceId 
-   */
-  public setupService(service: Service<StateData>, deviceId: DeviceId) {
-    Logger.debug(`Setting up ${service.name} for ${deviceId.string}`);
-    const stateMap = service as Service<StateData>;
-    this.addDevice(deviceId, service);
-
-    stateMap.on('stateMessage', (data: ServiceMessage<StateData>) => {
-      this.emit('stateMessage', data);
-    });
-
-    stateMap.on('newDevice', (service: InstanceType<typeof StateMap>) => {
-      Logger.debug(`New StateMap Device ${service.deviceId.string}`)
-      this.emit('newDevice', service);
-      assert(service);
-    })
-  }
-}
-
 /**
  * StateMap Class
  */
 export class StateMap extends Service<StateData> {
   public readonly name = "StateMap";
-  public readonly handler: StateMapHandler;
-  private hasReceivedState: boolean = false;
+  static readonly emitter: EventEmitter = new EventEmitter();
+  static #instances: Map<string, StateMap> = new Map()
 
   /**
    * @constructor
@@ -101,9 +75,16 @@ export class StateMap extends Service<StateData> {
    * @param {StateMapHandler} serviceHandler 
    * @param {DeviceId} deviceId 
    */
-  constructor(parent: InstanceType<typeof StageLinq>, serviceHandler: StateMapHandler, deviceId?: DeviceId) {
-    super(parent, serviceHandler, deviceId)
-    this.handler = this._handler as StateMapHandler
+  constructor(deviceId?: DeviceId) {
+    super(deviceId)
+    StateMap.#instances.set(this.deviceId.string, this)
+    this.addListener('newDevice', (service: StateMap) => StateMap.instanceListener('newDevice', service))
+    this.addListener('newDevice', (service: StateMap) => StageLinq.status.addDecks(service))
+    this.addListener('stateMessage', (data: StateData) => StateMap.instanceListener('stateMessage', data))
+  }
+
+  private static instanceListener(eventName: string, ...args: any) {
+    StateMap.emitter.emit(eventName, ...args)
   }
 
   /**
@@ -111,14 +92,11 @@ export class StateMap extends Service<StateData> {
    */
   public async subscribe() {
     const socket = this.socket;
-    while (!this.parent.discovery.hasConnectionInfo(this.deviceId)) {
-      await sleep(200);
-    }
 
     Logger.silly(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.string}`);
-    const thisPeer = this.parent.discovery.getConnectionInfo(this.deviceId);
 
-    switch (thisPeer?.device?.type) {
+
+    switch (this.device.info.unit?.type) {
       case "PLAYER": {
         for (let state of playerStateValues) {
           await this.subscribeState(state, 0, socket);
@@ -143,7 +121,7 @@ export class StateMap extends Service<StateData> {
   }
 
 
-  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<StateData> {
+  protected parseData(ctx: ReadContext): ServiceMessage<StateData> {
     assert(this.deviceId);
 
     const marker = ctx.getString(4);
@@ -162,12 +140,11 @@ export class StateMap extends Service<StateData> {
           const json = JSON.parse(jsonString);
           return {
             id: MAGIC_MARKER_JSON,
-            deviceId: this.deviceId,
-            socket: socket,
             message: {
               name: name,
-              service: this,
               json: json,
+              service: this,
+              deviceId: this.deviceId,
             },
           };
         } catch (err) {
@@ -182,11 +159,10 @@ export class StateMap extends Service<StateData> {
 
         return {
           id: MAGIC_MARKER_INTERVAL,
-          socket: socket,
-          deviceId: this.deviceId,
           message: {
-            name: name,
             service: this,
+            deviceId: this.deviceId,
+            name: name,
             interval: interval,
           },
         };
@@ -199,18 +175,15 @@ export class StateMap extends Service<StateData> {
 
   protected messageHandler(data: ServiceMessage<StateData>): void {
 
-    if (data?.message?.interval) {
-      this.sendStateResponse(data.message.name, data.socket);
-    }
-    if (data?.message?.json) {
-      this.emit('stateMessage', data);
+    if (this.listenerCount(data?.message?.name) && data?.message?.json) {
+      this.emit(data.message.name, data.message)
     }
 
-    if (data && data.message.json && !this.hasReceivedState) {
-      Logger.silent(
-        `${data.deviceId.string} ${data.message.name} => ${data.message.json ? JSON.stringify(data.message.json) : data.message.interval
-        }`);
-      this.hasReceivedState = true;
+    if (data?.message?.interval) {
+      this.sendStateResponse(data.message.name, data.message.service.socket);
+    }
+    if (data?.message?.json) {
+      this.emit('stateMessage', data.message);
     }
   }
 
