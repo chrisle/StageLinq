@@ -39,7 +39,6 @@ We can choose which services to implement by including them in the `StageLinqOpt
 ```ts 
 const stageLinqOptions: StageLinqOptions = {
   downloadDbSources: true,
-  maxRetries: 3,
   actingAs: ActingAsDevice.StageLinqJS,
   services: [
     ServiceList.StateMap,
@@ -63,19 +62,19 @@ await stageLinq.connect();
 Discovery emits a number of messages which may be helpful when debugging.
 
 ```ts
-stageLinq.discovery.on('listening', () => {
+StageLinq.discovery.on('listening', () => {
   console.log(`[DISCOVERY] Listening`)
 });
 
-stageLinq.discovery.on('announcing', (info) => {
+StageLinq.discovery.on('announcing', (info) => {
   console.log(`[DISCOVERY] Broadcasting Announce ${info.deviceId.string} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
 });
 
-stageLinq.discovery.on('newDiscoveryDevice', (info) => {
+StageLinq.discovery.on('newDiscoveryDevice', (info) => {
   console.log(`[DISCOVERY] New Device ${info.deviceId.string} ${info.source} ${info.software.name} ${info.software.version}`)
 });
 
-stageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
+StageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
   console.log(`[DISCOVERY] Updated Device ${info.deviceId.string} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
 });
 ```
@@ -112,15 +111,14 @@ public getDevices(): ConnectionInfo[] {
 
 
 
-
 ## StateMap
 ```ts
-stageLinq.stateMap.on('newDevice', (service: StateMapDevice) => {
+StateMap.emitter.on('newDevice', (service: StateMapDevice) => {
     console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
     service.subscribe();
 });
 
-stageLinq.stateMap.on('stateMessage', async (data: StateData) => {
+StateMap.emitter.on('stateMessage', async (data: StateData) => {
     console.log(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
   });
 ```
@@ -151,39 +149,38 @@ async function songLoaded(data: StateData) {
   }
 }
 
-stageLinq.stateMap.on('newDevice', async (service: StateMapDevice) => {
+StateMap.emitter,on('newDevice', async (service: StateMapDevice) => {
   console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
-  const info = stageLinq.devices.device(service.deviceId).info
+  const info = StageLinq.devices.device(service.deviceId).info
   for (let i = 1; i <= info.unit.decks; i++) {
     service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
     service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
   }
-
   service.subscribe();
 });
 ```
 
-## FileTransfer & Databases
+## FileTransfer & Sources
 
 ```ts
-stageLinq.fileTransfer.on('fileTransferProgress', (source, file, txid, progress) => {
+FileTransfer.emitter.on('fileTransferProgress', (source, file, txid, progress) => {
   console.log(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
 });
 
-stageLinq.fileTransfer.on('fileTransferComplete', (source, file, txid) => {
+FileTransfer.emitter.on('fileTransferComplete', (source, file, txid) => {
   console.log(`[FILETRANSFER] Complete ${source.name} id:{${txid}} ${file}`);
 });
 
-stageLinq.fileTransfer.on('newSource', (source: Source) => {
+StageLing.sources.on('newSource', (source: Source) => {
   console.log(`[FILETRANSFER] Source Available: (${source.name})`);
 });
 
-stageLinq.fileTransfer.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
+StageLing.sources.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
   console.log(`[FILETRANSFER] Source Removed: ${sourceName} on ${deviceId.string}`);
 });
 
-stageLinq.databases.on('dbDownloaded', (source: Source) => {
+StageLing.sources.on('dbDownloaded', (source: Source) => {
   console.log(`[FILETRANSFER] Database Downloaded: (${source.name})`);
 });
 ```
@@ -221,9 +218,8 @@ const beatMethod = {
 };
 
 
-stageLinq.beatInfo.on('newBeatInfoDevice', async (beatInfo: BeatInfo) => {
+BeatInfo.emitter.on('newBeatInfoDevice', async (beatInfo: BeatInfo) => {
   console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
-
 
   if (beatMethod.useCallback) {
     beatInfo.startBeatInfo(beatOptions, beatCallback);
@@ -231,7 +227,7 @@ stageLinq.beatInfo.on('newBeatInfoDevice', async (beatInfo: BeatInfo) => {
 
   if (beatMethod.useEvent) {
     beatInfo.startBeatInfo(beatOptions);
-    stageLinq.beatInfo.on('beatMsg', (bd) => {
+    BeatInfo.emitter.on('beatMsg', (bd) => {
       if (bd.message) {
         beatCallback(bd);
       }
@@ -248,7 +244,6 @@ stageLinq.beatInfo.on('newBeatInfoDevice', async (beatInfo: BeatInfo) => {
 
     setTimeout(beatFunc, 4000, beatInfo)
   }
-
 })
 
 ```

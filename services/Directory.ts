@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
 import { ReadContext, WriteContext, sleep } from '../utils';
-import { ServiceMessage, MessageId, Units } from '../types';
+import { ServiceMessage, Units } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { StageLinq } from '../StageLinq';
@@ -13,6 +13,12 @@ import {
   TimeSynchronization,
 } from '../services'
 
+
+enum MessageId {
+  ServicesAnnouncement = 0x0,
+  TimeStamp = 0x1,
+  ServicesRequest = 0x2,
+}
 
 export interface DirectoryData {
   deviceId: string;

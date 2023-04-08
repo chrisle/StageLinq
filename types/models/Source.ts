@@ -1,4 +1,4 @@
-import { DbConnection } from '../../Sources';
+import { DbConnection } from '../../Sources/DbConnection';
 import { FileTransfer } from '../../services';
 import { DeviceId } from '../../devices/DeviceId';
 

@@ -10,7 +10,7 @@ import { StageLinq } from '../StageLinq';
 
 const DOWNLOAD_TIMEOUT = 60000; // in ms
 const MAGIC_MARKER = 'fltx';
-export const CHUNK_SIZE = 4096;
+const CHUNK_SIZE = 4096;
 
 export interface FileTransferData {
   service: FileTransfer;
@@ -264,9 +264,7 @@ export class FileTransfer extends Service<FileTransferData> {
    * @returns {Promise<Uint8Array>} Contents of the file.
    */
   async getFile(source: Source, location: string): Promise<Uint8Array> {
-    // while (!this.#isAvailable) {
-    //   await sleep(500)
-    // }
+
     await this.isAvailable();
     this.#isAvailable = false;
     assert(this.receivedFile === null);
@@ -331,7 +329,7 @@ export class FileTransfer extends Service<FileTransferData> {
    * Gets new sources and deletes those which have been removed
    * @param {string[]} sources  an array of current sources from device
    */
-  async updateSources(sources: string[]) {
+  private async updateSources(sources: string[]) {
     const currentSources = StageLinq.sources.getSources(this.deviceId);
     const currentSourceNames = currentSources.map(source => source.name);
 
@@ -342,7 +340,6 @@ export class FileTransfer extends Service<FileTransferData> {
       StageLinq.sources.deleteSource(source.name, source.deviceId)
 
     }
-
     if (newSources.length) {
       this.getSources(newSources);
     }
@@ -352,7 +349,7 @@ export class FileTransfer extends Service<FileTransferData> {
    * Get Sources from Device
    * @param {sources[]} sources Array of sources
    */
-  async getSources(sources: string[]) {
+  private async getSources(sources: string[]) {
     const result: Source[] = [];
 
     for (const source of sources) {

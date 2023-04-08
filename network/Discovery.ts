@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
-import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, Action, IpAddress, Units } from '../types';
+import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, IpAddress, Units } from '../types';
 import { sleep, WriteContext, ReadContext } from '../utils';
 import { DeviceId } from '../devices'
 import { Socket, RemoteInfo, createSocket } from 'dgram';
@@ -13,6 +13,11 @@ import { StageLinq } from '../StageLinq';
 const ANNOUNCEMENT_INTERVAL = 1000;
 const LISTEN_PORT = 51337;
 const DISCOVERY_MESSAGE_MARKER = 'airD';
+
+enum Action {
+    Login = 'DISCOVERER_HOWDY_',
+    Logout = 'DISCOVERER_EXIT_',
+}
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 

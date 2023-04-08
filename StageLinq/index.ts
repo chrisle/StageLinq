@@ -1,5 +1,4 @@
 import { Discovery } from '../network';
-import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { ActingAsDevice, StageLinqOptions } from '../types';
 import { Devices, DeviceId } from '../devices'
@@ -17,7 +16,7 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
 /**
  * Main StageLinq class.
  */
-export class StageLinq extends EventEmitter {
+export class StageLinq {
   static options: StageLinqOptions;
   static readonly devices = new Devices();
   static readonly discovery: Discovery = new Discovery();
@@ -34,7 +33,6 @@ export class StageLinq extends EventEmitter {
    * @param {StageLinqOptions} [options]
    */
   constructor(options?: StageLinqOptions) {
-    super();
     StageLinq.options = options || DEFAULT_OPTIONS;
   }
 
@@ -48,7 +46,7 @@ export class StageLinq extends EventEmitter {
     new(_deviceId?: DeviceId): T;
   }, deviceId?: DeviceId): Promise<T> {
     const service = new ctor(deviceId);
-    await service.listen();
+    await service.start();
     return service;
   }
 

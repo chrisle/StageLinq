@@ -19,7 +19,7 @@ export class Devices extends EventEmitter {
    * @returns {Device}
    */
   addDevice(info: ConnectionInfo): Device {
-    const device = new Device(info, this);
+    const device = new Device(info);
     this.#devices.set(device.deviceId.string, device)
     this.emit('newDevice', device)
     return device
@@ -98,8 +98,7 @@ export class Devices extends EventEmitter {
 
 }
 
-export class Device extends EventEmitter {
-  readonly parent: Devices;
+export class Device {
   readonly deviceId: DeviceId;
   info: ConnectionInfo;
   private services: Map<string, InstanceType<typeof Service>> = new Map();
@@ -107,12 +106,9 @@ export class Device extends EventEmitter {
   /**
    * @constructor
    * @param {connectionInfo} info 
-   * @param {Devices} parent 
    */
-  constructor(info: ConnectionInfo, parent: Devices) {
-    super();
+  constructor(info: ConnectionInfo) {
     this.deviceId = info.deviceId;
-    this.parent = parent;
     this.info = info;
   }
 

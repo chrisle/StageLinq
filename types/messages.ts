@@ -1,15 +1,5 @@
 import { DeviceId } from '../devices/DeviceId';
 
-export enum Action {
-    Login = 'DISCOVERER_HOWDY_',
-    Logout = 'DISCOVERER_EXIT_',
-}
-
-export enum MessageId {
-    ServicesAnnouncement = 0x0,
-    TimeStamp = 0x1,
-    ServicesRequest = 0x2,
-}
 
 export interface DiscoveryMessage {
     deviceId: DeviceId;
