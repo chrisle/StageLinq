@@ -1,6 +1,6 @@
 import { ActingAsDevice, StageLinqOptions, ServiceList, Source } from '../types';
 import { DeviceId } from '../devices'
-import { StateData, StateMap, BeatData, BeatInfo, FileTransfer } from '../services';
+import { StateData, StateMap, BeatData, BeatInfo, FileTransfer, Broadcast } from '../services';
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import { Logger } from '../LogEmitter';
@@ -27,6 +27,7 @@ function progressBar(size: number, bytes: number, total: number): string {
 async function getTrackInfo(sourceName: string, deviceId: DeviceId, trackName: string) {
   while (!StageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
     await sleep(1000);
+    //console.log('still sleeping on getTrackInfo')
   }
   try {
     const source = StageLinq.sources.getSource(sourceName, deviceId);
@@ -67,6 +68,7 @@ async function main() {
       ServiceList.StateMap,
       ServiceList.FileTransfer,
       ServiceList.BeatInfo,
+      ServiceList.Broadcast,
     ],
   }
 
@@ -121,6 +123,10 @@ async function main() {
   StageLinq.devices.on('newService', (device, service) => {
     console.log(`[DEVICES] New ${service.name} Service on ${device.deviceId.string} port ${service.serverInfo.port}`)
   });
+
+  Broadcast.emitter.on('message', (deviceId: DeviceId, name: string, value) => {
+    console.log(`[BROADCAST] ${deviceId.string} ${name}`, value)
+  })
 
 
   if (stageLinqOptions.services.includes(ServiceList.StateMap)) {
