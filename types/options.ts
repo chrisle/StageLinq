@@ -1,5 +1,6 @@
 import { version } from '../package.json';
 import { DeviceId } from '../devices/DeviceId';
+//import * as Services from '../services'
 
 export interface DiscoveryMessageOptions {
     name: string;
@@ -21,6 +22,7 @@ export enum ServiceList {
     StateMap = "StateMap",
     FileTransfer = "FileTransfer",
     BeatInfo = "BeatInfo",
+    Broadcast = "Broadcast",
     TimeSynchronization = "TimeSynchronization",
     Directory = "Directory",
 }
