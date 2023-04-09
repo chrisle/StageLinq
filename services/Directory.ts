@@ -11,6 +11,7 @@ import {
   FileTransfer,
   BeatInfo,
   TimeSynchronization,
+  Broadcast,
 } from '../services'
 
 
@@ -105,6 +106,7 @@ export class Directory extends Service<DirectoryData> {
    * @param {DeviceId} deviceId 
    * @param {Socket} socket
    */
+
   private async sendServiceAnnouncement(deviceId: DeviceId, socket: Socket): Promise<void> {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.ServicesRequest);
@@ -132,6 +134,11 @@ export class Directory extends Service<DirectoryData> {
           case 'TimeSynchronization': {
             const timeSync = await StageLinq.startServiceListener(TimeSynchronization, deviceId)
             services.push(timeSync);
+            break;
+          }
+          case 'Broadcast': {
+            const broadcast = await StageLinq.startServiceListener(Broadcast, deviceId)
+            services.push(broadcast);
             break;
           }
           default:
