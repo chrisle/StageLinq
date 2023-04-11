@@ -3,11 +3,12 @@ import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
 import { ReadContext, WriteContext, sleep } from '../utils';
 import { Service } from './Service';
-import type { ServiceMessage, Source } from '../types';
+import type { ServiceMessage } from '../types';
+import { Database, Source } from '../Sources'
 import { DeviceId } from '../devices'
 import { StageLinq } from '../StageLinq';
 
-
+const MESSAGE_TIMEOUT = 5000; // in ms
 const DOWNLOAD_TIMEOUT = 60000; // in ms
 const MAGIC_MARKER = 'fltx';
 const CHUNK_SIZE = 4096;
@@ -29,9 +30,22 @@ enum MessageId {
   SourceLocations = 0x3,
   FileTransferId = 0x4,
   FileTransferChunk = 0x5,
+  DataUpdate = 0x6,
   Unknown0 = 0x8,
   DeviceShutdown = 0x9,
   RequestSources = 0x7d2,
+  WalOn = 0x1,
+  WalOff = 0x0,
+}
+
+enum Action {
+  RequestStat = 0x7d1,
+  RequestSources = 0x7d2,
+  Unknown1 = 0x7d3,
+  RequestFileTransferId = 0x7d4,
+  RequestChunkRange = 0x7d5,
+  TransferComplete = 0x7d6,
+  WalMode = 0x7d9,
 }
 
 export interface FileTransferProgress {
@@ -50,36 +64,27 @@ export declare interface FileTransfer {
 export class FileTransfer extends Service<FileTransferData> {
   public name: string = "FileTransfer";
   private receivedFile: WriteContext = null;
-  static #instances: Map<string, FileTransfer> = new Map()
   static readonly emitter: EventEmitter = new EventEmitter();
-  #txid: number = 1;
+  static #txid: number = 2;
   #isAvailable: boolean = true;
 
   constructor(deviceId?: DeviceId) {
     super(deviceId)
-    FileTransfer.#instances.set(this.deviceId.string, this)
     this.addListener('newDevice', (service: FileTransfer) => FileTransfer.fileTransferListener('newDevice', service))
     this.addListener('newSource', (source: Source) => FileTransfer.fileTransferListener('newSource', source))
     this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => FileTransfer.fileTransferListener('newSource', name, deviceId))
     this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => FileTransfer.fileTransferListener('fileTransferProgress', source, fileName, txid, progress))
     this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => FileTransfer.fileTransferListener('fileTransferComplete', source, fileName, txid))
   }
-  // TODO need better txId to handle concurrent transfers
-  public get txid() {
-    return this.#txid;
-  }
 
+  private get newTxid() {
+    const txid = parseInt(FileTransfer.#txid.toString())
+    FileTransfer.#txid++
+    return txid;
+  }
 
   private static fileTransferListener(eventName: string, ...args: any) {
     FileTransfer.emitter.emit(eventName, ...args)
-  }
-
-  static getInstance(deviceId: DeviceId): FileTransfer {
-    return FileTransfer.#instances.get(deviceId.string)
-  }
-
-  static getInstances(): string[] {
-    return [...FileTransfer.#instances.keys()]
   }
 
   protected parseData(ctx: ReadContext): ServiceMessage<FileTransferData> {
@@ -116,14 +121,14 @@ export class FileTransfer extends Service<FileTransferData> {
           const location = ctx.readNetworkStringUTF16();
           sources.push(location);
         }
-        // Final three bytes should be 0x1 0x1 0x1
-        assert(ctx.readUInt8() === 0x1);
-        assert(ctx.readUInt8() === 0x1);
-        assert(ctx.readUInt8() === 0x1);
-        assert(ctx.isEOF());
 
+        // Final three bytes should be 0x1 0x1 0x1 for Sources, 0x1 0x1 0x0 for dir/ls
+        const signOff = ctx.read(3);
+        assert(ctx.isEOF());
         Logger.silly(`getting sources for `, this.deviceId.string);
-        this.updateSources(sources);
+        if (signOff[2] === 1) {
+          this.updateSources(sources);
+        }
 
         return {
           id: messageId,
@@ -139,7 +144,7 @@ export class FileTransfer extends Service<FileTransferData> {
       case MessageId.FileStat: {
         assert(ctx.sizeLeft() === 53);
         // Last 4 bytes (FAT32) indicate size of file
-        ctx.seek(49);
+        ctx.seek(49)
         const size = ctx.readUInt32();
 
         return {
@@ -202,9 +207,21 @@ export class FileTransfer extends Service<FileTransferData> {
         };
       }
 
+      case MessageId.DataUpdate: {
+        return {
+          id: messageId,
+          message: {
+            service: this,
+            deviceId: this.deviceId,
+            txid: txId,
+            data: ctx.readRemainingAsNewBuffer(),
+          },
+        };
+      }
+
       case MessageId.Unknown0: {
         //sizeLeft() of 6 means its not an offline analyzer
-        this.requestSources();
+        this.requestSources(1);
 
         return {
           id: messageId,
@@ -235,18 +252,34 @@ export class FileTransfer extends Service<FileTransferData> {
 
       default:
         {
-          assert.fail(`File Transfer Unhandled message id '${messageId}'`);
+          const remaining = ctx.readRemainingAsNewBuffer()
+          Logger.error(`File Transfer Unhandled message id '${messageId}'`, remaining.toString('hex'));
         }
         break;
     }
   }
 
   protected messageHandler(data: ServiceMessage<FileTransferData>): void {
+    if (data && data.id && data.id !== MessageId.FileTransferChunk) {
+      const msgData = { ...data.message }
+      delete msgData.service
+      delete msgData.deviceId
+      if (msgData.data) {
+        delete msgData.data
+      }
+      Logger.silly(data.message.deviceId.string, MessageId[data.id], msgData)
+    }
+
+
+    if (data.id === MessageId.DataUpdate) {
+      // console.warn(`[DataUpdate]`, data.message.data.toString('hex'))
+    }
+
     this.emit('fileMessage', data);
     if (data && data.id === MessageId.FileTransferChunk && this.receivedFile) {
       this.receivedFile.write(data.message.data);
     }
-    if (data && data.id === MessageId.RequestSources) {
+    if (data && data.id === Action.RequestSources) {
       this.sendNoSourcesReply(data.message);
     }
   }
@@ -263,13 +296,16 @@ export class FileTransfer extends Service<FileTransferData> {
    * @param {string} location Location of the file on the device.
    * @returns {Promise<Uint8Array>} Contents of the file.
    */
-  async getFile(source: Source, location: string): Promise<Uint8Array> {
+  async getFile(source: Source, location: string, _transfer?: Transfer): Promise<Uint8Array> {
+
+    const transfer = _transfer || new Transfer(source, location, this.newTxid)
+
 
     await this.isAvailable();
     this.#isAvailable = false;
     assert(this.receivedFile === null);
-    await this.requestFileTransferId(location);
-    const txinfo = await this.waitForMessage('fileMessage', MessageId.FileTransferId);
+    await this.requestFileTransferId(location, transfer.txid);
+    const txinfo = await this.waitForFileMessage('fileMessage', MessageId.FileTransferId, transfer.txid);
     if (txinfo) {
       this.receivedFile = new WriteContext({ size: txinfo.size });
       const totalChunks = Math.ceil(txinfo.size / CHUNK_SIZE);
@@ -281,7 +317,7 @@ export class FileTransfer extends Service<FileTransferData> {
         this.#isAvailable = true;
         return;
       }
-      await this.requestChunkRange(1, 0, totalChunks - 1);
+      await this.requestChunkRange(transfer.txid, 0, totalChunks - 1);
 
       try {
         await new Promise(async (resolve, reject) => {
@@ -292,7 +328,7 @@ export class FileTransfer extends Service<FileTransferData> {
           while (this.receivedFile.isEOF() === false) {
             const bytesDownloaded = total - this.receivedFile.sizeLeft();
             const percentComplete = (bytesDownloaded / total) * 100;
-            this.emit('fileTransferProgress', source, location.split('/').pop(), this.txid, {
+            this.emit('fileTransferProgress', source, location.split('/').pop(), transfer.txid, {
               sizeLeft: this.receivedFile.sizeLeft(),
               total: txinfo.size,
               bytesDownloaded: bytesDownloaded,
@@ -303,7 +339,7 @@ export class FileTransfer extends Service<FileTransferData> {
             await sleep(200);
           }
           Logger.debug(`Download complete.`);
-          this.emit('fileTransferComplete', source, location.split('/').pop(), this.#txid)
+          this.emit('fileTransferComplete', source, location.split('/').pop(), transfer.txid)
           resolve(true);
         });
       } catch (err) {
@@ -314,9 +350,10 @@ export class FileTransfer extends Service<FileTransferData> {
         throw new Error(msg);
       }
 
-      Logger.debug(`Signaling transfer complete.`);
-      await this.signalTransferComplete();
-      this.#txid++
+      if (!_transfer) {
+        Logger.info(`Signaling transfer complete.`);
+        await this.signalTransferComplete(transfer.txid);
+      }
     }
 
     const buf = this.receivedFile ? this.receivedFile.getBuffer() : null;
@@ -352,52 +389,99 @@ export class FileTransfer extends Service<FileTransferData> {
   private async getSources(sources: string[]) {
     const result: Source[] = [];
 
+
     for (const source of sources) {
       //try to retrieve V2.x Database2/m.db first. If file doesn't exist or 0 size, retrieve V1.x /m.db
-      const databases = [`/${source}/Engine Library/Database2/m.db`, `/${source}/Engine Library/m.db`];
-      for (const database of databases) {
-        await this.requestStat(database);
-        const fstatMessage = await this.waitForMessage('fileMessage', MessageId.FileStat);
 
-        if (fstatMessage.size > 0) {
+      const thisSource: Source = {
+        name: source,
+        deviceId: this.deviceId,
+        service: this,
+        databases: [],
+        dbFiles: ['m.db']
+      }
 
-          const thisSource: Source = {
-            name: source,
-            deviceId: this.deviceId,
-            service: this,
-            database: {
-              size: fstatMessage.size,
-              remote: {
-                location: database,
-                device: this.deviceId,
-              }
-            }
-          }
-          StageLinq.sources.setSource(thisSource);
-          this.emit('newSource', thisSource)
-          result.push(thisSource);
+      for (const database of thisSource.dbFiles) {
+        const dbPath = `/${source}/Engine Library/Database2`
+        const _transfer = new Transfer(thisSource, `${dbPath}/${database}`, this.newTxid)
+        await this.swapWalMode(1, _transfer.txid);
+        await this.requestStat(_transfer.filepath, _transfer.txid);
+        const fstatMessage = await this.waitForFileMessage('fileMessage', MessageId.FileStat, _transfer.txid);
 
-          if (StageLinq.options.downloadDbSources) {
-            StageLinq.sources.downloadDb(thisSource);
-          }
-          break;
+        if (fstatMessage.size > 126976) {
+
+          const db = new Database(database, fstatMessage.size, dbPath, _transfer.source, _transfer)
+
+          console.log(`{${_transfer.txid}} file: ${db.remoteDBPath} size: ${db.size}`)
+          thisSource.databases.push(db)
+
+          await this.signalMessageComplete(_transfer.txid)
+        } else {
+          await this.signalMessageComplete(_transfer.txid)
         }
       }
+      StageLinq.sources.setSource(thisSource);
+
+      this.emit('newSource', thisSource)
+      result.push(thisSource);
+
+      if (StageLinq.options.downloadDbSources) {
+        await StageLinq.sources.downloadDbs(thisSource);
+      }
     }
+  }
+
+  async getSourceDirInfo(source: Source) {
+    const dbPath = `/${source.name}/Engine Library/Database2`
+    const transfer = new Transfer(source, dbPath, this.newTxid)
+    let returnList: string[][] = [];
+    try {
+      await this.requestPathInfo(transfer.filepath, transfer.txid);
+      const dbFileList = await this.waitForFileMessage('fileMessage', MessageId.SourceLocations, transfer.txid);
+      //thisSource.dbFiles = dbFileList.sources;
+      console.log(`Contents of ${transfer.filepath}`, dbFileList.sources);
+      for (const file of dbFileList.sources) {
+        const _transfer = new Transfer(source, `${dbPath}/${file}`, this.newTxid)
+        await this.requestStat(_transfer.filepath, _transfer.txid);
+        const fstatMessage = await this.waitForFileMessage('fileMessage', MessageId.FileStat, _transfer.txid);
+        returnList.push([_transfer.txid.toString(), file, fstatMessage.size.toString()])
+      }
+    } catch (err) {
+      console.log(err)
+    }
+    console.log(returnList);
+
+
   }
 
   ///////////////////////////////////////////////////////////////////////////
   // Private methods
 
+  private async waitForFileMessage(eventMessage: string, messageId: number, txid: number): Promise<FileTransferData> {
+    return await new Promise((resolve, reject) => {
+      const listener = (message: ServiceMessage<FileTransferData>) => {
+        if (message.id === messageId && message.message?.txid === txid) {
+          this.removeListener(eventMessage, listener);
+          resolve(message.message);
+        }
+      };
+      this.addListener(eventMessage, listener);
+      setTimeout(() => {
+        reject(new Error(`Failed to receive message '${messageId}' on time`));
+      }, MESSAGE_TIMEOUT);
+    });
+  }
+
+
   /**
    * Request fstat on file from Device
    * @param {string} filepath 
    */
-  private async requestStat(filepath: string): Promise<void> {
+  private async requestStat(filepath: string, txid: number): Promise<void> {
     // 0x7d1: seems to request some sort of fstat on a file
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(this.#txid);
+    ctx.writeUInt32(txid);
     ctx.writeUInt32(0x7d1);
     ctx.writeNetworkStringUTF16(filepath);
     await this.writeWithLength(ctx);
@@ -406,13 +490,23 @@ export class FileTransfer extends Service<FileTransferData> {
   /**
    * Request current sources attached to device
    */
-  private async requestSources(): Promise<void> {
+  private async requestSources(txid: number): Promise<void> {
     // 0x7d2: Request available sources
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(this.#txid);
+    ctx.writeUInt32(txid);
     ctx.writeUInt32(0x7d2); // Database query
     ctx.writeUInt32(0x0);
+    await this.writeWithLength(ctx);
+  }
+
+  async requestPathInfo(path: string, txid: number): Promise<void> {
+    // 0x7d2: Request available sources
+    const ctx = new WriteContext();
+    ctx.writeFixedSizedString(MAGIC_MARKER);
+    ctx.writeUInt32(txid);
+    ctx.writeUInt32(0x7d2); // Database query
+    ctx.writeNetworkStringUTF16(path)
     await this.writeWithLength(ctx);
   }
 
@@ -420,11 +514,11 @@ export class FileTransfer extends Service<FileTransferData> {
    * Request TxId for file
    * @param {string} filepath 
    */
-  private async requestFileTransferId(filepath: string): Promise<void> {
+  private async requestFileTransferId(filepath: string, txid: number): Promise<void> {
     // 0x7d4: Request transfer id?
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(this.#txid);
+    ctx.writeUInt32(txid);
     ctx.writeUInt32(0x7d4);
     ctx.writeNetworkStringUTF16(filepath);
     ctx.writeUInt32(0x0); // Not sure why we need 0x0 here
@@ -441,10 +535,10 @@ export class FileTransfer extends Service<FileTransferData> {
     // 0x7d5: seems to be the code to request chunk range
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(this.#txid);
+    ctx.writeUInt32(txid);
     ctx.writeUInt32(0x7d5);
     ctx.writeUInt32(0x0);
-    ctx.writeUInt32(txid);  //TODO This isn't txid is it?
+    ctx.writeUInt32(0x1);  //TODO This isn't txid is it?
     ctx.writeUInt32(0x0);
     ctx.writeUInt32(chunkStartId);
     ctx.writeUInt32(0x0);
@@ -455,15 +549,23 @@ export class FileTransfer extends Service<FileTransferData> {
   /**
    * Signal Transfer Completed
    */
-  private async signalTransferComplete(): Promise<void> {
+  private async signalTransferComplete(txid: number): Promise<void> {
     // 0x7d6: seems to be the code to signal transfer completed
     const ctx = new WriteContext();
     ctx.writeFixedSizedString(MAGIC_MARKER);
-    ctx.writeUInt32(this.#txid);
+    ctx.writeUInt32(txid);
     ctx.writeUInt32(0x7d6);
     await this.writeWithLength(ctx);
   }
 
+  private async signalMessageComplete(txid: number): Promise<void> {
+    // 0x7d6: seems to be the code to signal transfer completed
+    const ctx = new WriteContext();
+    ctx.writeFixedSizedString(MAGIC_MARKER);
+    ctx.writeUInt32(txid);
+    ctx.writeUInt32(0x7d3);
+    await this.writeWithLength(ctx);
+  }
   /**
    * Reply to Devices requesting our sources
    * @param {FileTransferData} data 
@@ -479,6 +581,16 @@ export class FileTransfer extends Service<FileTransferData> {
     await this.writeWithLength(ctx);
   }
 
+  private async swapWalMode(action: 0 | 1, txid: number): Promise<void> {
+    // 0x7d9: swap Wal Mode?
+    const ctx = new WriteContext();
+    ctx.writeFixedSizedString(MAGIC_MARKER);
+    ctx.writeUInt32(txid);
+    ctx.writeUInt32(0x7d9);
+    ctx.writeInt32(action);
+    await this.writeWithLength(ctx);
+  }
+
   /**
    * Promise will resolve when service is available
    */
@@ -488,4 +600,22 @@ export class FileTransfer extends Service<FileTransferData> {
     }
   }
 
+}
+
+export class Transfer extends EventEmitter {
+  static readonly emitter: EventEmitter = new EventEmitter();
+  #txid: number;
+  source: Source = null;
+  filepath: string = null;
+
+  constructor(source: Source, filepath: string, txid: number) {
+    super()
+    this.source = source;
+    this.filepath = filepath
+    this.#txid = txid;
+  }
+
+  get txid() {
+    return this.#txid
+  }
 }

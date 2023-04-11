@@ -15,6 +15,7 @@ export class DbConnection {
     this.dbPath = dbPath;
     Logger.debug(`Opening ${this.dbPath}`);
     this.db = new Database(this.dbPath);
+    this.db.pragma('journal_mode = WAL');
   }
 
   /**

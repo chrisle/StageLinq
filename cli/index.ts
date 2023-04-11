@@ -1,6 +1,7 @@
-import { ActingAsDevice, StageLinqOptions, ServiceList, Source } from '../types';
+import { ActingAsDevice, StageLinqOptions, ServiceList } from '../types';
 import { DeviceId } from '../devices'
 import { StateData, StateMap, BeatData, BeatInfo, FileTransfer, Broadcast } from '../services';
+import { Source } from '../Sources'
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
 import { Logger } from '../LogEmitter';
@@ -27,12 +28,12 @@ function progressBar(size: number, bytes: number, total: number): string {
 async function getTrackInfo(sourceName: string, deviceId: DeviceId, trackName: string) {
   while (!StageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
     await sleep(1000);
-    //console.log('still sleeping on getTrackInfo')
   }
   try {
     const source = StageLinq.sources.getSource(sourceName, deviceId);
-    const connection = source.database.local.connection;
+    const connection = source.databases[0].connection;
     const result = await connection.getTrackInfo(trackName);
+    connection.close();
     return result;
   } catch (e) {
     console.error(e);
@@ -65,9 +66,9 @@ async function main() {
     downloadDbSources: true,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
-      ServiceList.StateMap,
+      //ServiceList.StateMap,
       ServiceList.FileTransfer,
-      ServiceList.BeatInfo,
+      //ServiceList.BeatInfo,
       ServiceList.Broadcast,
     ],
   }
@@ -126,6 +127,10 @@ async function main() {
 
   Broadcast.emitter.on('message', (deviceId: DeviceId, name: string, value) => {
     console.log(`[BROADCAST] ${deviceId.string} ${name}`, value)
+    const db = StageLinq.sources.getDBByUuid(value.databaseUuid)
+    if (db.length) console.log('[BROADCAST] Found DB ', db[0].uuid);
+
+
   })
 
 
@@ -167,7 +172,7 @@ async function main() {
     });
 
     StateMap.emitter.on('stateMessage', async (data: StateData) => {
-      console.log(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
+      Logger.debug(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
     });
 
   }
@@ -177,7 +182,7 @@ async function main() {
 
 
     FileTransfer.emitter.on('fileTransferProgress', (source, file, txid, progress) => {
-      console.log(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
+      Logger.debug(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
     });
 
     FileTransfer.emitter.on('fileTransferComplete', (source, file, txid) => {
