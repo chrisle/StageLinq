@@ -438,7 +438,6 @@ export class FileTransfer extends Service<FileTransferData> {
     try {
       await this.requestPathInfo(transfer.filepath, transfer.txid);
       const dbFileList = await this.waitForFileMessage('fileMessage', MessageId.SourceLocations, transfer.txid);
-      //thisSource.dbFiles = dbFileList.sources;
       console.log(`Contents of ${transfer.filepath}`, dbFileList.sources);
       for (const file of dbFileList.sources) {
         const _transfer = new Transfer(source, `${dbPath}/${file}`, this.newTxid)
@@ -450,8 +449,6 @@ export class FileTransfer extends Service<FileTransferData> {
       console.log(err)
     }
     console.log(returnList);
-
-
   }
 
   ///////////////////////////////////////////////////////////////////////////
@@ -538,7 +535,7 @@ export class FileTransfer extends Service<FileTransferData> {
     ctx.writeUInt32(txid);
     ctx.writeUInt32(0x7d5);
     ctx.writeUInt32(0x0);
-    ctx.writeUInt32(0x1);  //TODO This isn't txid is it?
+    ctx.writeUInt32(0x1);
     ctx.writeUInt32(0x0);
     ctx.writeUInt32(chunkStartId);
     ctx.writeUInt32(0x0);
@@ -602,14 +599,13 @@ export class FileTransfer extends Service<FileTransferData> {
 
 }
 
-export class Transfer extends EventEmitter {
+export class Transfer {
   static readonly emitter: EventEmitter = new EventEmitter();
   #txid: number;
   source: Source = null;
   filepath: string = null;
 
   constructor(source: Source, filepath: string, txid: number) {
-    super()
     this.source = source;
     this.filepath = filepath
     this.#txid = txid;

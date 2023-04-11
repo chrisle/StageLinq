@@ -66,9 +66,9 @@ async function main() {
     downloadDbSources: true,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
-      //ServiceList.StateMap,
+      ServiceList.StateMap,
       ServiceList.FileTransfer,
-      //ServiceList.BeatInfo,
+      ServiceList.BeatInfo,
       ServiceList.Broadcast,
     ],
   }
@@ -125,13 +125,16 @@ async function main() {
     console.log(`[DEVICES] New ${service.name} Service on ${device.deviceId.string} port ${service.serverInfo.port}`)
   });
 
-  Broadcast.emitter.on('message', (deviceId: DeviceId, name: string, value) => {
-    console.log(`[BROADCAST] ${deviceId.string} ${name}`, value)
-    const db = StageLinq.sources.getDBByUuid(value.databaseUuid)
-    if (db.length) console.log('[BROADCAST] Found DB ', db[0].uuid);
 
+  if (stageLinqOptions.services.includes(ServiceList.Broadcast)) {
 
-  })
+    Broadcast.emitter.on('message', (deviceId: DeviceId, name: string, value) => {
+      console.log(`[BROADCAST] ${deviceId.string} ${name}`, value)
+      const db = StageLinq.sources.getDBByUuid(value.databaseUuid)
+      if (db.length) console.log('[BROADCAST] Found DB ', db[0].uuid);
+    })
+
+  }
 
 
   if (stageLinqOptions.services.includes(ServiceList.StateMap)) {

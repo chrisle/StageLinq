@@ -68,20 +68,20 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     //     await this.write(ctx, this.socket);
     // };
 
-    protected parseData(p_ctx: ReadContext): ServiceMessage<TimeSyncData> {
+    protected parseData(ctx: ReadContext): ServiceMessage<TimeSyncData> {
         const timestamp = this.getTimeStamp();
-        const size = p_ctx.readUInt32();
+        const size = ctx.readUInt32();
 
         if (size === 0) {
-            const deviceId = new DeviceId(p_ctx.read(16))
-            const svcName = p_ctx.readNetworkStringUTF16();
-            const svcPort = p_ctx.readUInt16();
+            const deviceId = new DeviceId(ctx.read(16))
+            const svcName = ctx.readNetworkStringUTF16();
+            const svcPort = ctx.readUInt16();
             console.log(deviceId.string, svcName, svcPort)
         } else {
-            const id = p_ctx.readUInt32();
+            const id = ctx.readUInt32();
             const msgs: bigint[] = []
-            while (p_ctx.sizeLeft()) {
-                msgs.push(p_ctx.readUInt64())
+            while (ctx.sizeLeft()) {
+                msgs.push(ctx.readUInt64())
             };
             return {
                 id: id,

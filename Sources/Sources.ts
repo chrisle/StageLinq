@@ -27,15 +27,7 @@ export declare interface Sources {
 }
 
 export class Sources extends EventEmitter {
-  private _sources: Map<string, Source> = new Map();
-
-  /**
-   * @constructor
-   * @param {StageLinq} parent 
-   */
-  constructor() {
-    super();
-  }
+  #sources: Map<string, Source> = new Map();
 
   /** 
    * Check if sources has Source
@@ -44,7 +36,7 @@ export class Sources extends EventEmitter {
    * @returns {boolean} true if has source 
    */
   hasSource(sourceName: string, deviceId: DeviceId): boolean {
-    return this._sources.has(`${deviceId.string}${sourceName}`);
+    return this.#sources.has(`${deviceId.string}${sourceName}`);
   }
 
   /** 
@@ -54,7 +46,7 @@ export class Sources extends EventEmitter {
    * @returns {boolean} true if has Source AND the source has downloaded DB
    */
   hasSourceAndDB(sourceName: string, deviceId: DeviceId): boolean {
-    const source = this._sources.get(`${deviceId.string}${sourceName}`);
+    const source = this.#sources.get(`${deviceId.string}${sourceName}`);
     const dbs = source.databases.filter(db => db.downloaded)
     return (source && dbs.length) ? true : false
   }
@@ -66,7 +58,7 @@ export class Sources extends EventEmitter {
    * @returns {Source}
    */
   getSource(sourceName: string, deviceId: DeviceId): Source {
-    return this._sources.get(`${deviceId.string}${sourceName}`);
+    return this.#sources.get(`${deviceId.string}${sourceName}`);
   }
 
   /**
@@ -76,10 +68,10 @@ export class Sources extends EventEmitter {
    */
   getSources(deviceId?: DeviceId): Source[] {
     if (deviceId) {
-      const filteredMap = new Map([...this._sources.entries()].filter(entry => entry[0].substring(0, 36) == deviceId.string))
+      const filteredMap = new Map([...this.#sources.entries()].filter(entry => entry[0].substring(0, 36) == deviceId.string))
       return [...filteredMap.values()]
     }
-    return [...this._sources.values()]
+    return [...this.#sources.values()]
   }
 
   /**
@@ -87,7 +79,7 @@ export class Sources extends EventEmitter {
    * @param {Source} source 
    */
   setSource(source: Source) {
-    this._sources.set(`${source.deviceId.string}${source.name}`, source);
+    this.#sources.set(`${source.deviceId.string}${source.name}`, source);
     this.emit('newSource', source);
   }
 
@@ -97,13 +89,17 @@ export class Sources extends EventEmitter {
    * @param {DeviceId} deviceId 
    */
   deleteSource(sourceName: string, deviceId: DeviceId) {
-    this._sources.delete(`${deviceId.string}${sourceName}`)
+    this.#sources.delete(`${deviceId.string}${sourceName}`)
     this.emit('sourceRemoved', sourceName, deviceId);
   }
 
+  /**
+   * Get Databases by UUID
+   * @param {string} uuid 
+   * @returns {Database[]}
+   */
   getDBByUuid(uuid: string): Database[] {
-    const dbs = [...this._sources.values()].map(src => src.databases).flat(1)
-
+    const dbs = [...this.#sources.values()].map(src => src.databases).flat(1)
     return dbs.filter(db => db.uuid == uuid)
   }
 
@@ -126,11 +122,15 @@ export class Sources extends EventEmitter {
     }
   }
 
+  /**
+   * Download DBs from source
+   * @param {Source} source 
+   */
   async downloadDbs(source: Source) {
     Logger.debug(`downloadDb request for ${source.name}`);
     for (const database of source.databases) {
-      console.log(`downloading ${database.filename}`)
-      await database.downloadDb(source)
+      Logger.info(`downloading ${database.filename}`)
+      await database.downloadDb();
     }
     this.emit('dbDownloaded', source);
     this.setSource(source);
@@ -144,28 +144,32 @@ type DBInfo = {
 }
 
 export class Database {
-  sourceName: string;
   size: number;
   filename: string;
   remotePath: string;
   localPath: string = null;
   uuid: string = null;
-  db: DbConnection = null;
   source: Source = null;
   txid: number;
   transfer: Transfer = null;
   downloaded: boolean = false;
   static #instances: Map<string, Database> = new Map();
 
+  /**
+   * @constructor
+   * @param {string} filename name of the file EG: 'm.db'
+   * @param {number} size size of the file
+   * @param {string} remotePath remote path (excl filename) of file
+   * @param {Source} source Source that the DB file is on
+   * @param {Transfer} transfer 
+   */
   constructor(filename: string, size: number, remotePath: string, source: Source, transfer: Transfer) {
     this.filename = filename;
     this.size = size;
     this.remotePath = remotePath;
-    this.sourceName = source.name;
     this.transfer = transfer
     this.source = source;
     this.localPath = getTempFilePath(`${source.deviceId.string}/${source.name}/`);
-
   }
 
   get remoteDBPath() {
@@ -184,8 +188,12 @@ export class Database {
     Database.#instances.set(db.uuid, db)
   }
 
-
-  async downloadDb(source: Source) {
+  /**
+   * 
+   * @param source 
+   */
+  async downloadDb() {
+    const source = this.source;
     Logger.info(`Reading database ${source.deviceId.string}/${source.name}/${this.filename}`);
     const file = await source.service.getFile(source, this.remoteDBPath, this.transfer);
     Logger.info(`Saving ${this.remoteDBPath}} to ${this.localDBPath}`);
@@ -193,15 +201,13 @@ export class Database {
     this.downloaded = true;
     await this.processDB();
     Logger.info(`Downloaded ${source.deviceId.string}/${source.name} to ${this.remoteDBPath}`);
-    //source.emit('dbDownloaded', source);
   }
 
-  async processDB() {
-    this.db = new DbConnection(this.localDBPath)
-    const result: DBInfo[] = await this.db.querySource('SELECT * FROM Information LIMIT 1')
+  private async processDB() {
+    const db = new DbConnection(this.localDBPath)
+    const result: DBInfo[] = await db.querySource('SELECT * FROM Information LIMIT 1')
     this.uuid = result[0].uuid
-    this.db.close();
-    this.db = null;
+    db.close();
     this.addInstance(this);
 
     if (StageLinq.options.services.includes(ServiceList.Broadcast)) {
