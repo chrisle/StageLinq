@@ -73,20 +73,23 @@ async function main() {
     ],
   }
 
-  const stageLinq = await new StageLinq(stageLinqOptions);
+  StageLinq.options = stageLinqOptions;
 
-  stageLinq.logger.on('error', (...args: any) => {
+
+  //const stageLinq = await new StageLinq(stageLinqOptions);
+
+  StageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
   });
-  stageLinq.logger.on('warn', (...args: any) => {
+  StageLinq.logger.on('warn', (...args: any) => {
     console.warn(...args);
     args.push("\n");
   });
-  stageLinq.logger.on('info', (...args: any) => {
+  StageLinq.logger.on('info', (...args: any) => {
     console.info(...args);
     args.push("\n");
   });
-  stageLinq.logger.on('log', (...args: any) => {
+  StageLinq.logger.on('log', (...args: any) => {
     console.log(...args);
     args.push("\n");
   });
@@ -280,7 +283,7 @@ async function main() {
       console.info('... exiting');
 
       try {
-        await stageLinq.disconnect();
+        await StageLinq.disconnect();
       } catch (err: any) {
         const message = err.stack.toString();
         console.error(message);
@@ -288,7 +291,7 @@ async function main() {
       process.exit(returnCode);
     });
 
-    await stageLinq.connect();
+    await StageLinq.connect();
 
     while (true) {
       await sleep(250);
@@ -300,7 +303,7 @@ async function main() {
     returnCode = 1;
   }
 
-  await stageLinq.disconnect();
+  await StageLinq.disconnect();
   process.exit(returnCode);
 }
 

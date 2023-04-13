@@ -17,7 +17,7 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
  * Main StageLinq class.
  */
 export class StageLinq {
-  static options: StageLinqOptions;
+  static options: StageLinqOptions = DEFAULT_OPTIONS;
   static readonly devices = new Devices();
   static readonly discovery: Discovery = new Discovery();
   static readonly sources: Sources = new Sources();;
@@ -25,16 +25,16 @@ export class StageLinq {
   static directory: Directory = null;
   static servers: Map<string, Server> = new Map();
 
-  public readonly logger: Logger = Logger.instance;
+  public static readonly logger: Logger = Logger.instance;
 
-  /**
-   * Main StageLinq Class
-   * @constructor
-   * @param {StageLinqOptions} [options]
-   */
-  constructor(options?: StageLinqOptions) {
-    StageLinq.options = options || DEFAULT_OPTIONS;
-  }
+  // /**
+  //  * Main StageLinq Class
+  //  * @constructor
+  //  * @param {StageLinqOptions} [options]
+  //  */
+  // constructor(options?: StageLinqOptions) {
+  //   StageLinq.options = options || DEFAULT_OPTIONS;
+  // }
 
   /**
    * Service Constructor Factory Function
@@ -78,7 +78,7 @@ export class StageLinq {
   /**
    * Connect to the StageLinq network.
    */
-  async connect() {
+  static async connect() {
     //  Initialize Discovery agent
     await StageLinq.discovery.listen(StageLinq.options.actingAs);
 
@@ -93,7 +93,7 @@ export class StageLinq {
    * Disconnect from the StageLinq network.
    * Close all open Servers
    */
-  async disconnect() {
+  static async disconnect() {
     try {
       Logger.warn('disconnecting');
       const servers = StageLinq.getServers();

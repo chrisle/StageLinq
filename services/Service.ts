@@ -256,4 +256,6 @@ export abstract class Service<T> extends EventEmitter {
 	protected abstract parseData(ctx: ReadContext, socket: Socket): ServiceMessage<T>;
 
 	protected abstract messageHandler(data: ServiceMessage<T>): void;
+
+	protected abstract instanceListener(eventName: string, ...args: any): void
 }

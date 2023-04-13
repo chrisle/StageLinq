@@ -61,4 +61,8 @@ export class Broadcast extends Service<BroadcastData> {
             }
         }
     }
+
+    protected instanceListener(eventName: string, ...args: any) {
+        Broadcast.emitter.emit(eventName, ...args)
+    }
 }

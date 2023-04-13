@@ -70,11 +70,11 @@ export class FileTransfer extends Service<FileTransferData> {
 
   constructor(deviceId?: DeviceId) {
     super(deviceId)
-    this.addListener('newDevice', (service: FileTransfer) => FileTransfer.fileTransferListener('newDevice', service))
-    this.addListener('newSource', (source: Source) => FileTransfer.fileTransferListener('newSource', source))
-    this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => FileTransfer.fileTransferListener('newSource', name, deviceId))
-    this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => FileTransfer.fileTransferListener('fileTransferProgress', source, fileName, txid, progress))
-    this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => FileTransfer.fileTransferListener('fileTransferComplete', source, fileName, txid))
+    this.addListener('newDevice', (service: FileTransfer) => this.instanceListener('newDevice', service))
+    this.addListener('newSource', (source: Source) => this.instanceListener('newSource', source))
+    this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => this.instanceListener('newSource', name, deviceId))
+    this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => this.instanceListener('fileTransferProgress', source, fileName, txid, progress))
+    this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => this.instanceListener('fileTransferComplete', source, fileName, txid))
   }
 
   private get newTxid() {
@@ -83,7 +83,7 @@ export class FileTransfer extends Service<FileTransferData> {
     return txid;
   }
 
-  private static fileTransferListener(eventName: string, ...args: any) {
+  protected instanceListener(eventName: string, ...args: any) {
     FileTransfer.emitter.emit(eventName, ...args)
   }
 
@@ -276,6 +276,10 @@ export class FileTransfer extends Service<FileTransferData> {
     }
 
     this.emit('fileMessage', data);
+
+    if (data.message?.txid && this.listenerCount(data.message.txid.toString())) {
+      this.emit(data.message.txid.toString(), data);
+    }
     if (data && data.id === MessageId.FileTransferChunk && this.receivedFile) {
       this.receivedFile.write(data.message.data);
     }
@@ -599,19 +603,51 @@ export class FileTransfer extends Service<FileTransferData> {
 
 }
 
-export class Transfer {
+export class Transfer extends EventEmitter {
   static readonly emitter: EventEmitter = new EventEmitter();
   #txid: number;
   source: Source = null;
   filepath: string = null;
 
   constructor(source: Source, filepath: string, txid: number) {
+    super();
     this.source = source;
-    this.filepath = filepath
+    this.filepath = filepath;
     this.#txid = txid;
+    this.source.service.addListener(txid.toString(), (data) => this.instanceListener(data))
   }
 
   get txid() {
     return this.#txid
   }
+
+  end() {
+    this.source.service.removeListener(this.#txid.toString(), this.instanceListener);
+    this.removeAllListeners();
+    this.#txid = null;
+    this.source = null;
+    this.filepath = null;
+  }
+
+  private instanceListener(data: ServiceMessage<FileTransferData>) {
+    this.emit(MessageId[data.id], data)
+  }
+
+  private async waitForFileMessage(eventMessage: string): Promise<FileTransferData> {
+    return await new Promise((resolve, reject) => {
+      const listener = (message: ServiceMessage<FileTransferData>) => {
+        if (eventMessage === MessageId[message.id]) {
+          this.removeListener(eventMessage, listener);
+          resolve(message.message);
+        }
+      };
+      this.addListener(eventMessage, listener);
+      setTimeout(() => {
+        reject(new Error(`Failed to receive message '${eventMessage}' on time`));
+      }, MESSAGE_TIMEOUT);
+    });
+  }
+
+
+
 }

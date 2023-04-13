@@ -201,6 +201,7 @@ export class Discovery extends EventEmitter {
         connectionInfo.addressPort = [connectionInfo.address, connectionInfo.port].join(":");
         if (Units[connectionInfo.software.name]) {
             connectionInfo.unit = Units[connectionInfo.software.name];
+            //console.log(Units[connectionInfo.software.name])
         }
 
         assert(ctx.isEOF());

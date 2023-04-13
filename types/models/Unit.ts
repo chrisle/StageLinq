@@ -21,6 +21,6 @@ export const Units: Unit = {
     NH08: { name: 'MIXSTREAMPRO', type: 'CONTROLLER', decks: 2 },
     NH09: { name: 'MIXSTREAMPROPLUS', type: 'CONTROLLER', decks: 2 },
     NH10: { name: 'MIXSTREAMPROGO', type: 'CONTROLLER', decks: 2 },
-    //JM08: { name: 'DN-X1800Prime', type: 'MIXER', decks: 0 },
-    //JM10: { name: 'DN-X1850Prime', type: 'MIXER', decks: 0 },
+    JM08: { name: 'DN-X1800Prime', type: 'MIXER', decks: 0 },
+    JM10: { name: 'DN-X1850Prime', type: 'MIXER', decks: 0 },
 }

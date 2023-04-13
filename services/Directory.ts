@@ -1,6 +1,6 @@
 import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
-import { ReadContext, WriteContext, sleep } from '../utils';
+import { ReadContext, WriteContext } from '../utils';
 import { ServiceMessage, Units } from '../types';
 import { DeviceId } from '../devices'
 import { Socket } from 'net';
@@ -58,7 +58,7 @@ export class Directory extends Service<DirectoryData> {
           }
 
           if (deviceInfo && deviceInfo.unit && deviceInfo.unit.type === 'MIXER') {
-            this.sendTimeStampReply(token);
+            setTimeout(this.sendTimeStampReply, 1400, token, socket);
           }
           break;
         case MessageId.ServicesAnnouncement:
@@ -164,7 +164,7 @@ export class Directory extends Service<DirectoryData> {
    * Send TimeStamp reply to Device
    * @param {Uint8Array} token Token from recepient Device
    */
-  private async sendTimeStampReply(token: Uint8Array) {
+  private async sendTimeStampReply(token: Uint8Array, socket: Socket) {
     const ctx = new WriteContext();
     ctx.writeUInt32(MessageId.TimeStamp);
     ctx.write(token);
@@ -172,8 +172,10 @@ export class Directory extends Service<DirectoryData> {
     ctx.writeUInt64(0n);
     const message = ctx.getBuffer();
     assert(message.length === 44);
-    await sleep(1400);
-    await this.socket.write(message);
-    Logger.silly(`sent TimeStamp to ${this.socket.remoteAddress}:${this.socket.remotePort}`);
+    await socket.write(message);
+    Logger.silly(`sent TimeStamp to ${socket.remoteAddress}:${socket.remotePort}`);
+  }
+
+  protected instanceListener() {
   }
 }

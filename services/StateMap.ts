@@ -77,12 +77,12 @@ export class StateMap extends Service<StateData> {
   constructor(deviceId?: DeviceId) {
     super(deviceId)
     StateMap.#instances.set(this.deviceId.string, this)
-    this.addListener('newDevice', (service: StateMap) => StateMap.instanceListener('newDevice', service))
+    this.addListener('newDevice', (service: StateMap) => this.instanceListener('newDevice', service))
     this.addListener('newDevice', (service: StateMap) => StageLinq.status.addDecks(service))
-    this.addListener('stateMessage', (data: StateData) => StateMap.instanceListener('stateMessage', data))
+    this.addListener('stateMessage', (data: StateData) => this.instanceListener('stateMessage', data))
   }
 
-  private static instanceListener(eventName: string, ...args: any) {
+  protected instanceListener(eventName: string, ...args: any) {
     StateMap.emitter.emit(eventName, ...args)
   }
 
