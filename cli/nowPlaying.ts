@@ -1,4 +1,4 @@
-import { ActingAsDevice, StageLinqOptions, ServiceList } from '../types';
+import { ActingAsDevice, StageLinqOptions, Services } from '../types';
 import { DeviceId } from '../devices'
 import { StateData, StateMap } from '../services';
 import { sleep } from '../utils/sleep';
@@ -14,8 +14,8 @@ async function main() {
         downloadDbSources: true,
         actingAs: ActingAsDevice.NowPlaying,
         services: [
-            ServiceList.StateMap,
-            ServiceList.FileTransfer,
+            Services.StateMap,
+            Services.FileTransfer,
         ],
     }
 

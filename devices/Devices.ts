@@ -76,6 +76,11 @@ export class Devices extends EventEmitter {
     await this.#devices.set(deviceId.string, device);
   }
 
+
+  async getDeviceServices(): Promise<InstanceType<typeof Service>[]> {
+    return [...this.#devices.values()].flatMap(device => device.getServices())
+  }
+
   /**
    * 
    * @param {DeviceId} deviceId 
@@ -101,7 +106,7 @@ export class Devices extends EventEmitter {
 export class Device {
   readonly deviceId: DeviceId;
   info: ConnectionInfo;
-  private services: Map<string, InstanceType<typeof Service>> = new Map();
+  #services: Map<string, InstanceType<typeof Service>> = new Map();
 
   /**
    * @constructor
@@ -116,12 +121,30 @@ export class Device {
     return this.info.unit.decks
   }
 
+
+  service(serviceName: string) {
+    return this.#services.get(serviceName)
+  }
+
+  hasService(serviceName: string): boolean {
+    return this.#services.has(serviceName)
+  }
+
+  getServiceNames(): string[] {
+    return [...this.#services.keys()]
+  }
+
+  getServices(): InstanceType<typeof Service>[] {
+    return [...this.#services.values()]
+  }
+
   /**
    * Add an instantiated Service
    * @param {Service} service 
    */
+
   addService(service: InstanceType<typeof Service>) {
-    this.services.set(service.name, service)
+    this.#services.set(service.name, service)
   }
 
   /**
@@ -129,6 +152,6 @@ export class Device {
    * @param {string} serviceName 
    */
   deleteService(serviceName: string) {
-    this.services.delete(serviceName)
+    this.#services.delete(serviceName)
   }
 }

@@ -246,9 +246,9 @@ export abstract class Service<T> extends EventEmitter {
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server) {
 		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
 
-		const serverName = `${serviceName}${deviceId.string}`;
+		//const serverName = `${serviceName}${deviceId.string}`;
 
-		StageLinq.deleteServer(serverName);
+		//StageLinq.deleteServer(serverName);
 		StageLinq.devices.deleteService(deviceId, serviceName);
 		await server.close();
 	}

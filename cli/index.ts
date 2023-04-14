@@ -1,4 +1,4 @@
-import { ActingAsDevice, StageLinqOptions, ServiceList } from '../types';
+import { ActingAsDevice, StageLinqOptions, Services } from '../types';
 import { DeviceId } from '../devices'
 import { StateData, StateMap, BeatData, BeatInfo, FileTransfer, Broadcast } from '../services';
 import { Source } from '../Sources'
@@ -25,20 +25,20 @@ function progressBar(size: number, bytes: number, total: number): string {
   return `[${progressArrary.join('')}]`
 }
 
-async function getTrackInfo(sourceName: string, deviceId: DeviceId, trackName: string) {
-  while (!StageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
-    await sleep(1000);
-  }
-  try {
-    const source = StageLinq.sources.getSource(sourceName, deviceId);
-    const connection = source.databases[0].connection;
-    const result = await connection.getTrackInfo(trackName);
-    connection.close();
-    return result;
-  } catch (e) {
-    console.error(e);
-  }
-}
+// async function getTrackInfo(sourceName: string, deviceId: DeviceId, trackName: string) {
+//   while (!StageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
+//     await sleep(1000);
+//   }
+//   try {
+//     const source = StageLinq.sources.getSource(sourceName, deviceId);
+//     const connection = source.getDatabase().connection;
+//     const result = await connection.getTrackInfo(trackName);
+//     connection.close();
+//     return result;
+//   } catch (e) {
+//     console.error(e);
+//   }
+// }
 
 async function downloadFile(sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
   while (!StageLinq.sources.hasSource(sourceName, deviceId)) {
@@ -66,17 +66,15 @@ async function main() {
     downloadDbSources: true,
     actingAs: ActingAsDevice.StageLinqJS,
     services: [
-      ServiceList.StateMap,
-      ServiceList.FileTransfer,
-      ServiceList.BeatInfo,
-      ServiceList.Broadcast,
+      Services.StateMap,
+      Services.FileTransfer,
+      Services.BeatInfo,
+      Services.Broadcast,
     ],
   }
 
   StageLinq.options = stageLinqOptions;
 
-
-  //const stageLinq = await new StageLinq(stageLinqOptions);
 
   StageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
@@ -121,7 +119,7 @@ async function main() {
 
 
   StageLinq.devices.on('newDevice', (device) => {
-    Logger.debug(`[DEVICES] New Device ${device.deviceId.string}`)
+    console.log(`[DEVICES] New Device ${device.deviceId.string}`)
   });
 
   StageLinq.devices.on('newService', (device, service) => {
@@ -129,49 +127,42 @@ async function main() {
   });
 
 
-  if (stageLinqOptions.services.includes(ServiceList.Broadcast)) {
+  if (stageLinqOptions.services.includes(Services.Broadcast)) {
 
-    Broadcast.emitter.on('message', (deviceId: DeviceId, name: string, value) => {
-      console.log(`[BROADCAST] ${deviceId.string} ${name}`, value)
-      const db = StageLinq.sources.getDBByUuid(value.databaseUuid)
-      if (db.length) console.log('[BROADCAST] Found DB ', db[0].uuid);
+    Broadcast.emitter.on('message', async (deviceId: DeviceId, name: string, value) => {
+      console.log(`[BROADCAST] ${deviceId.string} ${name}`, value);
+      const db = StageLinq.sources.getDBByUuid(value.databaseUuid);
+      if (db.length) {
+        const connection = db[0].connection();
+        const track = await connection.getTrackById(value.trackId);
+        connection.close();
+        console.log('[BROADCAST] Track Changed:', track);
+      }
     })
 
   }
 
 
-  if (stageLinqOptions.services.includes(ServiceList.StateMap)) {
+  if (stageLinqOptions.services.includes(Services.StateMap)) {
 
     async function deckIsMaster(data: StateData) {
       if (data.json.state) {
-        const deck = parseInt(data.name.substring(12, 13))
+        const deck = parseInt(data.name.substring(12, 13));
         await sleep(250);
-        const track = StageLinq.status.getTrack(data.deviceId, deck)
-        console.log(`Now Playing: `, track)
-      }
-    }
-
-    async function songLoaded(data: StateData) {
-      if (data.json.state) {
-        const deck = parseInt(data.name.substring(12, 13))
-        await sleep(250);
-        const track = StageLinq.status.getTrack(data.deviceId, deck)
-        console.log(`[STATUS] Track Loaded: `, track)
-
-        if (stageLinqOptions.services.includes(ServiceList.FileTransfer) && StageLinq.options.downloadDbSources) {
-          const trackInfo = await getTrackInfo(track.source.name, track.source.location, track.TrackNetworkPath);
-          console.log('[STATUS] Track DB Info: ', trackInfo)
+        const track = StageLinq.status.getTrack(data.deviceId, deck);
+        console.log(`Now Playing: `, track);
+        if (stageLinqOptions.services.includes(Services.FileTransfer) && StageLinq.options.downloadDbSources) {
           downloadFile(track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
         }
       }
     }
+
 
     StateMap.emitter.on('newDevice', async (service: StateMap) => {
       console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
       for (let i = 1; i <= service.device.deckCount(); i++) {
         service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
-        service.addListener(`/Engine/Deck${i}/Track/SongLoaded`, songLoaded);
       }
 
       service.subscribe();
@@ -184,7 +175,7 @@ async function main() {
   }
 
 
-  if (stageLinqOptions.services.includes(ServiceList.FileTransfer)) {
+  if (stageLinqOptions.services.includes(Services.FileTransfer)) {
 
 
     FileTransfer.emitter.on('fileTransferProgress', (source, file, txid, progress) => {
@@ -210,20 +201,24 @@ async function main() {
   }
 
 
-  if (stageLinqOptions.services.includes(ServiceList.BeatInfo)) {
+  if (stageLinqOptions.services.includes(Services.BeatInfo)) {
 
-    //  User Options
+    /**
+     * Resolution for triggering callback
+     *    0 = every message WARNING, it's a lot!
+     *    1 = every beat 
+     *    4 = every 4 beats 
+     *    .25 = every 1/4 beat
+     */
     const beatOptions = {
-      // Resolution for triggering callback
-      //    0 = every message WARNING, it's a lot!
-      //    1 = every beat 
-      //    4 = every 4 beats 
-      //    .25 = every 1/4 beat
       everyNBeats: 1,
     }
 
-    //  User callback function. 
-    //  Will be triggered everytime a player's beat counter crosses the resolution threshold
+    /**
+     *  User callback function. 
+     *  Will be triggered everytime a player's beat counter crosses the resolution threshold
+     * @param {BeatData} bd 
+     */
     function beatCallback(bd: BeatData,) {
       let deckBeatString = ""
       for (let i = 0; i < bd.deckCount; i++) {

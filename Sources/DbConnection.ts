@@ -73,6 +73,19 @@ export class DbConnection {
     return result[0];
   }
 
+  async getTrackById(id: number): Promise<TrackDBEntry> {
+    let result: TrackDBEntry[];
+
+    result = this.querySource('SELECT * FROM Track WHERE id = (?) LIMIT 1', id);
+    if (!result) throw new Error(`Could not find track id: ${id} in database.`);
+    result[0].trackData = await this.zInflate(result[0].trackData);
+    result[0].overviewWaveFormData = await this.zInflate(result[0].overviewWaveFormData);
+    result[0].beatData = await this.zInflate(result[0].beatData);
+
+    return result[0];
+  }
+
+
   /**
    * Close DB Connection
    */

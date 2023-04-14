@@ -14,11 +14,11 @@ export interface StageLinqOptions {
     maxRetries?: number;
     actingAs?: DiscoveryMessageOptions;
     downloadDbSources?: boolean;
-    services?: ServiceList[];
+    services?: Services[];
     connectToMixer?: boolean
 }
 
-export enum ServiceList {
+export enum Services {
     StateMap = "StateMap",
     FileTransfer = "FileTransfer",
     BeatInfo = "BeatInfo",

@@ -5,7 +5,6 @@ import { Devices, DeviceId } from '../devices'
 import { Sources } from '../Sources';
 import { Service, Directory } from '../services';
 import { Status } from '../status/Status';
-import { AddressInfo, Server } from 'net';
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
@@ -14,27 +13,17 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
 };
 
 /**
- * Main StageLinq class.
+ * Main StageLinq static class.
  */
 export class StageLinq {
   static options: StageLinqOptions = DEFAULT_OPTIONS;
+  static readonly logger: Logger = Logger.instance;
   static readonly devices = new Devices();
   static readonly discovery: Discovery = new Discovery();
-  static readonly sources: Sources = new Sources();;
+  static readonly sources: Sources = new Sources();
   static readonly status: Status = new Status();
   static directory: Directory = null;
-  static servers: Map<string, Server> = new Map();
 
-  public static readonly logger: Logger = Logger.instance;
-
-  // /**
-  //  * Main StageLinq Class
-  //  * @constructor
-  //  * @param {StageLinqOptions} [options]
-  //  */
-  // constructor(options?: StageLinqOptions) {
-  //   StageLinq.options = options || DEFAULT_OPTIONS;
-  // }
 
   /**
    * Service Constructor Factory Function
@@ -46,33 +35,12 @@ export class StageLinq {
     new(_deviceId?: DeviceId): T;
   }, deviceId?: DeviceId): Promise<T> {
     const service = new ctor(deviceId);
+    if (deviceId) {
+      StageLinq.devices.addService(deviceId, service)
+    }
+
     await service.start();
     return service;
-  }
-
-  /**
-   * Add a Server to the Server Register
-   * @param {string} serverName 
-   * @param {Server} server 
-   */
-  static addServer(serverName: string, server: Server) {
-    StageLinq.servers.set(serverName, server);
-  }
-
-  /**
-   * Remove a Server from the Server Register
-   * @param {string} serverName 
-   */
-  static deleteServer(serverName: string) {
-    StageLinq.servers.delete(serverName);
-  }
-
-  /**
-   * Get All Servers
-   * @returns {IterableIterator<[string, Server]>}
-   */
-  private static getServers() {
-    return StageLinq.servers.entries();
   }
 
   /**
@@ -96,11 +64,11 @@ export class StageLinq {
   static async disconnect() {
     try {
       Logger.warn('disconnecting');
-      const servers = StageLinq.getServers();
-      for (let [serviceName, server] of servers) {
-        const addressInfo = server.address() as AddressInfo;
-        console.log(`Closing ${serviceName} server port ${addressInfo.port}`);
-        await server.close;
+      await this.directory.stop();
+      const services = await StageLinq.devices.getDeviceServices();
+      for (const service of services) {
+        console.log(`closing ${service.name} on ${service.deviceId.string}`);
+        await service.stop()
       }
       await StageLinq.discovery.unannounce();
     } catch (e) {
