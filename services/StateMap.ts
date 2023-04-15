@@ -7,12 +7,7 @@ import { DeviceId } from '../devices'
 import { Socket } from 'net';
 import { Service } from '../services';
 import { StageLinq } from '../StageLinq';
-import * as stagelinqConfig from '../stagelinqConfig.json';
 
-
-export type Player = typeof stagelinqConfig.player;
-export type PlayerDeck = typeof stagelinqConfig.playerDeck;
-export type Mixer = typeof stagelinqConfig.mixer;
 
 const MAGIC_MARKER = 'smaa';
 const MAGIC_MARKER_INTERVAL = 0x000007d2;
@@ -30,7 +25,11 @@ enum Result {
 }
 
 
+// import * as stagelinqConfig from '../stagelinqConfig.json';
 
+// export type Player = typeof stagelinqConfig.player;
+// export type PlayerDeck = typeof stagelinqConfig.playerDeck;
+// export type Mixer = typeof stagelinqConfig.mixer;
 // function stateReducer(obj: any, prefix: string): string[] {
 //   const entries = Object.entries(obj)
 //   const retArr = entries.map(([key, value]) => {
@@ -70,20 +69,21 @@ export class StateMap extends Service<StateData> {
   static #instances: Map<string, StateMap> = new Map()
 
   /**
+   * StateMap Service Class
    * @constructor
    * @param {StageLinq} parent 
    * @param {StateMapHandler} serviceHandler 
    * @param {DeviceId} deviceId 
    */
-  constructor(deviceId?: DeviceId) {
+  constructor(deviceId: DeviceId) {
     super(deviceId)
     StateMap.#instances.set(this.deviceId.string, this)
-    this.addListener('newDevice', (service: StateMap) => StateMap.instanceListener('newDevice', service))
+    this.addListener('newDevice', (service: StateMap) => this.instanceListener('newDevice', service))
     this.addListener('newDevice', (service: StateMap) => StageLinq.status.addDecks(service))
-    this.addListener('stateMessage', (data: StateData) => StateMap.instanceListener('stateMessage', data))
+    this.addListener('stateMessage', (data: StateData) => this.instanceListener('stateMessage', data))
   }
 
-  private static instanceListener(eventName: string, ...args: any) {
+  protected instanceListener(eventName: string, ...args: any) {
     StateMap.emitter.emit(eventName, ...args)
   }
 

@@ -42,6 +42,7 @@ export class BeatInfo extends Service<BeatData> {
 	protected isBufferedService: boolean = true;
 
 	/**
+	 * BeatInfo Service Class
 	 * @constructor
 	 * @param {DeviceId} [deviceId] 
 	 */
@@ -49,13 +50,14 @@ export class BeatInfo extends Service<BeatData> {
 	constructor(deviceId: DeviceId) {
 		super(deviceId)
 		BeatInfo.#instances.set(this.deviceId.string, this)
-		this.addListener('connection', () => BeatInfo.instanceListener('newDevice', this))
-		this.addListener('beatMessage', (data: BeatData) => BeatInfo.instanceListener('beatMessage', data))
+		this.addListener('connection', () => this.instanceListener('newDevice', this))
+		this.addListener('beatMessage', (data: BeatData) => this.instanceListener('beatMessage', data))
 	}
 
-	private static instanceListener(eventName: string, ...args: any) {
+	protected instanceListener(eventName: string, ...args: any) {
 		BeatInfo.emitter.emit(eventName, ...args)
 	}
+
 	static getInstances(): string[] {
 		return [...BeatInfo.#instances.keys()]
 	}

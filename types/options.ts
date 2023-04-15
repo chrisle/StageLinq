@@ -1,5 +1,6 @@
 import { version } from '../package.json';
 import { DeviceId } from '../devices/DeviceId';
+//import * as Services from '../services'
 
 export interface DiscoveryMessageOptions {
     name: string;
@@ -13,14 +14,15 @@ export interface StageLinqOptions {
     maxRetries?: number;
     actingAs?: DiscoveryMessageOptions;
     downloadDbSources?: boolean;
-    services?: ServiceList[];
+    services?: Services[];
     connectToMixer?: boolean
 }
 
-export enum ServiceList {
+export enum Services {
     StateMap = "StateMap",
     FileTransfer = "FileTransfer",
     BeatInfo = "BeatInfo",
+    Broadcast = "Broadcast",
     TimeSynchronization = "TimeSynchronization",
     Directory = "Directory",
 }

@@ -15,6 +15,7 @@ export class DbConnection {
     this.dbPath = dbPath;
     Logger.debug(`Opening ${this.dbPath}`);
     this.db = new Database(this.dbPath);
+    this.db.pragma('journal_mode = WAL');
   }
 
   /**
@@ -54,23 +55,31 @@ export class DbConnection {
    * @returns {Promise<Track>}
    */
   async getTrackInfo(_trackPath: string): Promise<TrackDBEntry> {
-    let result: TrackDBEntry[];
-
-    //console.dir(_trackPath.split('/'))
     const trackPath = _trackPath.split('/').slice(5, _trackPath.length).join('/')
-    //console.log(trackPath)
-    //if (/streaming:\/\//.test(trackPath)) {
-    //  result = this.querySource('SELECT * FROM Track WHERE uri = (?) LIMIT 1', trackPath);
-    //} else {
-    result = this.querySource('SELECT * FROM Track WHERE path = (?) LIMIT 1', trackPath);
-    //}
+    const result: TrackDBEntry[] = this.querySource('SELECT * FROM Track WHERE path = (?) LIMIT 1', trackPath);
     if (!result) throw new Error(`Could not find track: ${trackPath} in database.`);
+
     result[0].trackData = await this.zInflate(result[0].trackData);
     result[0].overviewWaveFormData = await this.zInflate(result[0].overviewWaveFormData);
     result[0].beatData = await this.zInflate(result[0].beatData);
 
     return result[0];
   }
+
+  /**
+   * 
+   * @param {number} id /ID of track in the database
+   * @returns {Promise<TrackDBEntry>}
+   */
+  async getTrackById(id: number): Promise<TrackDBEntry> {
+    const result: TrackDBEntry[] = this.querySource('SELECT * FROM Track WHERE id = (?) LIMIT 1', id);
+    if (!result) throw new Error(`Could not find track id: ${id} in database.`);
+    result[0].trackData = await this.zInflate(result[0].trackData);
+    result[0].overviewWaveFormData = await this.zInflate(result[0].overviewWaveFormData);
+    result[0].beatData = await this.zInflate(result[0].beatData);
+    return result[0];
+  }
+
 
   /**
    * Close DB Connection

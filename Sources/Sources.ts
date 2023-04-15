@@ -1,10 +1,12 @@
 import { EventEmitter } from 'events';
-import { Source } from '../types';
+import { Services } from '../types';
 import { DeviceId } from '../devices'
 import { Logger } from '../LogEmitter';
 import * as fs from 'fs';
 import { DbConnection } from './DbConnection';
 import { getTempFilePath } from '../utils';
+import { StageLinq } from '../StageLinq';
+import { Broadcast, BroadcastMessage, FileTransfer } from '../services';
 
 
 export declare interface Sources {
@@ -18,15 +20,12 @@ export declare interface Sources {
 }
 
 export class Sources extends EventEmitter {
-  private _sources: Map<string, Source> = new Map();
+  #sources: Map<string, Source> = new Map();
 
   /**
-   * @constructor
-   * @param {StageLinq} parent 
+   * Sources EndPoint Class
    */
-  constructor() {
-    super();
-  }
+
 
   /** 
    * Check if sources has Source
@@ -35,7 +34,7 @@ export class Sources extends EventEmitter {
    * @returns {boolean} true if has source 
    */
   hasSource(sourceName: string, deviceId: DeviceId): boolean {
-    return this._sources.has(`${deviceId.string}${sourceName}`);
+    return this.#sources.has(`${deviceId.string}${sourceName}`);
   }
 
   /** 
@@ -45,8 +44,9 @@ export class Sources extends EventEmitter {
    * @returns {boolean} true if has Source AND the source has downloaded DB
    */
   hasSourceAndDB(sourceName: string, deviceId: DeviceId): boolean {
-    const source = this._sources.get(`${deviceId.string}${sourceName}`);
-    return (source && source.database?.local) ? true : false
+    const source = this.#sources.get(`${deviceId.string}${sourceName}`);
+    const dbs = source.getDatabases().filter(db => db.downloaded)
+    return (source && dbs.length) ? true : false
   }
 
   /**
@@ -56,7 +56,7 @@ export class Sources extends EventEmitter {
    * @returns {Source}
    */
   getSource(sourceName: string, deviceId: DeviceId): Source {
-    return this._sources.get(`${deviceId.string}${sourceName}`);
+    return this.#sources.get(`${deviceId.string}${sourceName}`);
   }
 
   /**
@@ -66,10 +66,10 @@ export class Sources extends EventEmitter {
    */
   getSources(deviceId?: DeviceId): Source[] {
     if (deviceId) {
-      const filteredMap = new Map([...this._sources.entries()].filter(entry => entry[0].substring(0, 36) == deviceId.string))
+      const filteredMap = new Map([...this.#sources.entries()].filter(entry => entry[0].substring(0, 36) == deviceId.string))
       return [...filteredMap.values()]
     }
-    return [...this._sources.values()]
+    return [...this.#sources.values()]
   }
 
   /**
@@ -77,7 +77,7 @@ export class Sources extends EventEmitter {
    * @param {Source} source 
    */
   setSource(source: Source) {
-    this._sources.set(`${source.deviceId.string}${source.name}`, source);
+    this.#sources.set(`${source.deviceId.string}${source.name}`, source);
     this.emit('newSource', source);
   }
 
@@ -87,8 +87,18 @@ export class Sources extends EventEmitter {
    * @param {DeviceId} deviceId 
    */
   deleteSource(sourceName: string, deviceId: DeviceId) {
-    this._sources.delete(`${deviceId.string}${sourceName}`)
+    this.#sources.delete(`${deviceId.string}${sourceName}`)
     this.emit('sourceRemoved', sourceName, deviceId);
+  }
+
+  /**
+   * Get Databases by UUID
+   * @param {string} uuid 
+   * @returns {Database[]}
+   */
+  getDBByUuid(uuid: string): Database[] {
+    const dbs = [...this.#sources.values()].map(src => src.getDatabases()).flat(1)
+    return dbs.filter(db => db.uuid == uuid)
   }
 
   /**
@@ -98,7 +108,7 @@ export class Sources extends EventEmitter {
    * @returns {Promise<Uint8Array>}
    */
   async downloadFile(source: Source, path: string): Promise<Uint8Array> {
-    const service = source.service;
+    const service = StageLinq.devices.device(source.deviceId).service('FileTransfer') as FileTransfer;
     await service.isAvailable();
 
     try {
@@ -109,23 +119,165 @@ export class Sources extends EventEmitter {
       throw new Error(err);
     }
   }
-  async downloadDb(source: Source) {
 
+  /**
+   * Download DBs from source
+   * @param {Source} source 
+   */
+  async downloadDbs(source: Source) {
     Logger.debug(`downloadDb request for ${source.name}`);
-    const dbPath = getTempFilePath(`${source.deviceId.string}/${source.name}/m.db`);
-    Logger.debug(`Reading database ${source.deviceId.string}/${source.name}`);
-
-    const file = await source.service.getFile(source, source.database.remote.location);
-    Logger.debug(`Saving ${source.deviceId.string}/${source.name} to ${dbPath}`);
-    fs.writeFileSync(dbPath, Buffer.from(file));
-
-    source.database.local = {
-      path: dbPath,
-      connection: new DbConnection(dbPath)
-    };
-    this.setSource(source);
-    Logger.debug(`Downloaded ${source.deviceId.string}/${source.name} to ${dbPath}`);
+    for (const database of source.getDatabases()) {
+      Logger.info(`downloading ${database.filename}`)
+      await database.downloadDb();
+    }
     this.emit('dbDownloaded', source);
+    this.setSource(source);
+    Logger.debug(`Downloaded ${source.deviceId.string}/${source.name}`);
   }
 }
 
+type DBInfo = {
+  id: number;
+  uuid: string;
+}
+
+export class Source {
+  name: string;
+  deviceId: DeviceId;
+  #databases: Map<string, Database> = new Map();
+
+  /**
+   * Source Type Class
+   * @constructor
+   * @param {string} name 
+   * @param {DeviceId} deviceId 
+   */
+
+
+  constructor(name: string, deviceId: DeviceId) {
+    this.name = name;
+    this.deviceId = deviceId;
+  }
+  /**
+   * Get a Database by File Name
+   * @param {string }name Filename eg "m.db"
+   * @returns {Database}
+   */
+  getDatabase(name?: string): Database {
+    return this.#databases.get(name || "m.db")
+  }
+
+  /**
+   * Get an array of all Databases
+   * @returns {Database[]}
+   */
+
+  getDatabases(): Database[] {
+    return [...this.#databases.values()]
+  }
+
+  /**
+   * New Database Constructor
+   * @param {string} filename 
+   * @param {number} size 
+   * @param {string} remotePath 
+   * @returns 
+   */
+  newDatabase(filename: string, size: number, remotePath: string): Database {
+    const db = new Database(filename, size, remotePath, this)
+    this.#databases.set(db.filename, db);
+    return db
+  }
+
+}
+
+
+class Database {
+  deviceId: DeviceId = null;
+  size: number;
+  filename: string;
+  remotePath: string;
+  localPath: string = null;
+  uuid: string = null;
+  source: Source = null;
+  sourceName: string = null;
+  txid: number;
+  downloaded: boolean = false;
+
+  /**
+   * Database Type Class
+   * @constructor
+   * @param {string} filename name of the file EG: 'm.db'
+   * @param {number} size size of the file
+   * @param {string} remotePath remote path (excl filename) of file
+   * @param {Source} source Source that the DB file is on
+   * @param {Transfer} transfer 
+   */
+  constructor(filename: string, size: number, remotePath: string, source: Source) {
+    this.filename = filename;
+    this.size = size;
+    this.remotePath = remotePath;
+    this.sourceName = source.name;
+    this.source = source;
+    this.deviceId = source.deviceId;
+    this.localPath = getTempFilePath(`${source.deviceId.string}/${source.name}/`);
+  }
+
+  /**
+   * Get full remote path & filename
+   */
+  get remoteDBPath() {
+    return `${this.remotePath}/${this.filename}`
+  }
+
+  /**
+   * Get full local path & filename
+   */
+  get localDBPath() {
+    return `${this.localPath}/${this.filename}`
+  }
+
+  /**
+   * Create new Connection to the DB for Querying
+   * @returns {DbConnection}
+   */
+  connection(): DbConnection {
+    return new DbConnection(this.localDBPath)
+  }
+
+
+  /**
+   * Downloads the Database
+   */
+  async downloadDb() {
+    const source = StageLinq.sources.getSource(this.sourceName, this.deviceId)
+    const service = StageLinq.devices.device(this.deviceId).service("FileTransfer") as FileTransfer;
+
+    Logger.info(`Reading database ${source.deviceId.string}/${source.name}/${this.filename}`);
+    const file = await service.getFile(source, this.remoteDBPath);
+    Logger.info(`Saving ${this.remoteDBPath}} to ${this.localDBPath}`);
+    fs.writeFileSync(this.localDBPath, Buffer.from(file));
+    this.downloaded = true;
+    await this.processDB();
+    Logger.info(`Downloaded ${source.deviceId.string}/${source.name} to ${this.remoteDBPath}`);
+  }
+
+  private async processDB() {
+    const db = new DbConnection(this.localDBPath)
+    const result: DBInfo[] = await db.querySource('SELECT * FROM Information LIMIT 1')
+    this.uuid = result[0].uuid
+    db.close();
+
+    if (StageLinq.options.services.includes(Services.Broadcast)) {
+      Broadcast.emitter.addListener(this.uuid, (key, value) => this.broadcastListener(key, value))
+      Logger.debug(`Sources added broadcast listener for ${this.uuid}`);
+    }
+  }
+
+  private broadcastListener(key: string, value: BroadcastMessage) {
+    Logger.silly(`MSG FROM BROADCAST ${key}`, value);
+    // const service = StageLinq.devices.device(this.deviceId).service('FileTransfer') as FileTransfer
+    // service.getSourceDirInfo(this.source);
+  }
+
+}

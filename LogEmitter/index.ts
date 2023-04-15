@@ -12,14 +12,17 @@ export declare interface Logger {
 }
 
 export class Logger extends EventEmitter {
-
   private logStream: fs.WriteStream = null;
   private static _instance: Logger;
   private timeStart: number;
 
-  constructor (_fileName?: string) {
+
+  /**
+   * Logger Utility Class
+   * @param {string} _fileName 
+   */
+  constructor(_fileName?: string) {
     super();
-    
     const fileName = _fileName || 'log.txt';
     this.logStream = fs.createWriteStream(fileName);//, {flags: 'a'});
     const hrTime = process.hrtime();
@@ -32,7 +35,7 @@ export class Logger extends EventEmitter {
     return this._instance || (this._instance = new this());
   }
 
-  private logEntry(...args: any){
+  private logEntry(...args: any) {
     const hrTime = process.hrtime();
     const logTime = Math.floor((hrTime[0] * 1000000 + hrTime[1] / 1000));
     this.logStream.write(`[${logTime - this.timeStart}] ${[args.join(' ')]}\n`);

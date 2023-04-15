@@ -1,21 +1,15 @@
 import { EventEmitter } from 'events';
 import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
-import { MessageId, ServiceMessage } from '../types';
+import { ServiceMessage } from '../types';
 import { DeviceId, Device } from '../devices';
 import { ReadContext, WriteContext } from '../utils';
-import { Server, Socket, AddressInfo, createServer } from 'net';
+import { Server, Socket, AddressInfo, createServer as CreateServer } from 'net';
 import { StageLinq } from '../StageLinq';
 
 
 const MESSAGE_TIMEOUT = 3000; // in ms
 
-export declare type ServiceData = {
-	name?: string;
-	socket?: Socket;
-	deviceId?: DeviceId;
-	service?: InstanceType<typeof Service>;
-}
 
 export abstract class Service<T> extends EventEmitter {
 	static instances: Map<string, InstanceType<typeof Service>> = new Map();
@@ -48,7 +42,7 @@ export abstract class Service<T> extends EventEmitter {
 	private async startServer(): Promise<Server> {
 		return await new Promise((resolve, reject) => {
 
-			const server = createServer((socket) => {
+			const server = CreateServer((socket) => {
 				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
 
 				clearTimeout(this.timeout);
@@ -80,7 +74,7 @@ export abstract class Service<T> extends EventEmitter {
 	 * Start Service Listener
 	 * @returns {Promise<AddressInfo>}
 	 */
-	async listen(): Promise<AddressInfo> {
+	async start(): Promise<AddressInfo> {
 		const server = await this.startServer();
 		return server.address() as AddressInfo;
 	}
@@ -88,7 +82,7 @@ export abstract class Service<T> extends EventEmitter {
 	/**
 	 * Close Server
 	 */
-	closeServer() {
+	async stop() {
 		assert(this.server);
 		try {
 			this.server.close();
@@ -155,9 +149,9 @@ export abstract class Service<T> extends EventEmitter {
 			(assert(ctx.sizeLeft() >= 2));
 			ctx.readUInt16(); //read port, though we don't need it
 
-			Logger.silent(`${MessageId[messageId]} to ${serviceName} from ${this.deviceId.string}`);
+			Logger.silent(`${messageId} request to ${serviceName} from ${this.deviceId.string}`);
 			if (this.device) {
-				this.device.parent.emit('newService', this.device, this)
+				StageLinq.devices.emit('newService', this.device, this)
 			}
 			this.emit('newDevice', this);
 		}
@@ -198,7 +192,7 @@ export abstract class Service<T> extends EventEmitter {
 	 * @param {number} messageId 
 	 * @returns {Promise<T>}
 	 */
-	async waitForMessage(eventMessage: string, messageId: number): Promise<T> {
+	protected async waitForMessage(eventMessage: string, messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
 			const listener = (message: ServiceMessage<T>) => {
 				if (message.id === messageId) {
@@ -218,7 +212,7 @@ export abstract class Service<T> extends EventEmitter {
 	 * @param {WriteContext} ctx 
 	 * @returns {Promise<boolean>} true if data written
 	 */
-	async write(ctx: WriteContext): Promise<boolean> {
+	protected async write(ctx: WriteContext): Promise<boolean> {
 		assert(ctx.isLittleEndian() === false);
 		const buf = ctx.getBuffer();
 		const written = await this.socket.write(buf);
@@ -230,7 +224,7 @@ export abstract class Service<T> extends EventEmitter {
 	 * @param {WriteContext} ctx 
 	 * @returns {Promise<boolean>} true if data written
 	 */
-	async writeWithLength(ctx: WriteContext): Promise<boolean> {
+	protected async writeWithLength(ctx: WriteContext): Promise<boolean> {
 		assert(ctx.isLittleEndian() === false);
 		const newCtx = new WriteContext({ size: ctx.tell() + 4, autoGrow: false });
 		newCtx.writeUInt32(ctx.tell());
@@ -252,15 +246,16 @@ export abstract class Service<T> extends EventEmitter {
 	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server) {
 		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
 
-		await server.close();
+		//const serverName = `${serviceName}${deviceId.string}`;
 
-		const serverName = `${serviceName}${deviceId.string}`;
-		StageLinq.deleteServer(serverName);
-
+		//StageLinq.deleteServer(serverName);
 		StageLinq.devices.deleteService(deviceId, serviceName);
+		await server.close();
 	}
 
 	protected abstract parseData(ctx: ReadContext, socket: Socket): ServiceMessage<T>;
 
 	protected abstract messageHandler(data: ServiceMessage<T>): void;
+
+	protected abstract instanceListener(eventName: string, ...args: any): void
 }

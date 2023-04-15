@@ -19,7 +19,7 @@ export class Devices extends EventEmitter {
    * @returns {Device}
    */
   addDevice(info: ConnectionInfo): Device {
-    const device = new Device(info, this);
+    const device = new Device(info);
     this.#devices.set(device.deviceId.string, device)
     this.emit('newDevice', device)
     return device
@@ -77,6 +77,14 @@ export class Devices extends EventEmitter {
   }
 
   /**
+   * Get an array of all current Service Instances
+   * @returns {Promise<InstanceType<typeof Service>[]>}
+   */
+  async getDeviceServices(): Promise<InstanceType<typeof Service>[]> {
+    return [...this.#devices.values()].flatMap(device => device.getServices())
+  }
+
+  /**
    * 
    * @param {DeviceId} deviceId 
    * @param {Service} service 
@@ -98,34 +106,69 @@ export class Devices extends EventEmitter {
 
 }
 
-export class Device extends EventEmitter {
-  readonly parent: Devices;
+export class Device {
   readonly deviceId: DeviceId;
   info: ConnectionInfo;
-  private services: Map<string, InstanceType<typeof Service>> = new Map();
+  #services: Map<string, InstanceType<typeof Service>> = new Map();
 
   /**
    * @constructor
    * @param {connectionInfo} info 
-   * @param {Devices} parent 
    */
-  constructor(info: ConnectionInfo, parent: Devices) {
-    super();
+  constructor(info: ConnectionInfo) {
     this.deviceId = info.deviceId;
-    this.parent = parent;
     this.info = info;
   }
 
+  /**
+   * Get # of decks on this device
+   * @returns {number}
+   */
   deckCount(): number {
     return this.info.unit.decks
+  }
+
+  /**
+   * Get a service instance by name
+   * @param {string} serviceName 
+   * @returns {InstanceType<typeof Service>}
+   */
+  service(serviceName: string): InstanceType<typeof Service> {
+    return this.#services.get(serviceName)
+  }
+
+  /**
+   * Check if Device has Service
+   * @param {string} serviceName 
+   * @returns {boolean}
+   */
+  hasService(serviceName: string): boolean {
+    return this.#services.has(serviceName)
+  }
+
+  /**
+   * Get an Array of names of all current Services on this Device
+   * @returns {string[]}
+   */
+  getServiceNames(): string[] {
+    return [...this.#services.keys()]
+  }
+
+  /**
+   * Get an Array of all current Services on this Device
+   * @returns {InstanceType<typeof Service>[]}
+   */
+  getServices(): InstanceType<typeof Service>[] {
+    return [...this.#services.values()]
   }
 
   /**
    * Add an instantiated Service
    * @param {Service} service 
    */
+
   addService(service: InstanceType<typeof Service>) {
-    this.services.set(service.name, service)
+    this.#services.set(service.name, service)
   }
 
   /**
@@ -133,6 +176,6 @@ export class Device extends EventEmitter {
    * @param {string} serviceName 
    */
   deleteService(serviceName: string) {
-    this.services.delete(serviceName)
+    this.#services.delete(serviceName)
   }
 }

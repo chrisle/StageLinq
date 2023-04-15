@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
-import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, Action, IpAddress, Units } from '../types';
+import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, IpAddress, Units } from '../types';
 import { sleep, WriteContext, ReadContext } from '../utils';
 import { DeviceId } from '../devices'
 import { Socket, RemoteInfo, createSocket } from 'dgram';
@@ -13,6 +13,11 @@ import { StageLinq } from '../StageLinq';
 const ANNOUNCEMENT_INTERVAL = 1000;
 const LISTEN_PORT = 51337;
 const DISCOVERY_MESSAGE_MARKER = 'airD';
+
+enum Action {
+    Login = 'DISCOVERER_HOWDY_',
+    Logout = 'DISCOVERER_EXIT_',
+}
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
@@ -33,12 +38,13 @@ export class Discovery extends EventEmitter {
     private announceTimer: NodeJS.Timer;
     private hasLooped: boolean = false;
 
+
     /**
-     * Discovery Class
-     * @constructor
+     * Discovery Network Class
+     
      */
     constructor() {
-        super();
+        super()
     }
 
     /**
@@ -196,6 +202,7 @@ export class Discovery extends EventEmitter {
         connectionInfo.addressPort = [connectionInfo.address, connectionInfo.port].join(":");
         if (Units[connectionInfo.software.name]) {
             connectionInfo.unit = Units[connectionInfo.software.name];
+            //console.log(Units[connectionInfo.software.name])
         }
 
         assert(ctx.isEOF());
