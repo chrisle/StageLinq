@@ -63,6 +63,7 @@ export class Track implements Partial<ITrackData> {
   TrackURI: string = "";
 
   /**
+   * Track Type Class
    * @constructor
    * @param {string} prefix State prefix that should proceed the property
    */

@@ -22,6 +22,11 @@ export declare interface Sources {
 export class Sources extends EventEmitter {
   #sources: Map<string, Source> = new Map();
 
+  /**
+   * Sources EndPoint Class
+   */
+
+
   /** 
    * Check if sources has Source
    * @param {string} sourceName - Name of source in EngineOS, eg: 'DJ STICK (USB 1)'
@@ -141,19 +146,43 @@ export class Source {
   deviceId: DeviceId;
   #databases: Map<string, Database> = new Map();
 
+  /**
+   * Source Type Class
+   * @constructor
+   * @param {string} name 
+   * @param {DeviceId} deviceId 
+   */
+
+
   constructor(name: string, deviceId: DeviceId) {
     this.name = name;
     this.deviceId = deviceId;
   }
-
-  getDatabase(name?: string) {
+  /**
+   * Get a Database by File Name
+   * @param {string }name Filename eg "m.db"
+   * @returns {Database}
+   */
+  getDatabase(name?: string): Database {
     return this.#databases.get(name || "m.db")
   }
+
+  /**
+   * Get an array of all Databases
+   * @returns {Database[]}
+   */
 
   getDatabases(): Database[] {
     return [...this.#databases.values()]
   }
 
+  /**
+   * New Database Constructor
+   * @param {string} filename 
+   * @param {number} size 
+   * @param {string} remotePath 
+   * @returns 
+   */
   newDatabase(filename: string, size: number, remotePath: string): Database {
     const db = new Database(filename, size, remotePath, this)
     this.#databases.set(db.filename, db);
@@ -176,6 +205,7 @@ class Database {
   downloaded: boolean = false;
 
   /**
+   * Database Type Class
    * @constructor
    * @param {string} filename name of the file EG: 'm.db'
    * @param {number} size size of the file
@@ -193,15 +223,25 @@ class Database {
     this.localPath = getTempFilePath(`${source.deviceId.string}/${source.name}/`);
   }
 
+  /**
+   * Get full remote path & filename
+   */
   get remoteDBPath() {
     return `${this.remotePath}/${this.filename}`
   }
 
+  /**
+   * Get full local path & filename
+   */
   get localDBPath() {
     return `${this.localPath}/${this.filename}`
   }
 
-  connection() {
+  /**
+   * Create new Connection to the DB for Querying
+   * @returns {DbConnection}
+   */
+  connection(): DbConnection {
     return new DbConnection(this.localDBPath)
   }
 

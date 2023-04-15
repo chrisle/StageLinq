@@ -38,12 +38,13 @@ export class Discovery extends EventEmitter {
     private announceTimer: NodeJS.Timer;
     private hasLooped: boolean = false;
 
+
     /**
-     * Discovery Class
-     * @constructor
+     * Discovery Network Class
+     
      */
     constructor() {
-        super();
+        super()
     }
 
     /**

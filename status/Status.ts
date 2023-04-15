@@ -8,6 +8,9 @@ import { DeviceId } from '../devices'
 export class Status extends EventEmitter {
     private tracks: Map<string, Track> = new Map();
 
+    /**
+     * Status EndPoint Class
+     */
 
     /**
      * Get Track Info from Status

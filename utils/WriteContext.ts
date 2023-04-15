@@ -11,6 +11,11 @@ interface WriteContextConstructOptions {
 export class WriteContext extends Context {
 	autoGrow: boolean;
 
+	/**
+	 * WriteContext Utility Class
+	 * @internal
+	 * @param {WriteContextConstructOptions} p_options 
+	 */
 	constructor(p_options?: WriteContextConstructOptions) {
 		const buffer = new ArrayBuffer(p_options && p_options.size > 0 ? p_options.size : 128);
 		super(buffer, !p_options ? false : !!p_options.littleEndian);

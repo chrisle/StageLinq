@@ -20,6 +20,15 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     private remoteTime: bigint;
     private avgTimeArray: bigint[] = [];
 
+    /**
+     * TimeSynchronization Service Class
+     * @tag Experimental
+     * @constructor
+     * @param deviceId 
+     */
+    constructor(deviceId: DeviceId) {
+        super(deviceId)
+    }
 
     public async sendTimeSyncRequest() {
         const ctx = new WriteContext();

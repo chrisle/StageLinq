@@ -76,7 +76,10 @@ export class Devices extends EventEmitter {
     await this.#devices.set(deviceId.string, device);
   }
 
-
+  /**
+   * Get an array of all current Service Instances
+   * @returns {Promise<InstanceType<typeof Service>[]>}
+   */
   async getDeviceServices(): Promise<InstanceType<typeof Service>[]> {
     return [...this.#devices.values()].flatMap(device => device.getServices())
   }
@@ -117,23 +120,44 @@ export class Device {
     this.info = info;
   }
 
+  /**
+   * Get # of decks on this device
+   * @returns {number}
+   */
   deckCount(): number {
     return this.info.unit.decks
   }
 
-
-  service(serviceName: string) {
+  /**
+   * Get a service instance by name
+   * @param {string} serviceName 
+   * @returns {InstanceType<typeof Service>}
+   */
+  service(serviceName: string): InstanceType<typeof Service> {
     return this.#services.get(serviceName)
   }
 
+  /**
+   * Check if Device has Service
+   * @param {string} serviceName 
+   * @returns {boolean}
+   */
   hasService(serviceName: string): boolean {
     return this.#services.has(serviceName)
   }
 
+  /**
+   * Get an Array of names of all current Services on this Device
+   * @returns {string[]}
+   */
   getServiceNames(): string[] {
     return [...this.#services.keys()]
   }
 
+  /**
+   * Get an Array of all current Services on this Device
+   * @returns {InstanceType<typeof Service>[]}
+   */
   getServices(): InstanceType<typeof Service>[] {
     return [...this.#services.values()]
   }

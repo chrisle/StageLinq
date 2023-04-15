@@ -17,13 +17,24 @@ export interface BroadcastData {
     [key: string]: any
 }
 
+
+
 export class Broadcast extends Service<BroadcastData> {
     public readonly name = "Broadcast"
     protected readonly isBufferedService: boolean = false;
     static readonly emitter: EventEmitter = new EventEmitter();
 
-    protected parseData(ctx: ReadContext): ServiceMessage<BroadcastData> {
+    /**
+     * Broadcast Service Class
+     * @tag Experimental
+     * @param {DeviceId} deviceId 
+     */
+    constructor(deviceId: DeviceId) {
+        super(deviceId)
+    }
 
+
+    protected parseData(ctx: ReadContext): ServiceMessage<BroadcastData> {
         const length = ctx.readUInt32();
         if (!length && ctx.sizeLeft()) {
             return {

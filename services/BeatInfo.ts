@@ -42,6 +42,7 @@ export class BeatInfo extends Service<BeatData> {
 	protected isBufferedService: boolean = true;
 
 	/**
+	 * BeatInfo Service Class
 	 * @constructor
 	 * @param {DeviceId} [deviceId] 
 	 */

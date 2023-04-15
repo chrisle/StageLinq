@@ -66,6 +66,11 @@ export class FileTransfer extends Service<FileTransferData> {
   static #txid: number = 2;
   #isAvailable: boolean = true;
 
+  /**
+   * FileTransfer Service Class
+   * @constructor
+   * @param {DeviceId} deviceId 
+   */
   constructor(deviceId?: DeviceId) {
     super(deviceId)
     this.addListener('newDevice', (service: FileTransfer) => this.instanceListener('newDevice', service))

@@ -69,12 +69,13 @@ export class StateMap extends Service<StateData> {
   static #instances: Map<string, StateMap> = new Map()
 
   /**
+   * StateMap Service Class
    * @constructor
    * @param {StageLinq} parent 
    * @param {StateMapHandler} serviceHandler 
    * @param {DeviceId} deviceId 
    */
-  constructor(deviceId?: DeviceId) {
+  constructor(deviceId: DeviceId) {
     super(deviceId)
     StateMap.#instances.set(this.deviceId.string, this)
     this.addListener('newDevice', (service: StateMap) => this.instanceListener('newDevice', service))

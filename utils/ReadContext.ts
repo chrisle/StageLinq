@@ -8,6 +8,13 @@ function fromCString(p_buffer: Uint8Array): string {
 }
 
 export class ReadContext extends Context {
+
+	/**
+	 * ReadContext Utility Class
+	 * @internal
+	 * @param p_buffer 
+	 * @param p_littleEndian 
+	 */
 	constructor(p_buffer: ArrayBuffer, p_littleEndian = false) {
 		super(p_buffer, p_littleEndian);
 	}

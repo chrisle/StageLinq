@@ -32,6 +32,13 @@ export class Directory extends Service<DirectoryData> {
   protected readonly isBufferedService = false;
   protected timeAlive: number;
 
+  /**
+   * Directory Service Class
+   * @internal
+   */
+  constructor() {
+    super()
+  }
 
   protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
     if (ctx.sizeLeft() < 20) {

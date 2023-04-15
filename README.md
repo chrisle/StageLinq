@@ -41,20 +41,21 @@ const stageLinqOptions: StageLinqOptions = {
   downloadDbSources: true,
   actingAs: ActingAsDevice.StageLinqJS,
   services: [
-    ServiceList.StateMap,
-    ServiceList.BeatInfo,
-    ServiceList.FileTransfer,
+    Services.StateMap,
+    Services.BeatInfo,
+    Services.FileTransfer,
   ],
 }
 ```
 
 ## Starting StageLinq
 
-StageLinq is started as it was previously:
+The main StageLinq class is now a Static Class:
 ```ts
-const stageLinq = new StageLinq(stageLinqOptions);
+StageLinq.options = stageLinqOptions;
 
-await stageLinq.connect();
+await StageLinq.connect();
+await StageLinq.disconnect();
 ```
 
 
@@ -112,6 +113,8 @@ public getDevices(): ConnectionInfo[] {
 
 
 ## StateMap
+
+
 ```ts
 StateMap.emitter.on('newDevice', (service: StateMapDevice) => {
     console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);

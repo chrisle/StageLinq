@@ -28,7 +28,7 @@ export class StageLinq {
   /**
    * Service Constructor Factory Function
    * @param {Service<T>} Service
-   * @param {DeviceId} deviceId 
+   * @param {DeviceId} [deviceId] 
    * @returns {Promise<Service<T>>}
    */
   static async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
