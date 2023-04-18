@@ -3,9 +3,8 @@ import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
 import { ReadContext, WriteContext, sleep } from '../utils';
 import { Service } from './Service';
-import type { ServiceMessage } from '../types';
+import type { ServiceMessage, DeviceId } from '../types';
 import { Source } from '../Sources'
-import { DeviceId } from '../devices'
 import { StageLinq } from '../StageLinq';
 
 const MESSAGE_TIMEOUT = 5000; // in ms

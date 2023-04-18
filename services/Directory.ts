@@ -1,8 +1,7 @@
 import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
 import { ReadContext, WriteContext } from '../utils';
-import { ServiceMessage, Units } from '../types';
-import { DeviceId } from '../devices'
+import { ServiceMessage, Units, DeviceId } from '../types';
 import { Socket } from 'net';
 import { StageLinq } from '../StageLinq';
 import {

@@ -1,5 +1,5 @@
 import { version } from '../package.json';
-import { DeviceId } from '../devices/DeviceId';
+import { DeviceId } from './DeviceId';
 //import * as Services from '../services'
 
 export interface DiscoveryMessageOptions {

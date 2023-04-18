@@ -1,4 +1,4 @@
-import { DeviceId } from "../../devices";
+import { DeviceId } from "../DeviceId";
 
 interface ITrackData {
   source: {

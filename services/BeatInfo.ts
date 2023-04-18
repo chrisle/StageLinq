@@ -1,8 +1,7 @@
 import { strict as assert } from 'assert';
 import { ReadContext, WriteContext } from '../utils';
 import { Service } from './Service';
-import type { ServiceMessage } from '../types';
-import { DeviceId } from '../devices'
+import type { ServiceMessage, DeviceId } from '../types';
 import { EventEmitter } from 'events';
 
 

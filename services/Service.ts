@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events';
 import { strict as assert } from 'assert';
 import { Logger } from '../LogEmitter';
-import { ServiceMessage } from '../types';
-import { DeviceId, Device } from '../devices';
+import { ServiceMessage, DeviceId } from '../types';
+import { Device } from '../devices';
 import { ReadContext, WriteContext } from '../utils';
 import { Server, Socket, AddressInfo, createServer as CreateServer } from 'net';
 import { StageLinq } from '../StageLinq';

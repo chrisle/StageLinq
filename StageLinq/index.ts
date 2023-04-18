@@ -1,10 +1,10 @@
-import { Discovery } from '../network';
+import { Discovery } from '../Discovery';
 import { Logger } from '../LogEmitter';
-import { ActingAsDevice, StageLinqOptions } from '../types';
-import { Devices, DeviceId } from '../devices'
+import { ActingAsDevice, StageLinqOptions, DeviceId } from '../types';
+import { Devices } from '../devices'
 import { Sources } from '../Sources';
 import { Service, Directory } from '../services';
-import { Status } from '../status/Status';
+import { Status } from '../status';
 
 
 const DEFAULT_OPTIONS: StageLinqOptions = {

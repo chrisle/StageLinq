@@ -1,4 +1,4 @@
-import { DeviceId } from '../devices/DeviceId';
+import { DeviceId } from './DeviceId';
 
 
 export interface DiscoveryMessage {

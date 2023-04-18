@@ -1,4 +1,4 @@
-export * from './network';
+export * from './Discovery';
 export * from './services';
 export * from './StageLinq';
 export * from './types';
