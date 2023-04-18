@@ -2,8 +2,7 @@ import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
 import { ReadContext, WriteContext } from '../utils';
-import { ServiceMessage, StateNames } from '../types';
-import { DeviceId } from '../devices'
+import { ServiceMessage, StateNames, DeviceId } from '../types';
 import { Socket } from 'net';
 import { Service } from '../services';
 import { StageLinq } from '../StageLinq';

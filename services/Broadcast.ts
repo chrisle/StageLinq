@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { ReadContext } from '../utils';
-import { ServiceMessage } from '../types';
-import { DeviceId } from '../devices'
+import { ServiceMessage, DeviceId } from '../types';
 import { Service } from './Service';
 import { StageLinq } from '../StageLinq';
 

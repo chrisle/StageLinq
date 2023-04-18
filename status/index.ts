@@ -1,8 +1,7 @@
 import { EventEmitter } from 'events';
 import { StageLinq } from '../StageLinq';
 import { StateData, StateMap } from '../services';
-import { Track } from '../types';
-import { DeviceId } from '../devices'
+import { Track, DeviceId } from '../types';
 
 
 export class Status extends EventEmitter {

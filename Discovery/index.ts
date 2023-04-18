@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
-import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, IpAddress, Units } from '../types';
+import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, IpAddress, Units, DeviceId } from '../types';
 import { sleep, WriteContext, ReadContext } from '../utils';
-import { DeviceId } from '../devices'
+import { } from '../types'
 import { Socket, RemoteInfo, createSocket } from 'dgram';
 import { subnet, SubnetInfo } from 'ip';
 import { networkInterfaces } from 'os';
