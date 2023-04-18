@@ -19,7 +19,6 @@ export interface ConnectionInfo extends DiscoveryMessage {
         type: string,
         decks: number
     };
-    addressPort?: string;
 }
 
 export interface ServiceMessage<T> {

@@ -12,18 +12,15 @@ const MESSAGE_TIMEOUT = 3000; // in ms
 
 
 export abstract class Service<T> extends EventEmitter {
-	static instances: Map<string, InstanceType<typeof Service>> = new Map();
 	public readonly name: string = "Service";
 	public readonly device: Device;
-
 	public deviceId: DeviceId = null;
-	public server: Server = null;
-	public serverInfo: AddressInfo;
 	public socket: Socket = null;
 
 	protected isBufferedService: boolean = true;
 	protected timeout: NodeJS.Timer;
 	private messageBuffer: Buffer = null;
+	private server: Server = null;
 
 	/**
 	 * Service Abstract Class
@@ -33,6 +30,10 @@ export abstract class Service<T> extends EventEmitter {
 		super();
 		this.deviceId = deviceId || null;
 		this.device = (deviceId ? StageLinq.devices.device(deviceId) : null);
+	}
+
+	get serverInfo(): AddressInfo {
+		return this.server.address() as AddressInfo
 	}
 
 	/**
@@ -59,7 +60,6 @@ export abstract class Service<T> extends EventEmitter {
 
 			}).listen(0, '0.0.0.0', () => {
 				this.server = server;
-				this.serverInfo = server.address() as AddressInfo;
 				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
 				if (this.deviceId) {
 					Logger.silly(`started timer for ${this.name} for ${this.deviceId.string}`)
