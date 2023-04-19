@@ -35,7 +35,7 @@ export class Broadcast extends Service<BroadcastData> {
     }
 
 
-    private parseData(ctx: ReadContext) {
+    private parseData(ctx: ReadContext): ServiceMessage<BroadcastData> {
         const length = ctx.readUInt32();
         if (!length && ctx.sizeLeft()) {
             const message = {
@@ -48,6 +48,7 @@ export class Broadcast extends Service<BroadcastData> {
                 }
             }
             this.emit(`${this.name}Message`, message);
+            return message
         } else {
             const message = {
                 id: length,
@@ -57,6 +58,7 @@ export class Broadcast extends Service<BroadcastData> {
                 }
             }
             this.emit(`${this.name}Message`, message);
+            return message
         }
     }
 

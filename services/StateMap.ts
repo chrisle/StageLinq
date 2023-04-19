@@ -122,7 +122,7 @@ export class StateMap extends Service<StateData> {
   }
 
 
-  protected parseData(ctx: ReadContext) {
+  protected parseData(ctx: ReadContext): ServiceMessage<StateData> {
     assert(this.deviceId);
 
     const marker = ctx.getString(4);
@@ -149,6 +149,7 @@ export class StateMap extends Service<StateData> {
             },
           };
           this.emit(`${this.name}Message`, message);
+          return message
         } catch (err) {
           Logger.error(this.name, jsonString, err);
         }
@@ -170,6 +171,7 @@ export class StateMap extends Service<StateData> {
           },
         };
         this.emit(`${this.name}Message`, message);
+        return message
         break;
       }
       default: {

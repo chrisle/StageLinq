@@ -96,7 +96,7 @@ export class FileTransfer extends Service<FileTransferData> {
     FileTransfer.emitter.emit(eventName, ...args)
   }
 
-  private parseData(ctx: ReadContext) {
+  private parseData(ctx: ReadContext): ServiceMessage<FileTransferData> {
 
     const check = ctx.getString(4);
     if (check !== MAGIC_MARKER) {
@@ -120,7 +120,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.SourceLocations: {
@@ -147,7 +147,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.FileStat: {
@@ -166,7 +166,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.EndOfMessage: {
@@ -180,7 +180,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.FileTransferId: {
@@ -199,7 +199,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.FileTransferChunk: {
@@ -221,7 +221,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.DataUpdate: {
@@ -235,7 +235,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.Unknown0: {
@@ -251,7 +251,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       case MessageId.DeviceShutdown: {
@@ -270,7 +270,7 @@ export class FileTransfer extends Service<FileTransferData> {
           },
         };
         this.emit(`${this.name}Message`, message);
-        break;
+        return message
       }
 
       default:
@@ -278,7 +278,7 @@ export class FileTransfer extends Service<FileTransferData> {
           const remaining = ctx.readRemainingAsNewBuffer()
           Logger.error(`File Transfer Unhandled message id '${messageId}'`, remaining.toString('hex'));
         }
-        break;
+        return
     }
   }
 

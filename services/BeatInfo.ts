@@ -97,7 +97,7 @@ export class BeatInfo extends Service<BeatData> {
 		await this.write(ctx);
 	}
 
-	private parseData(ctx: ReadContext) {
+	private parseData(ctx: ReadContext): ServiceMessage<BeatData> {
 		assert(ctx.sizeLeft() > 72);
 		let id = ctx.readUInt32()
 		const clock = ctx.readUInt64();
@@ -126,6 +126,7 @@ export class BeatInfo extends Service<BeatData> {
 			}
 		}
 		this.emit(`${this.name}Message`, message);
+		return message
 	}
 
 	private messageHandler(data: ServiceMessage<BeatData>): void {

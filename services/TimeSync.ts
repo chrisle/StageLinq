@@ -79,7 +79,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     //     await this.write(ctx, this.socket);
     // };
 
-    protected parseData(ctx: ReadContext) {
+    protected parseData(ctx: ReadContext): ServiceMessage<TimeSyncData> {
         const timestamp = this.getTimeStamp();
         const size = ctx.readUInt32();
 
@@ -102,6 +102,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
                 }
             }
             this.emit(`${this.name}Message`, message);
+            return message
         }
     }
 
