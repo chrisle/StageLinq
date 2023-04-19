@@ -18,8 +18,8 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
 export class StageLinq {
   static options: StageLinqOptions = DEFAULT_OPTIONS;
   static readonly logger: Logger = Logger.instance;
-  static readonly devices = new Devices();
   static readonly discovery: Discovery = new Discovery();
+  static readonly devices = new Devices();
   static readonly sources: Sources = new Sources();
   static readonly status: Status = new Status();
   static directory: Directory = null;
@@ -35,9 +35,6 @@ export class StageLinq {
     new(_deviceId?: DeviceId): T;
   }, deviceId?: DeviceId): Promise<T> {
     const service = new ctor(deviceId);
-    if (deviceId) {
-      StageLinq.devices.addService(deviceId, service)
-    }
 
     await service.start();
     return service;
@@ -48,7 +45,7 @@ export class StageLinq {
    */
   static async connect() {
     //  Initialize Discovery agent
-    await StageLinq.discovery.listen(StageLinq.options.actingAs);
+    StageLinq.discovery.listen(StageLinq.options.actingAs);
 
     //Directory is required
     StageLinq.directory = await StageLinq.startServiceListener(Directory);

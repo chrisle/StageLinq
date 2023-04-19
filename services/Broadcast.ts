@@ -29,14 +29,16 @@ export class Broadcast extends Service<BroadcastData> {
      * @param {DeviceId} deviceId 
      */
     constructor(deviceId: DeviceId) {
-        super(deviceId)
+        super(deviceId);
+        this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
+        this.addListener(`${this.name}Message`, (message: ServiceMessage<BroadcastData>) => this.messageHandler(message));
     }
 
 
-    protected parseData(ctx: ReadContext): ServiceMessage<BroadcastData> {
+    private parseData(ctx: ReadContext) {
         const length = ctx.readUInt32();
         if (!length && ctx.sizeLeft()) {
-            return {
+            const message = {
                 id: length,
                 message: {
                     deviceId: new DeviceId(ctx.read(16)),
@@ -45,18 +47,20 @@ export class Broadcast extends Service<BroadcastData> {
                     sizeLeft: ctx.sizeLeft()
                 }
             }
+            this.emit(`${this.name}Message`, message);
         } else {
-            return {
+            const message = {
                 id: length,
                 message: {
                     json: ctx.getString(length),
                     sizeLeft: ctx.sizeLeft()
                 }
             }
+            this.emit(`${this.name}Message`, message);
         }
     }
 
-    protected messageHandler(data: ServiceMessage<BroadcastData>): void {
+    private messageHandler(data: ServiceMessage<BroadcastData>): void {
         if (data?.id === 0) {
             StageLinq.devices.emit('newService', this.device, this)
         }

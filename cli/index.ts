@@ -74,7 +74,6 @@ async function main() {
 
   StageLinq.options = stageLinqOptions;
 
-
   StageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
   });
@@ -90,7 +89,7 @@ async function main() {
     console.log(...args);
     args.push("\n");
   });
-  // stageLinq.logger.on('debug', (...args: any) => {
+  // StageLinq.logger.on('debug', (...args: any) => {
   //   console.debug(...args);
   //   args.push("\n");
   // });
@@ -168,7 +167,7 @@ async function main() {
     });
 
     StateMap.emitter.on('stateMessage', async (data: StateData) => {
-      Logger.debug(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
+      Logger.info(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
     });
 
   }

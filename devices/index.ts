@@ -1,8 +1,22 @@
 import { EventEmitter } from 'events';
+import { Logger } from '../LogEmitter';
 import { Service } from '../services';
-import { ConnectionInfo, DeviceId } from '../types';
+import { ConnectionInfo, DeviceId, Units } from '../types';
 import { sleep } from '../utils';
+import { StageLinq } from '../StageLinq';
 
+
+function isStageLinqDevice(info: ConnectionInfo): boolean {
+  return !!Units[info.software.name]
+}
+
+function isMixer(info: ConnectionInfo): boolean {
+  return Units[info.software.name]?.type === "MIXER"
+}
+
+function portHasChanged(incoming: ConnectionInfo, current: ConnectionInfo): boolean {
+  return incoming.port !== current?.port
+}
 
 export declare interface Devices {
   on(event: 'newDevice', listener: (device: Device) => void): this;
@@ -12,17 +26,45 @@ export declare interface Devices {
 export class Devices extends EventEmitter {
   #devices: Map<string, Device> = new Map();
 
-  /**
-   * Add Device
-   * @param {ConnectionInfo} info 
-   * @returns {Device}
-   */
-  addDevice(info: ConnectionInfo): Device {
-    const device = new Device(info);
-    this.#devices.set(device.deviceId.string, device)
-    this.emit('newDevice', device)
-    return device
+
+  constructor() {
+    super()
+    this.initListeners()
   }
+
+  private async initListeners() {
+    // while (!StageLinq && !StageLinq.discovery) {
+    //   await sleep(100);
+    // }
+    await sleep(250);
+    StageLinq.discovery.addListener('discoveryDevice', (info: ConnectionInfo) => this.deviceListener(info))
+    while (!StageLinq.directory) {
+      await sleep(250);
+    }
+    StageLinq.directory.addListener('newService', (service) => this.serviceListener(service))
+  }
+
+  private serviceListener(service: InstanceType<typeof Service>) {
+    this.addService(service.deviceId, service)
+    service.addListener('closingService', (service) => this.deleteService(service.deviceId, service.name))
+  }
+
+  private deviceListener(info: ConnectionInfo) {
+    const currentDevice = this.#devices.get(info.deviceId.string)
+
+    if ((!this.#devices.has(info.deviceId.string) || portHasChanged(info, currentDevice?.info))
+      && isStageLinqDevice(info)
+      && !isMixer(info)
+    ) {
+
+      Logger.debug(`Setting New Device! ${info.deviceId.string} ${info.software.name}`)
+      const device = new Device(info)
+      this.#devices.set(info.deviceId.string, device)
+      this.emit('newDevice', device)
+    }
+  }
+
+
 
   /**
    * 
@@ -55,27 +97,6 @@ export class Devices extends EventEmitter {
   }
 
   /**
-  * 
-  * @param {DeviceId} deviceId 
-  * @param {ConnectionInfo} info 
-  * @returns {boolean}
-  */
-  hasNewInfo(deviceId: DeviceId, info: ConnectionInfo): boolean {
-    return this.device(deviceId).info?.port !== info.port
-  }
-
-  /**
-   * 
-   * @param {DeviceId} deviceId 
-   * @param {ConnectionInfo} info 
-   */
-  async updateDeviceInfo(deviceId: DeviceId, info: ConnectionInfo): Promise<void> {
-    const device = await this.getDevice(deviceId)
-    device.info = info;
-    await this.#devices.set(deviceId.string, device);
-  }
-
-  /**
    * Get an array of all current Service Instances
    * @returns {Promise<InstanceType<typeof Service>[]>}
    */
@@ -88,7 +109,7 @@ export class Devices extends EventEmitter {
    * @param {DeviceId} deviceId 
    * @param {Service} service 
    */
-  addService(deviceId: DeviceId, service: InstanceType<typeof Service>) {
+  private addService(deviceId: DeviceId, service: InstanceType<typeof Service>) {
     const device = this.device(deviceId)
     device.addService(service)
   }
@@ -98,10 +119,12 @@ export class Devices extends EventEmitter {
    * @param {DeviceId} deviceId 
    * @param {string} serviceName 
    */
-  deleteService(deviceId: DeviceId, serviceName: string) {
+  private deleteService(deviceId: DeviceId, serviceName: string) {
     const device = this.device(deviceId);
     device.deleteService(serviceName)
   }
+
+
 
 }
 

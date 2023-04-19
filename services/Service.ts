@@ -50,20 +50,15 @@ export abstract class Service<T> extends EventEmitter {
 				this.socket = socket;
 				if (this.name !== "Directory") this.emit('connection', this.name, this.deviceId)
 
-				socket.on('error', (err) => {
-					reject(err);
-				});
-
-				socket.on('data', async data => {
-					await this.dataHandler(data, socket)
-				});
+				socket.on('error', (err) => reject(err));
+				socket.on('data', async (data) => await this.dataHandler(data, socket));
 
 			}).listen(0, '0.0.0.0', () => {
 				this.server = server;
 				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
 				if (this.deviceId) {
 					Logger.silly(`started timer for ${this.name} for ${this.deviceId.string}`)
-					this.timeout = setTimeout(this.closeService, 5000, this.deviceId, this.name, this.server);
+					this.timeout = setTimeout(this.closeService, 8000, this);
 				};
 				resolve(server);
 			});
@@ -105,13 +100,8 @@ export abstract class Service<T> extends EventEmitter {
 		}
 	}
 
-	/**
-	 * Handle incoming Data from Server Socket
-	 * @param {Buffer} data 
-	 * @param {Socket} socket 
-	 */
-	private async dataHandler(data: Buffer, socket: Socket) {
-		// Concantenate messageBuffer with current data
+
+	private concantenateBuffer(data: Buffer): ReadContext {
 		let buffer: Buffer = null;
 		if (this.messageBuffer && this.messageBuffer.length > 0) {
 			buffer = Buffer.concat([this.messageBuffer, data]);
@@ -119,18 +109,24 @@ export abstract class Service<T> extends EventEmitter {
 			buffer = data;
 		}
 		this.messageBuffer = null
-
-		// TODO: Clean up this arraybuffer confusion mess
 		const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-		let ctx = new ReadContext(arrayBuffer, false);
+		return new ReadContext(arrayBuffer, false)
+	}
+
+	/**
+	 * Handle incoming Data from Server Socket
+	 * @param {Buffer} data 
+	 * @param {Socket} socket 
+	 */
+	private async dataHandler(data: Buffer, socket: Socket) {
+
+		const ctx = this.concantenateBuffer(data);
 
 		if (!this.isBufferedService) {
-			const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket);
-			this.messageHandler(parsedData);
+			this.emit(`${this.name}Data`, new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket)
 		};
 
 		if (await this.subMessageTest(ctx.peek(20))) {
-
 			const messageId = ctx.readUInt32();
 			const token = ctx.read(16) // DeviceID
 			if (!this.deviceId) {
@@ -138,17 +134,8 @@ export abstract class Service<T> extends EventEmitter {
 				Logger.silent(`${this.name} adding DeviceId: ${deviceId.string}`)
 				this.deviceId = deviceId
 			}
-			//peak at network string length then rewind and read string
-			const stringLength = ctx.readUInt32();
-			ctx.seek(-4);
-
-			(assert(stringLength <= ctx.sizeLeft()));
 			const serviceName = ctx.readNetworkStringUTF16();
-
-			//make sure reading port won't overrun buffer
-			(assert(ctx.sizeLeft() >= 2));
-			ctx.readUInt16(); //read port, though we don't need it
-
+			ctx.seek(2);
 			Logger.silent(`${messageId} request to ${serviceName} from ${this.deviceId.string}`);
 			if (this.device) {
 				StageLinq.devices.emit('newService', this.device, this)
@@ -165,16 +152,9 @@ export abstract class Service<T> extends EventEmitter {
 
 				const length = ctx.readUInt32();
 				if (length <= ctx.sizeLeft()) {
-
 					const message = ctx.read(length);
-					if (!message) {
-						Logger.warn(message)
-					}
-					// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 					const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-					const parsedData = this.parseData(new ReadContext(data, false), socket);
-					this.messageHandler(parsedData);
-
+					this.emit(`${this.name}Data`, new ReadContext(data, false), socket)
 				} else {
 					ctx.seek(-4); // Rewind 4 bytes to include the length again
 					this.messageBuffer = ctx.readRemainingAsNewBuffer();
@@ -243,19 +223,11 @@ export abstract class Service<T> extends EventEmitter {
 	 * @param {StageLinq} parent 
 	 * @param {ServiceHandler} handler 
 	 */
-	protected async closeService(deviceId: DeviceId, serviceName: string, server: Server) {
-		Logger.debug(`closing ${serviceName} server for ${deviceId.string} due to timeout`);
-
-		//const serverName = `${serviceName}${deviceId.string}`;
-
-		//StageLinq.deleteServer(serverName);
-		StageLinq.devices.deleteService(deviceId, serviceName);
-		await server.close();
+	protected async closeService(service: Service<T>) {
+		Logger.info(`closing ${service.name} server for ${service.deviceId.string} due to timeout`);
+		service.emit('closingService', service)
+		service.server.close();
 	}
-
-	protected abstract parseData(ctx: ReadContext, socket: Socket): ServiceMessage<T>;
-
-	protected abstract messageHandler(data: ServiceMessage<T>): void;
 
 	protected abstract instanceListener(eventName: string, ...args: any): void
 }

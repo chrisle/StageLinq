@@ -49,8 +49,10 @@ export class BeatInfo extends Service<BeatData> {
 	constructor(deviceId: DeviceId) {
 		super(deviceId)
 		BeatInfo.#instances.set(this.deviceId.string, this)
-		this.addListener('connection', () => this.instanceListener('newDevice', this))
-		this.addListener('beatMessage', (data: BeatData) => this.instanceListener('beatMessage', data))
+		this.addListener('connection', () => this.instanceListener('newDevice', this));
+		this.addListener('beatMessage', (data: BeatData) => this.instanceListener('beatMessage', data));
+		this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
+		this.addListener(`${this.name}Message`, (message: ServiceMessage<BeatData>) => this.messageHandler(message));
 	}
 
 	protected instanceListener(eventName: string, ...args: any) {
@@ -95,7 +97,7 @@ export class BeatInfo extends Service<BeatData> {
 		await this.write(ctx);
 	}
 
-	protected parseData(ctx: ReadContext): ServiceMessage<BeatData> {
+	private parseData(ctx: ReadContext) {
 		assert(ctx.sizeLeft() > 72);
 		let id = ctx.readUInt32()
 		const clock = ctx.readUInt64();
@@ -113,20 +115,20 @@ export class BeatInfo extends Service<BeatData> {
 			deck[i].samples = ctx.readFloat64();
 		}
 		assert(ctx.isEOF())
-		const beatMsg = {
-			service: this,
-			deviceId: this.deviceId,
-			clock: clock,
-			deckCount: deckCount,
-			deck: deck,
-		}
-		return {
+		const message = {
 			id: id,
-			message: beatMsg
+			message: {
+				service: this,
+				deviceId: this.deviceId,
+				clock: clock,
+				deckCount: deckCount,
+				deck: deck,
+			}
 		}
+		this.emit(`${this.name}Message`, message);
 	}
 
-	protected messageHandler(data: ServiceMessage<BeatData>): void {
+	private messageHandler(data: ServiceMessage<BeatData>): void {
 
 		function resCheck(res: number, prevBeat: number, currentBeat: number): boolean {
 			if (res === 0) {

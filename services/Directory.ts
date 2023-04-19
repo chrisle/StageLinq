@@ -37,9 +37,11 @@ export class Directory extends Service<DirectoryData> {
    */
   constructor() {
     super()
+    this.addListener(`${this.name}Data`, (ctx: ReadContext, socket: Socket) => this.parseData(ctx, socket));
+    this.addListener(`${this.name}Message`, (message: ServiceMessage<DirectoryData>) => this.messageHandler(message));
   }
 
-  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
+  private parseData(ctx: ReadContext, socket: Socket) {
     if (ctx.sizeLeft() < 20) {
       return
     }
@@ -50,7 +52,7 @@ export class Directory extends Service<DirectoryData> {
     }
 
     this.deviceId = new DeviceId(token);
-    const deviceInfo = StageLinq.discovery.getConnectionInfo(this.deviceId);
+    const deviceInfo = StageLinq.devices.device(this.deviceId)?.info
 
     assert(this.socket)
     try {
@@ -73,7 +75,7 @@ export class Directory extends Service<DirectoryData> {
           Logger.silent(this.name, 'received ', service, port);
           break;
         case MessageId.ServicesRequest:
-          Logger.silly(`service request from ${this.deviceId.string}`)
+          Logger.debug(`service request from ${this.deviceId.string}`)
           this.sendServiceAnnouncement(this.deviceId, socket);
           break;
         default:
@@ -87,25 +89,34 @@ export class Directory extends Service<DirectoryData> {
     }
 
 
-    const directoryMessage: DirectoryData = {
-      deviceId: this.deviceId.string
-    };
+
     const directoryData = {
-      id: 69,
+      id: id,
       socket: this.socket,
       deviceId: this.deviceId,
-      message: directoryMessage,
+      message: {
+        deviceId: this.deviceId.string
+      },
     };
-    return directoryData;
+    this.emit(`${this.name}Message`, directoryData);
   }
 
-  protected messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {
+  private messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {
     if (!directoryMsg) {
       Logger.silent(`${this.name} Empty Directory Message`)
     }
   }
 
   /////////// Private Methods
+
+  private async getNewService(serviceName: string, deviceId: DeviceId): Promise<InstanceType<typeof Service>> {
+    if (serviceName == "FileTransfer") return await StageLinq.startServiceListener(FileTransfer, deviceId)
+    if (serviceName == "StateMap") return await StageLinq.startServiceListener(StateMap, deviceId)
+    if (serviceName == "FileTransfer") return await StageLinq.startServiceListener(FileTransfer, deviceId)
+    if (serviceName == "BeatInfo") return await StageLinq.startServiceListener(BeatInfo, deviceId)
+    if (serviceName == "Broadcast") return await StageLinq.startServiceListener(Broadcast, deviceId)
+    if (serviceName == "TimeSynchronization") return await StageLinq.startServiceListener(TimeSynchronization, deviceId)
+  }
 
   /**
    * Send Service announcement with list of Service:Port
@@ -121,35 +132,9 @@ export class Directory extends Service<DirectoryData> {
     const device = await StageLinq.devices.getDevice(deviceId);
     for (const serviceName of StageLinq.options.services) {
       if (device && !!Units[device.info?.software?.name]) {
-        switch (serviceName) {
-          case 'FileTransfer': {
-            const fileTransfer = await StageLinq.startServiceListener(FileTransfer, deviceId)
-            services.push(fileTransfer);
-            break;
-          }
-          case 'StateMap': {
-            const stateMap = await StageLinq.startServiceListener(StateMap, deviceId)
-            services.push(stateMap);
-            break;
-          }
-          case 'BeatInfo': {
-            const beatInfo = await StageLinq.startServiceListener(BeatInfo, deviceId)
-            services.push(beatInfo);
-            break;
-          }
-          case 'TimeSynchronization': {
-            const timeSync = await StageLinq.startServiceListener(TimeSynchronization, deviceId)
-            services.push(timeSync);
-            break;
-          }
-          case 'Broadcast': {
-            const broadcast = await StageLinq.startServiceListener(Broadcast, deviceId)
-            services.push(broadcast);
-            break;
-          }
-          default:
-            break;
-        }
+        const service = await this.getNewService(serviceName, deviceId);
+        this.emit('newService', service);
+        services.push(service)
       }
     }
 
