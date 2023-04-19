@@ -3,11 +3,9 @@ import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
 import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, IpAddress, Units, DeviceId } from '../types';
 import { sleep, WriteContext, ReadContext } from '../utils';
-import { } from '../types'
 import { Socket, RemoteInfo, createSocket } from 'dgram';
 import { subnet, SubnetInfo } from 'ip';
 import { networkInterfaces } from 'os';
-import { StageLinq } from '../StageLinq';
 
 
 const ANNOUNCEMENT_INTERVAL = 1000;
@@ -35,26 +33,8 @@ export class Discovery extends EventEmitter {
     private options: DiscoveryMessageOptions = null;
     private peers: Map<string, ConnectionInfo> = new Map();
     private deviceId: DeviceId = null
-    private announceTimer: NodeJS.Timer;
-    private hasLooped: boolean = false;
+    private announceTimer: NodeJS.Timer
 
-
-    /**
-     * Discovery Network Class
-     
-     */
-    constructor() {
-        super()
-    }
-
-    /**
-     * Get ConnectionInfo
-     * @param {DeviceId} deviceId 
-     * @returns {ConnectionInfo}
-     */
-    public getConnectionInfo(deviceId: DeviceId): ConnectionInfo {
-        return this.peers.get(deviceId.string);
-    }
 
     /**
      * Get list of devices
@@ -76,29 +56,13 @@ export class Discovery extends EventEmitter {
      * Start Discovery Listener
      * @param {DiscoveryMessageOptions} options 
      */
-    async listen(options: DiscoveryMessageOptions) {
+    listen(options: DiscoveryMessageOptions) {
         this.options = options;
         this.deviceId = options.deviceId
 
         this.emit('listening');
-        await this.listenForDevices(async (connectionInfo: ConnectionInfo) => {
 
-            if (Units[connectionInfo.software.name] && !StageLinq.devices.hasDevice(connectionInfo.deviceId)) {
-                const device = StageLinq.devices.addDevice(connectionInfo);
-                this.peers.set(device.deviceId.string, connectionInfo);
-                Logger.silly(`Discovery Message From ${connectionInfo.source} ${connectionInfo.software.name} ${device.deviceId.string}`)
-                this.emit('newDiscoveryDevice', connectionInfo);
-            } else {
-                this.hasLooped = true;
-            }
-
-            if (Units[connectionInfo.software.name] && StageLinq.devices.hasDevice(connectionInfo.deviceId) && StageLinq.devices.hasNewInfo(connectionInfo.deviceId, connectionInfo)) {
-                this.peers.set(connectionInfo.deviceId.string, connectionInfo);
-                StageLinq.devices.updateDeviceInfo(connectionInfo.deviceId, connectionInfo);
-                Logger.silly(`Updated port for ${connectionInfo.deviceId.string}`);
-                this.emit('updatedDiscoveryDevice', connectionInfo);
-            }
-        });
+        this.listenForDevices((connectionInfo: ConnectionInfo) => this.emit('discoveryDevice', connectionInfo));
     }
 
     /**
@@ -109,9 +73,7 @@ export class Discovery extends EventEmitter {
         assert(this.socket);
         this.socket.setBroadcast(true);
         const discoveryMessage = this.createDiscoveryMessage(Action.Login, this.options, port);
-        while (!this.hasLooped) {
-            await sleep(250);
-        }
+        await sleep(500);
         const ips = this.findBroadcastIPs()
         const address = ips.filter(ip => {
             return ip.contains(this.address) === true
