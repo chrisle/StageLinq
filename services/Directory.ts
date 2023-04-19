@@ -37,11 +37,11 @@ export class Directory extends Service<DirectoryData> {
    */
   constructor() {
     super()
-    this.addListener(`${this.name}Data`, (ctx: ReadContext, socket: Socket) => this.parseData(ctx, socket));
-    this.addListener(`${this.name}Message`, (message: ServiceMessage<DirectoryData>) => this.messageHandler(message));
+    this.addListener(`data`, (ctx: ReadContext, socket: Socket) => this.parseData(ctx, socket));
+    this.addListener(`message`, (message: ServiceMessage<DirectoryData>) => this.messageHandler(message));
   }
 
-  private parseData(ctx: ReadContext, socket: Socket) {
+  private parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
     if (ctx.sizeLeft() < 20) {
       return
     }
@@ -54,7 +54,7 @@ export class Directory extends Service<DirectoryData> {
     this.deviceId = new DeviceId(token);
     const deviceInfo = StageLinq.devices.device(this.deviceId)?.info
 
-    assert(this.socket)
+
     try {
       switch (id) {
         case MessageId.TimeStamp:
@@ -88,17 +88,16 @@ export class Directory extends Service<DirectoryData> {
       Logger.silent(`${this.name} possible malformed data: ${ctx.readRemainingAsNewBuffer().toString('hex')}`)
     }
 
-
-
     const directoryData = {
       id: id,
-      socket: this.socket,
+      socket: socket,
       deviceId: this.deviceId,
       message: {
         deviceId: this.deviceId.string
       },
     };
-    this.emit(`${this.name}Message`, directoryData);
+    this.emit(`message`, directoryData);
+    return directoryData
   }
 
   private messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {

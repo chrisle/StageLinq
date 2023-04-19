@@ -30,12 +30,12 @@ export class Broadcast extends Service<BroadcastData> {
      */
     constructor(deviceId: DeviceId) {
         super(deviceId);
-        this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
-        this.addListener(`${this.name}Message`, (message: ServiceMessage<BroadcastData>) => this.messageHandler(message));
+        this.addListener(`data`, (ctx: ReadContext) => this.parseData(ctx));
+        this.addListener(`message`, (message: ServiceMessage<BroadcastData>) => this.messageHandler(message));
     }
 
 
-    private parseData(ctx: ReadContext) {
+    private parseData(ctx: ReadContext): ServiceMessage<BroadcastData> {
         const length = ctx.readUInt32();
         if (!length && ctx.sizeLeft()) {
             const message = {
@@ -47,7 +47,8 @@ export class Broadcast extends Service<BroadcastData> {
                     sizeLeft: ctx.sizeLeft()
                 }
             }
-            this.emit(`${this.name}Message`, message);
+            this.emit(`message`, message);
+            return message
         } else {
             const message = {
                 id: length,
@@ -56,7 +57,8 @@ export class Broadcast extends Service<BroadcastData> {
                     sizeLeft: ctx.sizeLeft()
                 }
             }
-            this.emit(`${this.name}Message`, message);
+            this.emit(`message`, message);
+            return message
         }
     }
 

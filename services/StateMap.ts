@@ -80,8 +80,8 @@ export class StateMap extends Service<StateData> {
     this.addListener('newDevice', (service: StateMap) => this.instanceListener('newDevice', service))
     this.addListener('newDevice', (service: StateMap) => StageLinq.status.addDecks(service))
     this.addListener('stateMessage', (data: StateData) => this.instanceListener('stateMessage', data))
-    this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
-    this.addListener(`${this.name}Message`, (message: ServiceMessage<StateData>) => this.messageHandler(message));
+    this.addListener(`data`, (ctx: ReadContext) => this.parseData(ctx));
+    this.addListener(`message`, (message: ServiceMessage<StateData>) => this.messageHandler(message));
   }
 
   protected instanceListener(eventName: string, ...args: any) {
@@ -122,7 +122,7 @@ export class StateMap extends Service<StateData> {
   }
 
 
-  protected parseData(ctx: ReadContext) {
+  protected parseData(ctx: ReadContext): ServiceMessage<StateData> {
     assert(this.deviceId);
 
     const marker = ctx.getString(4);
@@ -148,7 +148,8 @@ export class StateMap extends Service<StateData> {
               deviceId: this.deviceId,
             },
           };
-          this.emit(`${this.name}Message`, message);
+          this.emit(`message`, message);
+          return message
         } catch (err) {
           Logger.error(this.name, jsonString, err);
         }
@@ -169,7 +170,8 @@ export class StateMap extends Service<StateData> {
             interval: interval,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
+        return message
         break;
       }
       default: {

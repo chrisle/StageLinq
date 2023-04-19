@@ -78,8 +78,8 @@ export class FileTransfer extends Service<FileTransferData> {
     this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => this.instanceListener('newSource', name, deviceId))
     this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => this.instanceListener('fileTransferProgress', source, fileName, txid, progress))
     this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => this.instanceListener('fileTransferComplete', source, fileName, txid));
-    this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
-    this.addListener(`${this.name}Message`, (message: ServiceMessage<FileTransferData>) => this.messageHandler(message));
+    this.addListener(`data`, (ctx: ReadContext) => this.parseData(ctx));
+    this.addListener(`message`, (message: ServiceMessage<FileTransferData>) => this.messageHandler(message));
   }
 
   /**
@@ -96,7 +96,7 @@ export class FileTransfer extends Service<FileTransferData> {
     FileTransfer.emitter.emit(eventName, ...args)
   }
 
-  private parseData(ctx: ReadContext) {
+  private parseData(ctx: ReadContext): ServiceMessage<FileTransferData> {
 
     const check = ctx.getString(4);
     if (check !== MAGIC_MARKER) {
@@ -119,8 +119,8 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.SourceLocations: {
@@ -146,8 +146,8 @@ export class FileTransfer extends Service<FileTransferData> {
             signOff: signOff,
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.FileStat: {
@@ -165,8 +165,8 @@ export class FileTransfer extends Service<FileTransferData> {
             size: size,
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.EndOfMessage: {
@@ -179,8 +179,8 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.FileTransferId: {
@@ -198,8 +198,8 @@ export class FileTransfer extends Service<FileTransferData> {
             size: filesize,
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.FileTransferChunk: {
@@ -220,8 +220,8 @@ export class FileTransfer extends Service<FileTransferData> {
             size: chunksize,
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.DataUpdate: {
@@ -234,8 +234,8 @@ export class FileTransfer extends Service<FileTransferData> {
             data: ctx.readRemainingAsNewBuffer(),
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.Unknown0: {
@@ -250,8 +250,8 @@ export class FileTransfer extends Service<FileTransferData> {
             data: ctx.readRemainingAsNewBuffer(),
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       case MessageId.DeviceShutdown: {
@@ -269,8 +269,8 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
-        this.emit(`${this.name}Message`, message);
-        break;
+        this.emit(`message`, message);
+        return message
       }
 
       default:
@@ -278,7 +278,7 @@ export class FileTransfer extends Service<FileTransferData> {
           const remaining = ctx.readRemainingAsNewBuffer()
           Logger.error(`File Transfer Unhandled message id '${messageId}'`, remaining.toString('hex'));
         }
-        break;
+        return
     }
   }
 
