@@ -37,8 +37,8 @@ export class Directory extends Service<DirectoryData> {
    */
   constructor() {
     super()
-    this.addListener(`${this.name}Data`, (ctx: ReadContext, socket: Socket) => this.parseData(ctx, socket));
-    this.addListener(`${this.name}Message`, (message: ServiceMessage<DirectoryData>) => this.messageHandler(message));
+    this.addListener(`data`, (ctx: ReadContext, socket: Socket) => this.parseData(ctx, socket));
+    this.addListener(`message`, (message: ServiceMessage<DirectoryData>) => this.messageHandler(message));
   }
 
   private parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
@@ -96,7 +96,7 @@ export class Directory extends Service<DirectoryData> {
         deviceId: this.deviceId.string
       },
     };
-    this.emit(`${this.name}Message`, directoryData);
+    this.emit(`message`, directoryData);
     return directoryData
   }
 

@@ -123,7 +123,7 @@ export abstract class Service<T> extends EventEmitter {
 		const ctx = this.concantenateBuffer(data);
 
 		if (!this.isBufferedService) {
-			this.emit(`${this.name}Data`, new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket)
+			this.emit(`data`, new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket)
 		};
 
 		if (await this.subMessageTest(ctx.peek(20))) {
@@ -154,7 +154,7 @@ export abstract class Service<T> extends EventEmitter {
 				if (length <= ctx.sizeLeft()) {
 					const message = ctx.read(length);
 					const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-					this.emit(`${this.name}Data`, new ReadContext(data, false), socket)
+					this.emit(`data`, new ReadContext(data, false), socket)
 				} else {
 					ctx.seek(-4); // Rewind 4 bytes to include the length again
 					this.messageBuffer = ctx.readRemainingAsNewBuffer();

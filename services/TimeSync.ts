@@ -28,8 +28,8 @@ export class TimeSynchronization extends Service<TimeSyncData> {
      */
     constructor(deviceId: DeviceId) {
         super(deviceId);
-        this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
-        this.addListener(`${this.name}Message`, (message: ServiceMessage<TimeSyncData>) => this.messageHandler(message));
+        this.addListener(`data`, (ctx: ReadContext) => this.parseData(ctx));
+        this.addListener(`message`, (message: ServiceMessage<TimeSyncData>) => this.messageHandler(message));
     }
 
     public async sendTimeSyncRequest() {
@@ -101,7 +101,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
                     timestamp: timestamp,
                 }
             }
-            this.emit(`${this.name}Message`, message);
+            this.emit(`message`, message);
             return message
         }
     }

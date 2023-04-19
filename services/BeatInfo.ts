@@ -51,8 +51,8 @@ export class BeatInfo extends Service<BeatData> {
 		BeatInfo.#instances.set(this.deviceId.string, this)
 		this.addListener('connection', () => this.instanceListener('newDevice', this));
 		this.addListener('beatMessage', (data: BeatData) => this.instanceListener('beatMessage', data));
-		this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
-		this.addListener(`${this.name}Message`, (message: ServiceMessage<BeatData>) => this.messageHandler(message));
+		this.addListener(`data`, (ctx: ReadContext) => this.parseData(ctx));
+		this.addListener(`message`, (message: ServiceMessage<BeatData>) => this.messageHandler(message));
 	}
 
 	protected instanceListener(eventName: string, ...args: any) {
@@ -125,7 +125,7 @@ export class BeatInfo extends Service<BeatData> {
 				deck: deck,
 			}
 		}
-		this.emit(`${this.name}Message`, message);
+		this.emit(`message`, message);
 		return message
 	}
 

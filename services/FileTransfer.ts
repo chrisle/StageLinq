@@ -78,8 +78,8 @@ export class FileTransfer extends Service<FileTransferData> {
     this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => this.instanceListener('newSource', name, deviceId))
     this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => this.instanceListener('fileTransferProgress', source, fileName, txid, progress))
     this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => this.instanceListener('fileTransferComplete', source, fileName, txid));
-    this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
-    this.addListener(`${this.name}Message`, (message: ServiceMessage<FileTransferData>) => this.messageHandler(message));
+    this.addListener(`data`, (ctx: ReadContext) => this.parseData(ctx));
+    this.addListener(`message`, (message: ServiceMessage<FileTransferData>) => this.messageHandler(message));
   }
 
   /**
@@ -119,7 +119,7 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -146,7 +146,7 @@ export class FileTransfer extends Service<FileTransferData> {
             signOff: signOff,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -165,7 +165,7 @@ export class FileTransfer extends Service<FileTransferData> {
             size: size,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -179,7 +179,7 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -198,7 +198,7 @@ export class FileTransfer extends Service<FileTransferData> {
             size: filesize,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -220,7 +220,7 @@ export class FileTransfer extends Service<FileTransferData> {
             size: chunksize,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -234,7 +234,7 @@ export class FileTransfer extends Service<FileTransferData> {
             data: ctx.readRemainingAsNewBuffer(),
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -250,7 +250,7 @@ export class FileTransfer extends Service<FileTransferData> {
             data: ctx.readRemainingAsNewBuffer(),
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
@@ -269,7 +269,7 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
-        this.emit(`${this.name}Message`, message);
+        this.emit(`message`, message);
         return message
       }
 
