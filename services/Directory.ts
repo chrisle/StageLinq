@@ -37,9 +37,11 @@ export class Directory extends Service<DirectoryData> {
    */
   constructor() {
     super()
+    this.addListener(`${this.name}Data`, (ctx: ReadContext, socket: Socket) => this.parseData(ctx, socket));
+    this.addListener(`${this.name}Message`, (message: ServiceMessage<DirectoryData>) => this.messageHandler(message));
   }
 
-  protected parseData(ctx: ReadContext, socket: Socket): ServiceMessage<DirectoryData> {
+  private parseData(ctx: ReadContext, socket: Socket) {
     if (ctx.sizeLeft() < 20) {
       return
     }
@@ -87,19 +89,19 @@ export class Directory extends Service<DirectoryData> {
     }
 
 
-    const directoryMessage: DirectoryData = {
-      deviceId: this.deviceId.string
-    };
+
     const directoryData = {
-      id: 69,
+      id: id,
       socket: this.socket,
       deviceId: this.deviceId,
-      message: directoryMessage,
+      message: {
+        deviceId: this.deviceId.string
+      },
     };
-    return directoryData;
+    this.emit(`${this.name}Message`, directoryData);
   }
 
-  protected messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {
+  private messageHandler(directoryMsg: ServiceMessage<DirectoryData>): void {
     if (!directoryMsg) {
       Logger.silent(`${this.name} Empty Directory Message`)
     }

@@ -80,6 +80,8 @@ export class StateMap extends Service<StateData> {
     this.addListener('newDevice', (service: StateMap) => this.instanceListener('newDevice', service))
     this.addListener('newDevice', (service: StateMap) => StageLinq.status.addDecks(service))
     this.addListener('stateMessage', (data: StateData) => this.instanceListener('stateMessage', data))
+    this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
+    this.addListener(`${this.name}Message`, (message: ServiceMessage<StateData>) => this.messageHandler(message));
   }
 
   protected instanceListener(eventName: string, ...args: any) {
@@ -120,7 +122,7 @@ export class StateMap extends Service<StateData> {
   }
 
 
-  protected parseData(ctx: ReadContext): ServiceMessage<StateData> {
+  protected parseData(ctx: ReadContext) {
     assert(this.deviceId);
 
     const marker = ctx.getString(4);
@@ -137,7 +139,7 @@ export class StateMap extends Service<StateData> {
         try {
           jsonString = ctx.readNetworkStringUTF16();
           const json = JSON.parse(jsonString);
-          return {
+          const message: ServiceMessage<StateData> = {
             id: MAGIC_MARKER_JSON,
             message: {
               name: name,
@@ -146,9 +148,11 @@ export class StateMap extends Service<StateData> {
               deviceId: this.deviceId,
             },
           };
+          this.emit(`${this.name}Message`, message);
         } catch (err) {
           Logger.error(this.name, jsonString, err);
         }
+        break;
       }
 
       case MAGIC_MARKER_INTERVAL: {
@@ -156,7 +160,7 @@ export class StateMap extends Service<StateData> {
         const interval = ctx.readInt32();
         ctx.seek(-4);
 
-        return {
+        const message: ServiceMessage<StateData> = {
           id: MAGIC_MARKER_INTERVAL,
           message: {
             service: this,
@@ -165,11 +169,14 @@ export class StateMap extends Service<StateData> {
             interval: interval,
           },
         };
-      }
-      default:
+        this.emit(`${this.name}Message`, message);
         break;
+      }
+      default: {
+        assert.fail(`Unhandled type ${type}`);
+        break;
+      }
     }
-    assert.fail(`Unhandled type ${type}`);
   }
 
   protected messageHandler(data: ServiceMessage<StateData>): void {

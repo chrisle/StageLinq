@@ -123,13 +123,10 @@ export abstract class Service<T> extends EventEmitter {
 		const ctx = this.concantenateBuffer(data);
 
 		if (!this.isBufferedService) {
-			this.emit('data',)
-			const parsedData = this.parseData(new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket);
-			this.messageHandler(parsedData);
+			this.emit(`${this.name}Data`, new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket)
 		};
 
 		if (await this.subMessageTest(ctx.peek(20))) {
-
 			const messageId = ctx.readUInt32();
 			const token = ctx.read(16) // DeviceID
 			if (!this.deviceId) {
@@ -137,17 +134,8 @@ export abstract class Service<T> extends EventEmitter {
 				Logger.silent(`${this.name} adding DeviceId: ${deviceId.string}`)
 				this.deviceId = deviceId
 			}
-			//peak at network string length then rewind and read string
-			const stringLength = ctx.readUInt32();
-			ctx.seek(-4);
-
-			(assert(stringLength <= ctx.sizeLeft()));
 			const serviceName = ctx.readNetworkStringUTF16();
-
-			//make sure reading port won't overrun buffer
-			(assert(ctx.sizeLeft() >= 2));
-			ctx.readUInt16(); //read port, though we don't need it
-
+			ctx.seek(2);
 			Logger.silent(`${messageId} request to ${serviceName} from ${this.deviceId.string}`);
 			if (this.device) {
 				StageLinq.devices.emit('newService', this.device, this)
@@ -164,16 +152,9 @@ export abstract class Service<T> extends EventEmitter {
 
 				const length = ctx.readUInt32();
 				if (length <= ctx.sizeLeft()) {
-
 					const message = ctx.read(length);
-					if (!message) {
-						Logger.warn(message)
-					}
-					// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 					const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-					const parsedData = this.parseData(new ReadContext(data, false), socket);
-					this.messageHandler(parsedData);
-
+					this.emit(`${this.name}Data`, new ReadContext(data, false), socket)
 				} else {
 					ctx.seek(-4); // Rewind 4 bytes to include the length again
 					this.messageBuffer = ctx.readRemainingAsNewBuffer();
@@ -247,10 +228,6 @@ export abstract class Service<T> extends EventEmitter {
 		service.emit('closingService', service)
 		service.server.close();
 	}
-
-	protected abstract parseData(ctx: ReadContext, socket: Socket): ServiceMessage<T>;
-
-	protected abstract messageHandler(data: ServiceMessage<T>): void;
 
 	protected abstract instanceListener(eventName: string, ...args: any): void
 }

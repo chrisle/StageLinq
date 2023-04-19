@@ -20,6 +20,7 @@ export interface FileTransferData {
   offset?: number;
   sources?: string[];
   data?: Buffer;
+  signOff?: Uint8Array;
 }
 
 enum MessageId {
@@ -76,7 +77,9 @@ export class FileTransfer extends Service<FileTransferData> {
     this.addListener('newSource', (source: Source) => this.instanceListener('newSource', source))
     this.addListener('sourceRemoved', (name: string, deviceId: DeviceId) => this.instanceListener('newSource', name, deviceId))
     this.addListener('fileTransferProgress', (source: Source, fileName: string, txid: number, progress: FileTransferProgress) => this.instanceListener('fileTransferProgress', source, fileName, txid, progress))
-    this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => this.instanceListener('fileTransferComplete', source, fileName, txid))
+    this.addListener('fileTransferComplete', (source: Source, fileName: string, txid: number) => this.instanceListener('fileTransferComplete', source, fileName, txid));
+    this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
+    this.addListener(`${this.name}Message`, (message: ServiceMessage<FileTransferData>) => this.messageHandler(message));
   }
 
   /**
@@ -93,7 +96,7 @@ export class FileTransfer extends Service<FileTransferData> {
     FileTransfer.emitter.emit(eventName, ...args)
   }
 
-  protected parseData(ctx: ReadContext): ServiceMessage<FileTransferData> {
+  private parseData(ctx: ReadContext) {
 
     const check = ctx.getString(4);
     if (check !== MAGIC_MARKER) {
@@ -101,7 +104,6 @@ export class FileTransfer extends Service<FileTransferData> {
     }
 
     const txId = ctx.readUInt32();
-
     const messageId: MessageId = ctx.readUInt32();
 
     switch (messageId) {
@@ -109,7 +111,7 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(ctx.readUInt32() === 0x0)
         assert(ctx.isEOF());
 
-        return {
+        const message = {
           id: MessageId.RequestSources,
           message: {
             service: this,
@@ -117,6 +119,8 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.SourceLocations: {
@@ -131,20 +135,19 @@ export class FileTransfer extends Service<FileTransferData> {
         // Final three bytes should be 0x1 0x1 0x1 for Sources, 0x1 0x1 0x0 for dir/ls
         const signOff = ctx.read(3);
         assert(ctx.isEOF());
-        Logger.silly(`getting sources for `, this.deviceId.string);
-        if (signOff[2] === 1) {
-          this.updateSources(sources);
-        }
 
-        return {
+        const message = {
           id: messageId,
           message: {
             service: this,
             deviceId: this.deviceId,
             txid: txId,
             sources: sources,
+            signOff: signOff,
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.FileStat: {
@@ -153,7 +156,7 @@ export class FileTransfer extends Service<FileTransferData> {
         ctx.seek(49)
         const size = ctx.readUInt32();
 
-        return {
+        const message = {
           id: messageId,
           message: {
             service: this,
@@ -162,11 +165,13 @@ export class FileTransfer extends Service<FileTransferData> {
             size: size,
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.EndOfMessage: {
         // End of result indication?
-        return {
+        const message = {
           id: messageId,
           message: {
             service: this,
@@ -174,6 +179,8 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.FileTransferId: {
@@ -182,7 +189,7 @@ export class FileTransfer extends Service<FileTransferData> {
         const filesize = ctx.readUInt32();
         const id = ctx.readUInt32();
         assert(id === 1)
-        return {
+        const message = {
           id: messageId,
           message: {
             service: this,
@@ -191,6 +198,8 @@ export class FileTransfer extends Service<FileTransferData> {
             size: filesize,
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.FileTransferChunk: {
@@ -200,7 +209,7 @@ export class FileTransfer extends Service<FileTransferData> {
         assert(chunksize === ctx.sizeLeft());
         assert(ctx.sizeLeft() <= CHUNK_SIZE);
 
-        return {
+        const message = {
           id: messageId,
           message: {
             service: this,
@@ -211,10 +220,12 @@ export class FileTransfer extends Service<FileTransferData> {
             size: chunksize,
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.DataUpdate: {
-        return {
+        const message = {
           id: messageId,
           message: {
             service: this,
@@ -223,13 +234,14 @@ export class FileTransfer extends Service<FileTransferData> {
             data: ctx.readRemainingAsNewBuffer(),
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.Unknown0: {
-        //sizeLeft() of 6 means its not an offline analyzer
-        this.requestSources(1);
-
-        return {
+        // sizeLeft() of 6 means its not an offline analyzer
+        // TODO name Unknown0 and finalize this
+        const message = {
           id: messageId,
           message: {
             service: this,
@@ -238,6 +250,8 @@ export class FileTransfer extends Service<FileTransferData> {
             data: ctx.readRemainingAsNewBuffer(),
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       case MessageId.DeviceShutdown: {
@@ -247,7 +261,7 @@ export class FileTransfer extends Service<FileTransferData> {
           Logger.debug(msg)
         }
 
-        return {
+        const message = {
           id: messageId,
           message: {
             service: this,
@@ -255,6 +269,8 @@ export class FileTransfer extends Service<FileTransferData> {
             txid: txId,
           },
         };
+        this.emit(`${this.name}Message`, message);
+        break;
       }
 
       default:
@@ -266,7 +282,7 @@ export class FileTransfer extends Service<FileTransferData> {
     }
   }
 
-  protected messageHandler(data: ServiceMessage<FileTransferData>): void {
+  private messageHandler(data: ServiceMessage<FileTransferData>): void {
     if (data && data.id && data.id !== MessageId.FileTransferChunk) {
       const msgData = { ...data.message }
       delete msgData.service
@@ -295,6 +311,21 @@ export class FileTransfer extends Service<FileTransferData> {
      */
     if (data && data.id === Action.RequestSources) {
       this.sendNoSourcesReply(data.message);
+    }
+
+    /**
+     * Request Sources
+     */
+    if (data && data.id === MessageId.Unknown0) {
+      this.requestSources(1);
+    }
+
+    /**
+     * If sources are changed, send updateSources request
+     */
+    if (data && data.id === MessageId.SourceLocations && data.message.signOff[2] === 1) {
+      Logger.silly(`getting sources for `, this.deviceId.string);
+      this.updateSources(data.message.sources);
     }
   }
 

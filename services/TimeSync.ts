@@ -27,7 +27,9 @@ export class TimeSynchronization extends Service<TimeSyncData> {
      * @param deviceId 
      */
     constructor(deviceId: DeviceId) {
-        super(deviceId)
+        super(deviceId);
+        this.addListener(`${this.name}Data`, (ctx: ReadContext) => this.parseData(ctx));
+        this.addListener(`${this.name}Message`, (message: ServiceMessage<TimeSyncData>) => this.messageHandler(message));
     }
 
     public async sendTimeSyncRequest() {
@@ -77,7 +79,7 @@ export class TimeSynchronization extends Service<TimeSyncData> {
     //     await this.write(ctx, this.socket);
     // };
 
-    protected parseData(ctx: ReadContext): ServiceMessage<TimeSyncData> {
+    protected parseData(ctx: ReadContext) {
         const timestamp = this.getTimeStamp();
         const size = ctx.readUInt32();
 
@@ -92,13 +94,14 @@ export class TimeSynchronization extends Service<TimeSyncData> {
             while (ctx.sizeLeft()) {
                 msgs.push(ctx.readUInt64())
             };
-            return {
+            const message = {
                 id: id,
                 message: {
                     msgs: msgs,
                     timestamp: timestamp,
                 }
             }
+            this.emit(`${this.name}Message`, message);
         }
     }
 
