@@ -273,15 +273,6 @@ export class FileTransfer extends Service<FileTransferData> {
         return message
       }
 
-      case MessageId.ServiceDisconnect: {
-        //This message is received when the player that FileTransfer is connected to shuts down
-        this.disconnect();
-        return {
-          id: messageId,
-          message: null,
-        };
-      }
-
       default:
         {
           const remaining = ctx.readRemainingAsNewBuffer()
@@ -401,7 +392,6 @@ export class FileTransfer extends Service<FileTransferData> {
         this.receivedFile = null
         this.releaseService();
         Logger.error(msg);
-        this._available = true;
         throw new Error(msg);
       }
       Logger.info(`Signaling transfer complete.`);
