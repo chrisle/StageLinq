@@ -13,6 +13,8 @@
 	"author": "honusz",
 	"license": "GNU GPLv3",
 	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"files": ["dist"],
 	"dependencies": {
 		"@types/filesystem": "^0.0.32",
 		"@types/uuid": "^9.0.1",
