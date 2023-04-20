@@ -8,6 +8,7 @@
 		"alwaysStrict": true,
 		"noImplicitAny": true,
 		"noUnusedLocals": true,
-		"noUnusedParameters": true
+		"noUnusedParameters": true,
+		"declaration": true
 	}
 }
