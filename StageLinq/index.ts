@@ -1,60 +1,75 @@
-import { announce, createDiscoveryMessage, StageLinqListener, unannounce } from '../network';
-import { EventEmitter } from 'events';
-import { StageLinqDevices } from '../network/StageLinqDevices';
+import { Discovery } from '../Discovery';
 import { Logger } from '../LogEmitter';
-import { Action, ActingAsDevice, StageLinqOptions } from '../types';
+import { ActingAsDevice, StageLinqOptions, DeviceId } from '../types';
+import { Devices } from '../devices'
+import { Sources } from '../Sources';
+import { Service, Directory } from '../services';
+import { Status } from '../status';
+
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
-  maxRetries: 3,
-  actingAs: ActingAsDevice.NowPlaying,
+  actingAs: ActingAsDevice.StageLinqJS,
   downloadDbSources: true,
-  enableFileTranfer: true
 };
 
 /**
- * Main StageLinq class.
+ * Main StageLinq static class.
  */
-export class StageLinq extends EventEmitter {
+export class StageLinq {
+  static options: StageLinqOptions = DEFAULT_OPTIONS;
+  static readonly logger: Logger = Logger.instance;
+  static readonly discovery: Discovery = new Discovery();
+  static readonly devices = new Devices();
+  static readonly sources: Sources = new Sources();
+  static readonly status: Status = new Status();
+  static directory: Directory = null;
 
-  devices: StageLinqDevices;
-  logger: Logger = Logger.instance;
-  options: StageLinqOptions;
 
-  private listener: StageLinqListener;
+  /**
+   * Service Constructor Factory Function
+   * @param {Service<T>} Service
+   * @param {DeviceId} [deviceId]
+   * @returns {Promise<Service<T>>}
+   */
+  static async startServiceListener<T extends InstanceType<typeof Service>>(ctor: {
+    new(_deviceId?: DeviceId): T;
+  }, deviceId?: DeviceId): Promise<T> {
+    const service = new ctor(deviceId);
 
-  constructor(options?: StageLinqOptions) {
-    super();
-    this.options = { ...DEFAULT_OPTIONS, ...options };
-    this.devices = new StageLinqDevices(this.options);
+    await service.start();
+    return service;
   }
 
   /**
    * Connect to the StageLinq network.
    */
-  async connect() {
-    this.listener = new StageLinqListener();
-    const msg = createDiscoveryMessage(Action.Login, this.options.actingAs);
-    await announce(msg);
-    this.listener.listenForDevices(async (connectionInfo) => {
-      await this.devices.handleDevice(connectionInfo);
-    });
+  static async connect() {
+    //  Initialize Discovery agent
+    StageLinq.discovery.listen(StageLinq.options.actingAs);
+
+    //Directory is required
+    StageLinq.directory = await StageLinq.startServiceListener(Directory);
+
+    //  Announce myself with Directory port
+    await StageLinq.discovery.announce(StageLinq.directory.serverInfo.port);
   }
 
   /**
    * Disconnect from the StageLinq network.
+   * Close all open Servers
    */
-  async disconnect() {
+  static async disconnect() {
     try {
-      this.devices.disconnectAll();
-      const msg = createDiscoveryMessage(Action.Logout, this.options.actingAs)
-      await unannounce(msg);
-    } catch(e) {
+      Logger.warn('disconnecting');
+      await this.directory.stop();
+      const services = await StageLinq.devices.getDeviceServices();
+      for (const service of services) {
+        console.log(`closing ${service.name} on ${service.deviceId.string}`);
+        await service.stop()
+      }
+      await StageLinq.discovery.unannounce();
+    } catch (e) {
       throw new Error(e);
     }
   }
-
-  get databases() {
-    return this.devices.databases;
-  }
-
 }

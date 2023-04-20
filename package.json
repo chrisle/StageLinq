@@ -1,8 +1,8 @@
 {
-	"name": "stagelinq",
-	"version": "1.0.9",
+	"name": "StageLinqJS",
+	"version": "2.0.0-Beta",
 	"description": "Typescript library to connect to Denon StageLinq devices",
-	"homepage": "https://github.com/chrisle/StageLinq",
+	"homepage": "https://github.com/honusz/StageLinq",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"start": "node dist/cli/index.js",
@@ -10,24 +10,24 @@
 		"watch": "tsc --build tsconfig.json -w",
 		"prepublish": "tsc --build tsconfig.json"
 	},
-	"author": "Chris Le (TRIODE)",
+	"author": "honusz",
 	"license": "GNU GPLv3",
 	"main": "dist/index.js",
 	"dependencies": {
-		"better-sqlite3": "^7.5.0",
+		"@types/filesystem": "^0.0.32",
+		"@types/uuid": "^9.0.1",
+		"better-sqlite3": "^7.6.2",
 		"console-stamp": "^3.0.3",
-		"file-type": "^16.5.3",
 		"ip": "^1.1.5",
-		"minimist": "^1.2.5",
-		"promise-socket": "^7.0.0"
+		"minimist": "^1.2.5"
 	},
 	"devDependencies": {
 		"@types/assert": "^1.5.5",
-		"@types/better-sqlite3": "^7.4.0",
+		"@types/better-sqlite3": "^7.6.3",
 		"@types/ip": "^1.1.0",
-		"@types/minimist": "^1.2.2",
-		"@types/node": "^16.4.0",
+		"@types/node": "^18.15.11",
 		"prettier": "^2.5.1",
-		"typescript": "^4.6.2"
+		"typedoc": "^0.23.28",
+		"typescript": "^5.0.3"
 	}
 }

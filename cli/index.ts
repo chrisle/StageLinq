@@ -1,155 +1,271 @@
-import { ActingAsDevice, PlayerStatus } from '../types';
-import { DbConnection } from "../Databases";
+import { ActingAsDevice, StageLinqOptions, Services, DeviceId } from '../types';
+import { StateData, StateMap, BeatData, BeatInfo, FileTransfer, Broadcast } from '../services';
+import { Source } from '../Sources'
 import { sleep } from '../utils/sleep';
 import { StageLinq } from '../StageLinq';
+import { Logger } from '../LogEmitter';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as path from 'path';
+import * as Path from 'path';
 
 require('console-stamp')(console, {
   format: ':date(HH:MM:ss) :label',
 });
 
-/**
- * Get track information for latest playing song.
- *
- * @param stageLinq Instance of StageLinq.
- * @param status Player to get track info from.
- * @returns Track info
- */
-function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
+function progressBar(size: number, bytes: number, total: number): string {
+  const progress = Math.ceil((bytes / total) * 10)
+  let progressArrary = new Array<string>(size);
+  progressArrary.fill(' ');
+  if (progress) {
+    for (let i = 0; i < progress; i++) {
+      progressArrary[i] = '|'
+    }
+  }
+  return `[${progressArrary.join('')}]`
+}
+
+// async function getTrackInfo(sourceName: string, deviceId: DeviceId, trackName: string) {
+//   while (!StageLinq.sources.hasSourceAndDB(sourceName, deviceId)) {
+//     await sleep(1000);
+//   }
+//   try {
+//     const source = StageLinq.sources.getSource(sourceName, deviceId);
+//     const connection = source.getDatabase().connection;
+//     const result = await connection.getTrackInfo(trackName);
+//     connection.close();
+//     return result;
+//   } catch (e) {
+//     console.error(e);
+//   }
+// }
+
+async function downloadFile(sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
+  while (!StageLinq.sources.hasSource(sourceName, deviceId)) {
+    await sleep(250)
+  }
   try {
-    const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
-    const connection = new DbConnection(dbPath);
-    const result = connection.getTrackInfo(status.trackPath);
-    connection.close();
-    console.log('Database entry:', result);
-    return result;
-  } catch(e) {
-    console.error(e);
+    const source = StageLinq.sources.getSource(sourceName, deviceId);
+    const data = await StageLinq.sources.downloadFile(source, path);
+    if (dest && data) {
+      const filePath = `${dest}/${path.split('/').pop()}`
+      fs.writeFileSync(filePath, Buffer.from(data));
+    }
+  } catch (e) {
+    console.error(`Could not download ${path}`);
+    console.error(e)
   }
 }
 
-/**
- * Download the currently playing song from the media.
- *
- * @param stageLinq Instance of StageLinq.
- * @param status Player to download the current song from.
- * @param dest Path to save file to.
- */
-async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: string) {
-  try {
-    const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
-    if (data) {
-      fs.writeFileSync(dest, Buffer.from(data));
-      console.log(`Downloaded ${status.trackPathAbsolute} to ${dest}`);
-    }
-  } catch(e) {
-    console.error(`Could not download ${status.trackPathAbsolute}`);
-  }
-}
 
 async function main() {
 
   console.log('Starting CLI');
 
-  const stageLinqOptions = {
-
-    // If set to true, download the source DBs in a temporary location.
-    // (default: true)
-    downloadDbSources: false,
-
-    // Max number of attempts to connect to a StageLinq device.
-    // (default: 3)
-    maxRetries: 3,
-
-    // What device to emulate on the network.
-    // (default: Now Playing)
-    actingAs: ActingAsDevice.NowPlaying
+  const stageLinqOptions: StageLinqOptions = {
+    downloadDbSources: true,
+    actingAs: ActingAsDevice.StageLinqJS,
+    services: [
+      Services.StateMap,
+      Services.FileTransfer,
+      Services.BeatInfo,
+      Services.Broadcast,
+    ],
   }
 
-  const stageLinq = new StageLinq(stageLinqOptions);
+  StageLinq.options = stageLinqOptions;
 
-  // Setup how you want to handle logs coming from StageLinq
-  stageLinq.logger.on('error', (...args: any) => {
+  StageLinq.logger.on('error', (...args: any) => {
     console.error(...args);
   });
-  stageLinq.logger.on('warn', (...args: any) => {
+  StageLinq.logger.on('warn', (...args: any) => {
     console.warn(...args);
+    args.push("\n");
   });
-  stageLinq.logger.on('info', (...args: any) => {
+  StageLinq.logger.on('info', (...args: any) => {
     console.info(...args);
+    args.push("\n");
   });
-  stageLinq.logger.on('log', (...args: any) => {
+  StageLinq.logger.on('log', (...args: any) => {
     console.log(...args);
+    args.push("\n");
   });
-  stageLinq.logger.on('debug', (...args: any) => {
-    console.debug(...args);
-  });
-  // Note: Silly is very verbose!
+  // StageLinq.logger.on('debug', (...args: any) => {
+  //   console.debug(...args);
+  //   args.push("\n");
+  // });
+  //Note: Silly is very verbose!
   // stageLinq.logger.on('silly', (...args: any) => {
   //   console.debug(...args);
   // });
 
-  // Fires when we connect to any device
-  stageLinq.devices.on('connected', async (connectionInfo) => {
-    console.log(`Successfully connected to ${connectionInfo.software.name}`);
 
-    if (stageLinq.options.downloadDbSources) {
-      // Fires when the database source starts downloading.
-      stageLinq.databases.on('dbDownloading', (sourceName, dbPath) => {
-        console.log(`Downloading ${sourceName} to ${dbPath}`);
-      });
+  StageLinq.discovery.on('listening', () => {
+    console.log(`[DISCOVERY] Listening`)
+  });
 
-      // Fires while the database source is being read
-      stageLinq.databases.on('dbProgress', (sourceName, total, bytes, percent) => {
-        console.debug(`Reading ${sourceName}: ${bytes}/${total} (${Math.ceil(percent)}%)`);
-      });
+  StageLinq.discovery.on('announcing', (info) => {
+    console.log(`[DISCOVERY] Broadcasting Announce ${info.deviceId.string} Port ${info.port} ${info.source} ${info.software.name}:${info.software.version}`)
+  });
 
-      // Fires when the database source has been read and saved to a temporary path.
-      stageLinq.databases.on('dbDownloaded', (sourceName, dbPath) => {
-        console.log(`Database (${sourceName}) has been downloaded to ${dbPath}`);
-      });
+  StageLinq.discovery.on('newDiscoveryDevice', (info) => {
+    console.log(`[DISCOVERY] New Device ${info.deviceId.string} ${info.source} ${info.software.name} ${info.software.version}`)
+  });
+
+  StageLinq.discovery.on('updatedDiscoveryDevice', (info) => {
+    console.log(`[DISCOVERY] Updated Device ${info.deviceId.string} Port:${info.port} ${info.source} ${info.software.name} ${info.software.version}`)
+  });
+
+
+  StageLinq.devices.on('newDevice', (device) => {
+    console.log(`[DEVICES] New Device ${device.deviceId.string}`)
+  });
+
+  StageLinq.devices.on('newService', (device, service) => {
+    console.log(`[DEVICES] New ${service.name} Service on ${device.deviceId.string} port ${service.serverInfo.port}`)
+  });
+
+
+  if (stageLinqOptions.services.includes(Services.Broadcast)) {
+
+    Broadcast.emitter.on('message', async (deviceId: DeviceId, name: string, value) => {
+      console.log(`[BROADCAST] ${deviceId.string} ${name}`, value);
+      const db = StageLinq.sources.getDBByUuid(value.databaseUuid);
+      if (db.length) {
+        const connection = db[0].connection();
+        const track = await connection.getTrackById(value.trackId);
+        connection.close();
+        console.log('[BROADCAST] Track Changed:', track);
+      }
+    })
+
+  }
+
+
+  if (stageLinqOptions.services.includes(Services.StateMap)) {
+
+    async function deckIsMaster(data: StateData) {
+      if (data.json.state) {
+        const deck = parseInt(data.name.substring(12, 13));
+        await sleep(250);
+        const track = StageLinq.status.getTrack(data.deviceId, deck);
+        console.log(`Now Playing: `, track);
+        if (stageLinqOptions.services.includes(Services.FileTransfer) && StageLinq.options.downloadDbSources) {
+          downloadFile(track.source.name, track.source.location, track.source.path, Path.resolve(os.tmpdir()));
+        }
+      }
     }
 
-  });
 
-  // Fires when StageLinq and all devices are ready to use.
-  stageLinq.devices.on('ready', () => {
-    console.log(`StageLinq is ready!`);
-  });
+    StateMap.emitter.on('newDevice', async (service: StateMap) => {
+      console.log(`[STATEMAP] Subscribing to States on ${service.deviceId.string}`);
 
-  // Fires when a new track is loaded on to a player.
-  stageLinq.devices.on('trackLoaded', async (status) => {
+      for (let i = 1; i <= service.device.deckCount(); i++) {
+        service.addListener(`/Engine/Deck${i}/DeckIsMaster`, deckIsMaster);
+      }
 
-    // Example of how to connect to the database using this library's
-    // implementation of BetterSqlite3 to get additional information.
-    if (stageLinq.options.downloadDbSources) {
-      getTrackInfo(stageLinq, status);
+      service.subscribe();
+    });
+
+    StateMap.emitter.on('stateMessage', async (data: StateData) => {
+      Logger.info(`[STATEMAP] ${data.deviceId.string} ${data.name} => ${JSON.stringify(data.json)}`);
+    });
+
+  }
+
+
+  if (stageLinqOptions.services.includes(Services.FileTransfer)) {
+
+
+    FileTransfer.emitter.on('fileTransferProgress', (source, file, txid, progress) => {
+      Logger.debug(`[FILETRANSFER] ${source.name} id:{${txid}} Reading ${file}: ${progressBar(10, progress.bytesDownloaded, progress.total)} (${Math.ceil(progress.percentComplete)}%)`);
+    });
+
+    FileTransfer.emitter.on('fileTransferComplete', (source, file, txid) => {
+      console.log(`[FILETRANSFER] Complete ${source.name} id:{${txid}} ${file}`);
+    });
+
+    StageLinq.sources.on('newSource', (source: Source) => {
+      console.log(`[SOURCES] Source Available: (${source.name})`);
+    });
+
+    StageLinq.sources.on('dbDownloaded', (source: Source) => {
+      console.log(`[SOURCES] Database Downloaded: (${source.name})`);
+    });
+
+    StageLinq.sources.on('sourceRemoved', (sourceName: string, deviceId: DeviceId) => {
+      console.log(`[SOURCES] Source Removed: ${sourceName} on ${deviceId.string}`);
+    });
+
+  }
+
+
+  if (stageLinqOptions.services.includes(Services.BeatInfo)) {
+
+    /**
+     * Resolution for triggering callback
+     *    0 = every message WARNING, it's a lot!
+     *    1 = every beat 
+     *    4 = every 4 beats 
+     *    .25 = every 1/4 beat
+     */
+    const beatOptions = {
+      everyNBeats: 1,
     }
 
-    // Example of how to download the actual track from the media.
-    await downloadFile(stageLinq, status, path.resolve(os.tmpdir(), 'media'));
-  });
+    /**
+     *  User callback function. 
+     *  Will be triggered everytime a player's beat counter crosses the resolution threshold
+     * @param {BeatData} bd 
+     */
+    function beatCallback(bd: BeatData,) {
+      let deckBeatString = ""
+      for (let i = 0; i < bd.deckCount; i++) {
+        deckBeatString += `Deck: ${i + 1} Beat: ${bd.deck[i].beat.toFixed(3)}/${bd.deck[i].totalBeats.toFixed(0)} `
+      }
+      console.log(`[BEATINFO] ${bd.deviceId.string} clock: ${bd.clock} ${deckBeatString}`);
+    }
 
-  // Fires when a track has started playing.
-  stageLinq.devices.on('nowPlaying', (status) => {
-    console.log(`Now Playing on [${status.deck}]: ${status.title} - ${status.artist}`)
-  });
+    ////  callback is optional, BeatInfo messages can be consumed by: 
+    //      - user callback
+    //      - event messages 
+    //      - reading the register 
+    const beatMethod = {
+      useCallback: true,
+      useEvent: false,
+      useRegister: false,
+    };
 
-  // Fires when StageLinq receives messages from a device.
-  stageLinq.devices.on('message', (connectionInfo, data) => {
-    const msg = data.message.json
-      ? JSON.stringify(data.message.json)
-      : data.message.interval;
-    console.debug(`${connectionInfo.address}:${connectionInfo.port} ` +
-      `${data.message.name} => ${msg}`);
-  });
+    BeatInfo.emitter.on('newDevice', async (beatInfo: BeatInfo) => {
+      console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
 
-  // Fires when the state of a device has changed.
-  stageLinq.devices.on('stateChanged', (status) => {
-    console.log(`Updating state [${status.deck}]`, status)
-  });
+      if (beatMethod.useCallback) {
+        beatInfo.startBeatInfo(beatOptions, beatCallback);
+      }
+
+      if (beatMethod.useEvent) {
+        beatInfo.startBeatInfo(beatOptions);
+        BeatInfo.emitter.on('beatMessage', (bd) => {
+
+          if (bd) {
+            beatCallback(bd);
+          }
+        });
+      }
+
+      if (beatMethod.useRegister) {
+        beatInfo.startBeatInfo(beatOptions);
+
+        function beatFunc(beatInfo: BeatInfo) {
+          const beatData = beatInfo.getBeatData();
+          if (beatData) beatCallback(beatData);
+        }
+
+        setTimeout(beatFunc, 4000, beatInfo)
+      }
+
+    })
+  }
+
 
   /////////////////////////////////////////////////////////////////////////
   // CLI
@@ -158,9 +274,9 @@ async function main() {
   try {
     process.on('SIGINT', async function () {
       console.info('... exiting');
-      // Ensure SIGINT won't be impeded by some error
+
       try {
-        await stageLinq.disconnect();
+        await StageLinq.disconnect();
       } catch (err: any) {
         const message = err.stack.toString();
         console.error(message);
@@ -168,7 +284,7 @@ async function main() {
       process.exit(returnCode);
     });
 
-    await stageLinq.connect();
+    await StageLinq.connect();
 
     while (true) {
       await sleep(250);
@@ -180,7 +296,7 @@ async function main() {
     returnCode = 1;
   }
 
-  await stageLinq.disconnect();
+  await StageLinq.disconnect();
   process.exit(returnCode);
 }
 

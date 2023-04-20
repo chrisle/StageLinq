@@ -11,6 +11,11 @@ interface WriteContextConstructOptions {
 export class WriteContext extends Context {
 	autoGrow: boolean;
 
+	/**
+	 * WriteContext Utility Class
+	 * @internal
+	 * @param {WriteContextConstructOptions} p_options 
+	 */
 	constructor(p_options?: WriteContextConstructOptions) {
 		const buffer = new ArrayBuffer(p_options && p_options.size > 0 ? p_options.size : 128);
 		super(buffer, !p_options ? false : !!p_options.littleEndian);
@@ -85,6 +90,13 @@ export class WriteContext extends Context {
 	writeUInt32(p_value: number): number {
 		this.checkSize(4);
 		new DataView(this.buffer).setUint32(this.pos, p_value, this.littleEndian);
+		this.pos += 4;
+		return 4;
+	}
+
+	writeInt32(p_value: number): number {
+		this.checkSize(4);
+		new DataView(this.buffer).setInt32(this.pos, p_value, this.littleEndian);
 		this.pos += 4;
 		return 4;
 	}

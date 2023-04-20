@@ -1,145 +1,242 @@
-//import { hex } from '../utils/hex';
 import { EventEmitter } from 'events';
-import { Logger } from '../LogEmitter';
-import { MessageId, MESSAGE_TIMEOUT, Tokens } from '../types';
-import { NetworkDevice } from '../network/NetworkDevice';
-import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
-import { WriteContext } from '../utils/WriteContext';
-import * as tcp from '../utils/tcp';
-import type { ServiceMessage } from '../types';
+import { Logger } from '../LogEmitter';
+import { ServiceMessage, DeviceId } from '../types';
+import { Device } from '../devices';
+import { ReadContext, WriteContext } from '../utils';
+import { Server, Socket, AddressInfo, createServer as CreateServer } from 'net';
+import { StageLinq } from '../StageLinq';
+
+
+const MESSAGE_TIMEOUT = 3000; // in ms
+
 
 export abstract class Service<T> extends EventEmitter {
-	private address: string;
-	private port: number;
-	public readonly name: string;
-	protected controller: NetworkDevice;
-	protected connection: tcp.Connection = null;
+	public readonly name: string = "Service";
+	public readonly device: Device;
+	public deviceId: DeviceId = null;
+	public socket: Socket = null;
 
-	constructor(p_address: string, p_port: number, p_controller: NetworkDevice) {
+	protected isBufferedService: boolean = true;
+	protected timeout: NodeJS.Timer;
+	private messageBuffer: Buffer = null;
+	private server: Server = null;
+
+	/**
+	 * Service Abstract Class
+	 * @param {DeviceId} [deviceId]
+	 */
+	constructor(deviceId?: DeviceId) {
 		super();
-		this.address = p_address;
-		this.port = p_port;
-		this.name = this.constructor.name;
-		this.controller = p_controller;
+		this.deviceId = deviceId || null;
+		this.device = (deviceId ? StageLinq.devices.device(deviceId) : null);
 	}
 
-	async connect(): Promise<void> {
-		assert(!this.connection);
-		this.connection = await tcp.connect(this.address, this.port);
-		let queue: Buffer = null;
+	get serverInfo(): AddressInfo {
+		return this.server.address() as AddressInfo
+	}
 
-		this.connection.socket.on('data', (p_data: Buffer) => {
-			let buffer: Buffer = null;
-			if (queue && queue.length > 0) {
-				buffer = Buffer.concat([queue, p_data]);
-			} else {
-				buffer = p_data;
-			}
+	/**
+	 * Creates a new Server for Service
+	 * @returns {Server}
+	 */
+	private async startServer(): Promise<Server> {
+		return await new Promise((resolve, reject) => {
 
-			// FIXME: Clean up this arraybuffer confusion mess
-			const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-			const ctx = new ReadContext(arrayBuffer, false);
-			queue = null;
+			const server = CreateServer((socket) => {
+				Logger.debug(`[${this.name}] connection from ${socket.remoteAddress}:${socket.remotePort}`)
 
-			try {
-				while (ctx.isEOF() === false) {
-					if (ctx.sizeLeft() < 4) {
-						queue = ctx.readRemainingAsNewBuffer();
-						break;
-					}
+				clearTimeout(this.timeout);
+				this.socket = socket;
+				if (this.name !== "Directory") this.emit('connection', this.name, this.deviceId)
 
-					const length = ctx.readUInt32();
-					if (length <= ctx.sizeLeft()) {
-						const message = ctx.read(length);
-						// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
-						const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-						// Logger.info("RECV", length);
-						//hex(message);
-						const parsedData = this.parseData(new ReadContext(data, false));
+				socket.on('error', (err) => reject(err));
+				socket.on('data', async (data) => await this.dataHandler(data, socket));
 
-						// Forward parsed data to message handler
-						this.messageHandler(parsedData);
-						this.emit('message', parsedData);
-					} else {
-						ctx.seek(-4); // Rewind 4 bytes to include the length again
-						queue = ctx.readRemainingAsNewBuffer();
-						break;
-					}
-				}
-			} catch (err) {
-				// FIXME: Rethrow based on the severity?
-				Logger.error(err);
-			}
+			}).listen(0, '0.0.0.0', () => {
+				this.server = server;
+				Logger.silly(`opened ${this.name} server on ${this.serverInfo.port}`);
+				if (this.deviceId) {
+					Logger.silly(`started timer for ${this.name} for ${this.deviceId.string}`)
+					this.timeout = setTimeout(this.closeService, 8000, this);
+				};
+				resolve(server);
+			});
 		});
-
-		// FIXME: Is this required for all Services?
-		const ctx = new WriteContext();
-		ctx.writeUInt32(MessageId.ServicesAnnouncement);
-		ctx.write(Tokens.SoundSwitch);
-		ctx.writeNetworkStringUTF16(this.name);
-		ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
-		await this.write(ctx);
-
-		await this.init();
-
-		Logger.debug(`Connected to service '${this.name}' at port ${this.port}`);
 	}
 
-	disconnect() {
-		assert(this.connection);
+	/**
+	 * Start Service Listener
+	 * @returns {Promise<AddressInfo>}
+	 */
+	async start(): Promise<AddressInfo> {
+		const server = await this.startServer();
+		return server.address() as AddressInfo;
+	}
+
+	/**
+	 * Close Server
+	 */
+	async stop() {
+		assert(this.server);
 		try {
+			this.server.close();
+		} catch (e) {
+			Logger.error('Error closing server', e);
+		}
+	}
+
+	private async subMessageTest(buff: Buffer): Promise<boolean> {
+		try {
+			const msg = buff.readInt32BE();
+			const deviceId = buff.slice(4);
+			if (msg === 0 && deviceId.length === 16) {
+				return true
+			} else {
+				return false
+			}
+		} catch {
+			return false
+		}
+	}
+
+
+	private concantenateBuffer(data: Buffer): ReadContext {
+		let buffer: Buffer = null;
+		if (this.messageBuffer && this.messageBuffer.length > 0) {
+			buffer = Buffer.concat([this.messageBuffer, data]);
+		} else {
+			buffer = data;
+		}
+		this.messageBuffer = null
+		const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+		return new ReadContext(arrayBuffer, false)
+	}
+
+	/**
+	 * Handle incoming Data from Server Socket
+	 * @param {Buffer} data 
+	 * @param {Socket} socket 
+	 */
+	private async dataHandler(data: Buffer, socket: Socket) {
+
+		const ctx = this.concantenateBuffer(data);
+
+		if (!this.isBufferedService) {
+			this.emit(`data`, new ReadContext(ctx.readRemainingAsNewArrayBuffer(), false), socket)
+		};
+
+		if (await this.subMessageTest(ctx.peek(20))) {
+			const messageId = ctx.readUInt32();
+			const token = ctx.read(16) // DeviceID
+			if (!this.deviceId) {
+				const deviceId = new DeviceId(token);
+				Logger.silent(`${this.name} adding DeviceId: ${deviceId.string}`)
+				this.deviceId = deviceId
+			}
+			const serviceName = ctx.readNetworkStringUTF16();
+			ctx.seek(2);
+			Logger.silent(`${messageId} request to ${serviceName} from ${this.deviceId.string}`);
+			if (this.device) {
+				StageLinq.devices.emit('newService', this.device, this)
+			}
+			this.emit('newDevice', this);
+		}
+
+		try {
+<<<<<<< HEAD
 			Logger.debug(`Disconnecting ${this.name} Service on ${this.address}`);
 			this.connection.destroy();
 		} catch (e) {
 			Logger.error('Error disconnecting', e);
 		} finally {
 			this.connection = null;
+=======
+			while (ctx.isEOF() === false) {
+				if (ctx.sizeLeft() < 4) {
+					this.messageBuffer = ctx.readRemainingAsNewBuffer();
+					break;
+				}
+
+				const length = ctx.readUInt32();
+				if (length <= ctx.sizeLeft()) {
+					const message = ctx.read(length);
+					const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
+					this.emit(`data`, new ReadContext(data, false), socket)
+				} else {
+					ctx.seek(-4); // Rewind 4 bytes to include the length again
+					this.messageBuffer = ctx.readRemainingAsNewBuffer();
+					break;
+				}
+			}
+		} catch (err) {
+			Logger.error(this.name, this.deviceId.string, err);
+>>>>>>> a2a8597a22a21bea71edf57aab99e8f032d0a3a9
 		}
 	}
 
-	async waitForMessage(p_messageId: number): Promise<T> {
+	/**
+	 * Wait for a message from the wire
+	 * @param {string} eventMessage 
+	 * @param {number} messageId 
+	 * @returns {Promise<T>}
+	 */
+	protected async waitForMessage(eventMessage: string, messageId: number): Promise<T> {
 		return await new Promise((resolve, reject) => {
-			const listener = (p_message: ServiceMessage<T>) => {
-				if (p_message.id === p_messageId) {
-					this.removeListener('message', listener);
-					resolve(p_message.message);
+			const listener = (message: ServiceMessage<T>) => {
+				if (message.id === messageId) {
+					this.removeListener(eventMessage, listener);
+					resolve(message.message);
 				}
 			};
-			this.addListener('message', listener);
+			this.addListener(eventMessage, listener);
 			setTimeout(() => {
-				reject(new Error(`Failed to receive message '${p_messageId}' on time`));
+				reject(new Error(`Failed to receive message '${messageId}' on time`));
 			}, MESSAGE_TIMEOUT);
 		});
 	}
 
-	async write(p_ctx: WriteContext) {
-		assert(p_ctx.isLittleEndian() === false);
-		assert(this.connection);
-		const buf = p_ctx.getBuffer();
-		// Logger.info("SEND");
-		//hex(buf);
-		const written = await this.connection.write(buf);
-		assert(written === buf.byteLength);
-		return written;
+	/**
+	 * Write a Context message to the socket
+	 * @param {WriteContext} ctx 
+	 * @returns {Promise<boolean>} true if data written
+	 */
+	protected async write(ctx: WriteContext): Promise<boolean> {
+		assert(ctx.isLittleEndian() === false);
+		const buf = ctx.getBuffer();
+		const written = await this.socket.write(buf);
+		return await written;
 	}
 
-	async writeWithLength(p_ctx: WriteContext) {
-		assert(p_ctx.isLittleEndian() === false);
-		assert(this.connection);
-		const newCtx = new WriteContext({ size: p_ctx.tell() + 4, autoGrow: false });
-		newCtx.writeUInt32(p_ctx.tell());
-		newCtx.write(p_ctx.getBuffer());
+	/**
+	 * Write a length-prefixed Context message to the socket
+	 * @param {WriteContext} ctx 
+	 * @returns {Promise<boolean>} true if data written
+	 */
+	protected async writeWithLength(ctx: WriteContext): Promise<boolean> {
+		assert(ctx.isLittleEndian() === false);
+		const newCtx = new WriteContext({ size: ctx.tell() + 4, autoGrow: false });
+		newCtx.writeUInt32(ctx.tell());
+		newCtx.write(ctx.getBuffer());
 		assert(newCtx.isEOF());
 		return await this.write(newCtx);
 	}
 
-	// FIXME: Cannot use abstract because of async; is there another way to get this?
-	protected async init() {
-		assert.fail('Implement this');
+	//	
+	/**
+	 * Callback for server timeout timer
+	 * Runs if device doesn't conect to service server
+	 * @param {DeviceId} deviceId 
+	 * @param {string} serviceName 
+	 * @param {Server} server 
+	 * @param {StageLinq} parent 
+	 * @param {ServiceHandler} handler 
+	 */
+	protected async closeService(service: Service<T>) {
+		Logger.info(`closing ${service.name} server for ${service.deviceId.string} due to timeout`);
+		service.emit('closingService', service)
+		service.server.close();
 	}
 
-	protected abstract parseData(p_ctx: ReadContext): ServiceMessage<T>;
-
-	protected abstract messageHandler(p_data: ServiceMessage<T>): void;
+	protected abstract instanceListener(eventName: string, ...args: any): void
 }
