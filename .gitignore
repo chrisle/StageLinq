@@ -1,4 +1,5 @@
 /localdb
+dist/
 
 # Logs
 logs
