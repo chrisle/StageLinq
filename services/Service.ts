@@ -115,8 +115,8 @@ export abstract class Service<T> extends EventEmitter {
 
 	/**
 	 * Handle incoming Data from Server Socket
-	 * @param {Buffer} data 
-	 * @param {Socket} socket 
+	 * @param {Buffer} data
+	 * @param {Socket} socket
 	 */
 	private async dataHandler(data: Buffer, socket: Socket) {
 
@@ -144,14 +144,6 @@ export abstract class Service<T> extends EventEmitter {
 		}
 
 		try {
-<<<<<<< HEAD
-			Logger.debug(`Disconnecting ${this.name} Service on ${this.address}`);
-			this.connection.destroy();
-		} catch (e) {
-			Logger.error('Error disconnecting', e);
-		} finally {
-			this.connection = null;
-=======
 			while (ctx.isEOF() === false) {
 				if (ctx.sizeLeft() < 4) {
 					this.messageBuffer = ctx.readRemainingAsNewBuffer();
@@ -171,14 +163,13 @@ export abstract class Service<T> extends EventEmitter {
 			}
 		} catch (err) {
 			Logger.error(this.name, this.deviceId.string, err);
->>>>>>> a2a8597a22a21bea71edf57aab99e8f032d0a3a9
 		}
 	}
 
 	/**
 	 * Wait for a message from the wire
-	 * @param {string} eventMessage 
-	 * @param {number} messageId 
+	 * @param {string} eventMessage
+	 * @param {number} messageId
 	 * @returns {Promise<T>}
 	 */
 	protected async waitForMessage(eventMessage: string, messageId: number): Promise<T> {
@@ -198,7 +189,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	/**
 	 * Write a Context message to the socket
-	 * @param {WriteContext} ctx 
+	 * @param {WriteContext} ctx
 	 * @returns {Promise<boolean>} true if data written
 	 */
 	protected async write(ctx: WriteContext): Promise<boolean> {
@@ -210,7 +201,7 @@ export abstract class Service<T> extends EventEmitter {
 
 	/**
 	 * Write a length-prefixed Context message to the socket
-	 * @param {WriteContext} ctx 
+	 * @param {WriteContext} ctx
 	 * @returns {Promise<boolean>} true if data written
 	 */
 	protected async writeWithLength(ctx: WriteContext): Promise<boolean> {
@@ -222,15 +213,15 @@ export abstract class Service<T> extends EventEmitter {
 		return await this.write(newCtx);
 	}
 
-	//	
+	//
 	/**
 	 * Callback for server timeout timer
 	 * Runs if device doesn't conect to service server
-	 * @param {DeviceId} deviceId 
-	 * @param {string} serviceName 
-	 * @param {Server} server 
-	 * @param {StageLinq} parent 
-	 * @param {ServiceHandler} handler 
+	 * @param {DeviceId} deviceId
+	 * @param {string} serviceName
+	 * @param {Server} server
+	 * @param {StageLinq} parent
+	 * @param {ServiceHandler} handler
 	 */
 	protected async closeService(service: Service<T>) {
 		Logger.info(`closing ${service.name} server for ${service.deviceId.string} due to timeout`);
