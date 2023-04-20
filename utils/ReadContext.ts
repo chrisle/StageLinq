@@ -8,6 +8,13 @@ function fromCString(p_buffer: Uint8Array): string {
 }
 
 export class ReadContext extends Context {
+
+	/**
+	 * ReadContext Utility Class
+	 * @internal
+	 * @param p_buffer 
+	 * @param p_littleEndian 
+	 */
 	constructor(p_buffer: ArrayBuffer, p_littleEndian = false) {
 		super(p_buffer, p_littleEndian);
 	}
@@ -24,6 +31,18 @@ export class ReadContext extends Context {
 		return view;
 	}
 
+	peek(p_bytes: number): Buffer {
+		const bytesToRead = Math.min(this.sizeLeft(), p_bytes);
+		if (bytesToRead <= 0) {
+			return null;
+		}
+
+		const view = new Uint8Array(this.buffer, this.pos, bytesToRead); // Buffer.from(this.buffer.slice(this.pos, this.pos + p_bytes))
+		//this.pos += bytesToRead;
+		assert(view.byteLength === bytesToRead);
+		return Buffer.from(view)
+	}
+
 	readRemaining(): Uint8Array {
 		return this.read(this.sizeLeft());
 	}
@@ -32,6 +51,18 @@ export class ReadContext extends Context {
 		const view = this.readRemaining();
 		const newArrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.length);
 		return Buffer.from(newArrayBuffer);
+	}
+
+	readRemainingAsNewArrayBuffer(): ArrayBuffer {
+		const view = this.readRemaining();
+		const newArrayBuffer = view.buffer.slice(view.byteOffset, view.byteOffset + view.length);
+		return newArrayBuffer;
+	}
+
+	readRemainingAsNewCtx(): ReadContext {
+
+		const newArrayBuffer = this.buffer.slice(this.pos, this.pos + this.sizeLeft());
+		return new ReadContext(newArrayBuffer, false);
 	}
 
 	getString(p_bytes: number): string {
@@ -50,6 +81,18 @@ export class ReadContext extends Context {
 			result += String.fromCharCode(this.readUInt16());
 		}
 		return result;
+	}
+
+	readFloat64(): number {
+		const offset = this.pos;
+		if (offset + 8 <= this.buffer.byteLength) {
+			const value = new DataView(this.buffer).getFloat64(this.pos, this.littleEndian);
+			this.pos += 8;
+			return value;
+		}
+
+		assert.fail(`Read outside buffer`);
+		return null;
 	}
 
 	readUInt64(): bigint {
@@ -111,4 +154,40 @@ export class ReadContext extends Context {
 		assert.fail(`Read outside buffer`);
 		return null;
 	}
+
+	/*
+	fastForward(ctx: ReadContext, targetString: string, msgId: number): ReadContext {
+	
+	assert(targetString.length % 2 === 0);
+	const shiftLeft = (collection:Uint8Array, value:any) => {
+		for (let i = 0; i < collection.length - 1; i++) {
+		collection[i] = collection[i + 1]; // Shift left
+		}
+		collection[collection.length - 1] = value; // Place new value at tail
+		return collection;
+	}
+
+	const ctxSize = ctx.sizeLeft();
+	const bufferSize = (targetString.length / 2);
+	let checkBufferArray = new Uint8Array(bufferSize);
+	checkBufferArray.fill(0);
+	let count = 0;
+
+	while (Buffer.from(checkBufferArray).toString('hex') !== targetString) {
+		shiftLeft(checkBufferArray, ctx.read(1));
+		count++
+		if (ctx.isEOF()) {
+		ctx.seek(0-ctxSize)
+		Logger.debug(`[${msgId}] fastForwarded checked ${count} bytes, returned original`);
+		return ctx
+		}
+	} 
+	ctx.seek(0-bufferSize);
+	if (count !== bufferSize) {
+		Logger.debug(`[${msgId}] fastForwarded ${count} bytes`);
+	}
+	return ctx
+	};
+	*/
 }
+

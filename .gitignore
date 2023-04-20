@@ -1,5 +1,6 @@
 /localdb
 dist/
+.clinic/
 
 # Logs
 logs
@@ -102,5 +103,12 @@ typings/
 
 # TernJS port file
 .tern-port
-
+scratch.ts
 log.txt
+log.txt
+.vscode/settings.json
+version
+log.txt
+.DS_Store
+package-lock.json
+waveform.bin

@@ -1,170 +1,248 @@
+import { EventEmitter } from 'events';
+import { Logger } from '../LogEmitter';
 import { strict as assert } from 'assert';
-import { StageLinqValue } from '../types';
-import { ReadContext } from '../utils/ReadContext';
-import { WriteContext } from '../utils/WriteContext';
-import { Service } from './Service';
-import type { ServiceMessage } from '../types';
-// import { Logger } from '../LogEmitter';
+import { ReadContext, WriteContext } from '../utils';
+import { ServiceMessage, StateNames, DeviceId } from '../types';
+import { Socket } from 'net';
+import { Service } from '../services';
+import { StageLinq } from '../StageLinq';
 
-export const States = [
-  // Mixer
-  StageLinqValue.MixerCH1faderPosition,
-  StageLinqValue.MixerCH2faderPosition,
-  StageLinqValue.MixerCrossfaderPosition,
-
-  // Decks
-  StageLinqValue.EngineDeck1Play,
-  StageLinqValue.EngineDeck1PlayState,
-  StageLinqValue.EngineDeck1PlayStatePath,
-  StageLinqValue.EngineDeck1TrackArtistName,
-  StageLinqValue.EngineDeck1TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck1TrackSongLoaded,
-  StageLinqValue.EngineDeck1TrackSongName,
-  StageLinqValue.EngineDeck1TrackTrackData,
-  StageLinqValue.EngineDeck1TrackTrackName,
-  StageLinqValue.EngineDeck1CurrentBPM,
-  StageLinqValue.EngineDeck1ExternalMixerVolume,
-
-  StageLinqValue.EngineDeck2Play,
-  StageLinqValue.EngineDeck2PlayState,
-  StageLinqValue.EngineDeck2PlayStatePath,
-  StageLinqValue.EngineDeck2TrackArtistName,
-  StageLinqValue.EngineDeck2TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck2TrackSongLoaded,
-  StageLinqValue.EngineDeck2TrackSongName,
-  StageLinqValue.EngineDeck2TrackTrackData,
-  StageLinqValue.EngineDeck2TrackTrackName,
-  StageLinqValue.EngineDeck2CurrentBPM,
-  StageLinqValue.EngineDeck2ExternalMixerVolume,
-
-  StageLinqValue.EngineDeck3Play,
-  StageLinqValue.EngineDeck3PlayState,
-  StageLinqValue.EngineDeck3PlayStatePath,
-  StageLinqValue.EngineDeck3TrackArtistName,
-  StageLinqValue.EngineDeck3TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck3TrackSongLoaded,
-  StageLinqValue.EngineDeck3TrackSongName,
-  StageLinqValue.EngineDeck3TrackTrackData,
-  StageLinqValue.EngineDeck3TrackTrackName,
-  StageLinqValue.EngineDeck3CurrentBPM,
-  StageLinqValue.EngineDeck3ExternalMixerVolume,
-
-  StageLinqValue.EngineDeck4Play,
-  StageLinqValue.EngineDeck4PlayState,
-  StageLinqValue.EngineDeck4PlayStatePath,
-  StageLinqValue.EngineDeck4TrackArtistName,
-  StageLinqValue.EngineDeck4TrackTrackNetworkPath,
-  StageLinqValue.EngineDeck4TrackSongLoaded,
-  StageLinqValue.EngineDeck4TrackSongName,
-  StageLinqValue.EngineDeck4TrackTrackData,
-  StageLinqValue.EngineDeck4TrackTrackName,
-  StageLinqValue.EngineDeck4CurrentBPM,
-  StageLinqValue.EngineDeck4ExternalMixerVolume,
-
-  StageLinqValue.ClientPreferencesLayerA,
-  StageLinqValue.ClientPreferencesPlayer,
-  StageLinqValue.ClientPreferencesPlayerJogColorA,
-  StageLinqValue.ClientPreferencesPlayerJogColorB,
-  StageLinqValue.EngineDeck1DeckIsMaster,
-  StageLinqValue.EngineDeck2DeckIsMaster,
-  StageLinqValue.EngineMasterMasterTempo,
-  StageLinqValue.EngineSyncNetworkMasterStatus,
-  StageLinqValue.MixerChannelAssignment1,
-  StageLinqValue.MixerChannelAssignment2,
-  StageLinqValue.MixerChannelAssignment3,
-  StageLinqValue.MixerChannelAssignment4,
-  StageLinqValue.MixerNumberOfChannels,
-
-];
 
 const MAGIC_MARKER = 'smaa';
-// FIXME: Is this thing really an interval?
 const MAGIC_MARKER_INTERVAL = 0x000007d2;
 const MAGIC_MARKER_JSON = 0x00000000;
 
+enum Action {
+  request = 0x000007d2,
+  response = 0x00000000,
+}
+
+enum Result {
+  accept = 0x00000000,
+  reject = 0xffffffff,
+  inquire = 0x00000064
+}
+
+
+// import * as stagelinqConfig from '../stagelinqConfig.json';
+
+// export type Player = typeof stagelinqConfig.player;
+// export type PlayerDeck = typeof stagelinqConfig.playerDeck;
+// export type Mixer = typeof stagelinqConfig.mixer;
+// function stateReducer(obj: any, prefix: string): string[] {
+//   const entries = Object.entries(obj)
+//   const retArr = entries.map(([key, value]) => {
+//     return (typeof value === 'object' ? [...stateReducer(value, `${prefix}${key}/`)] : `${prefix}${key}`)
+//   })
+//   return retArr.flat()
+// }
+
+// const playerStateValues = stateReducer(stagelinqConfig.player, '/');
+// const mixerStateValues = stateReducer(stagelinqConfig.mixer, '/');
+// const controllerStateValues = [...playerStateValues, ...mixerStateValues];
+
+const playerStateValues = Object.values(StateNames.player);
+const mixerStateValues = Object.values(StateNames.mixer);
+const controllerStateValues = [...playerStateValues, ...mixerStateValues];
+
+
 export interface StateData {
-  name: string;
+  service: StateMap;
+  deviceId: DeviceId;
+  name?: string;
   json?: {
     type: number;
     string?: string;
     value?: number;
+    state?: boolean;
   };
   interval?: number;
 }
 
+/**
+ * StateMap Class
+ */
 export class StateMap extends Service<StateData> {
-  async init() {
-    for (const state of States) {
-      await this.subscribeState(state, 0);
+  public readonly name = "StateMap";
+  static readonly emitter: EventEmitter = new EventEmitter();
+  static #instances: Map<string, StateMap> = new Map()
+
+  /**
+   * StateMap Service Class
+   * @constructor
+   * @param {StageLinq} parent 
+   * @param {StateMapHandler} serviceHandler 
+   * @param {DeviceId} deviceId 
+   */
+  constructor(deviceId: DeviceId) {
+    super(deviceId)
+    StateMap.#instances.set(this.deviceId.string, this)
+    this.addListener('newDevice', (service: StateMap) => this.instanceListener('newDevice', service))
+    this.addListener('newDevice', (service: StateMap) => StageLinq.status.addDecks(service))
+    this.addListener('stateMessage', (data: StateData) => this.instanceListener('stateMessage', data))
+    this.addListener(`data`, (ctx: ReadContext) => this.parseData(ctx));
+    this.addListener(`message`, (message: ServiceMessage<StateData>) => this.messageHandler(message));
+  }
+
+  protected instanceListener(eventName: string, ...args: any) {
+    StateMap.emitter.emit(eventName, ...args)
+  }
+
+  /**
+   * Subscribe to StateMap States
+   */
+  public async subscribe() {
+    const socket = this.socket;
+
+    Logger.silly(`Sending Statemap subscriptions to ${socket.remoteAddress}:${socket.remotePort} ${this.deviceId.string}`);
+
+
+    switch (this.device.info.unit?.type) {
+      case "PLAYER": {
+        for (let state of playerStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+        break;
+      }
+      case "CONTROLLER": {
+        for (let state of controllerStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+        break;
+      }
+      case "MIXER": {
+        for (let state of mixerStateValues) {
+          await this.subscribeState(state, 0, socket);
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
 
-  protected parseData(p_ctx: ReadContext): ServiceMessage<StateData> {
-    const marker = p_ctx.getString(4);
+
+  protected parseData(ctx: ReadContext): ServiceMessage<StateData> {
+    assert(this.deviceId);
+
+    const marker = ctx.getString(4);
+    if (marker !== MAGIC_MARKER) {
+      Logger.error(assert(marker !== MAGIC_MARKER));
+    }
     assert(marker === MAGIC_MARKER);
 
-    const type = p_ctx.readUInt32();
+    const type = ctx.readUInt32();
     switch (type) {
       case MAGIC_MARKER_JSON: {
-        const name = p_ctx.readNetworkStringUTF16();
-        const json = JSON.parse(p_ctx.readNetworkStringUTF16());
-        return {
-          id: MAGIC_MARKER_JSON,
-          message: {
-            name: name,
-            json: json,
-          },
-        };
+        const name = ctx.readNetworkStringUTF16();
+        let jsonString = "";
+        try {
+          jsonString = ctx.readNetworkStringUTF16();
+          const json = JSON.parse(jsonString);
+          const message: ServiceMessage<StateData> = {
+            id: MAGIC_MARKER_JSON,
+            message: {
+              name: name,
+              json: json,
+              service: this,
+              deviceId: this.deviceId,
+            },
+          };
+          this.emit(`message`, message);
+          return message
+        } catch (err) {
+          Logger.error(this.name, jsonString, err);
+        }
+        break;
       }
 
       case MAGIC_MARKER_INTERVAL: {
-        const name = p_ctx.readNetworkStringUTF16();
-        const interval = p_ctx.readInt32();
-        return {
+        const name = ctx.readNetworkStringUTF16();
+        const interval = ctx.readInt32();
+        ctx.seek(-4);
+
+        const message: ServiceMessage<StateData> = {
           id: MAGIC_MARKER_INTERVAL,
           message: {
+            service: this,
+            deviceId: this.deviceId,
             name: name,
             interval: interval,
           },
         };
-      }
-
-      default:
+        this.emit(`message`, message);
+        return message
         break;
+      }
+      default: {
+        assert.fail(`Unhandled type ${type}`);
+        break;
+      }
     }
-    assert.fail(`Unhandled type ${type}`);
-    return null;
   }
 
-  protected messageHandler(_: ServiceMessage<StateData>): void {
-    // Logger.debug(
-    //   `${p_data.message.name} => ${
-    //     p_data.message.json ? JSON.stringify(p_data.message.json) : p_data.message.interval
-    //   }`
-    // );
+  protected messageHandler(data: ServiceMessage<StateData>): void {
+
+    if (this.listenerCount(data?.message?.name) && data?.message?.json) {
+      this.emit(data.message.name, data.message)
+    }
+
+    if (data?.message?.interval) {
+      this.sendStateResponse(data.message.name, data.message.service.socket);
+    }
+    if (data?.message?.json) {
+      this.emit('stateMessage', data.message);
+    }
   }
 
-  private async subscribeState(p_state: string, p_interval: number) {
-    // Logger.log(`Subscribe to state '${p_state}'`);
+  /**
+   * Respond to StateMap request with rejection
+   * @param {string} state 
+   * @param {Socket} socket 
+   */
+  private async sendStateResponse(state: string, socket: Socket) {
+
     const getMessage = function (): Buffer {
       const ctx = new WriteContext();
       ctx.writeFixedSizedString(MAGIC_MARKER);
-      ctx.writeUInt32(MAGIC_MARKER_INTERVAL);
-      ctx.writeNetworkStringUTF16(p_state);
-      ctx.writeUInt32(p_interval);
+      ctx.writeUInt32(Action.response);
+      ctx.writeNetworkStringUTF16(state);
+      ctx.writeUInt32(Result.reject);
       return ctx.getBuffer();
     };
 
     const message = getMessage();
-    {
+
+    const ctx = new WriteContext();
+    ctx.writeUInt32(message.length);
+    ctx.write(message)
+    const buffer = ctx.getBuffer();
+    await socket.write(buffer);
+  }
+
+  /**
+   * Send subcribe to state message to device
+   * @param {string} state Path/Name of the State
+   * @param {number} interval TODO clear this up
+   * @param {Socket} socket 
+   */
+  private async subscribeState(state: string, interval: number, socket: Socket) {
+
+    const getMessage = function (): Buffer {
       const ctx = new WriteContext();
-      ctx.writeUInt32(message.length);
-      const written = await this.connection.write(ctx.getBuffer());
-      assert(written === 4);
-    }
-    {
-      const written = await this.connection.write(message);
-      assert(written === message.length);
-    }
+      ctx.writeFixedSizedString(MAGIC_MARKER);
+      ctx.writeUInt32(MAGIC_MARKER_INTERVAL);
+      ctx.writeNetworkStringUTF16(state);
+      ctx.writeUInt32(interval);
+      return ctx.getBuffer();
+    };
+
+    const message = getMessage();
+
+    const ctx = new WriteContext();
+    ctx.writeUInt32(message.length);
+    ctx.write(message)
+    const buffer = ctx.getBuffer();
+    await socket.write(buffer);
   }
 }
