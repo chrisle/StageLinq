@@ -16,13 +16,49 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
  * Main StageLinq static class.
  */
 export class StageLinq {
-	static options: StageLinqOptions = DEFAULT_OPTIONS;
-	static readonly logger: Logger = Logger.instance;
-	static readonly discovery: Discovery = new Discovery();
-	static readonly devices = new Devices();
-	static readonly sources: Sources = new Sources();
-	static readonly status: Status = new Status();
-	static directory: Directory = null;
+	private static _options: StageLinqOptions = DEFAULT_OPTIONS;
+	readonly logger: Logger = Logger.instance;
+	private static _discovery: Discovery = null;
+	private static _devices: Devices = null;
+	private static _sources: Sources = null;
+	private static _status: Status = null;
+	private static _directory: Directory = null;
+
+	constructor(options?: StageLinqOptions,) {
+		StageLinq._options = options || DEFAULT_OPTIONS;
+		StageLinq._discovery = new Discovery();
+		StageLinq._devices = new Devices();
+		StageLinq._sources = new Sources();
+		StageLinq._status = new Status();
+	}
+
+	static get options() {
+		return this._options
+	}
+
+	static get discovery() {
+		return this._discovery
+	}
+
+	static get devices() {
+		return this._devices
+	}
+
+	static get sources() {
+		return this._sources
+	}
+
+	static get status() {
+		return this._status
+	}
+
+	static get directory() {
+		return this._directory
+	}
+
+	private static set directory(service: Directory) {
+		StageLinq._directory = service;
+	}
 
 
 	/**
@@ -43,7 +79,7 @@ export class StageLinq {
 	/**
 	 * Connect to the StageLinq network.
 	 */
-	static async connect() {
+	async connect() {
 		//  Initialize Discovery agent
 		StageLinq.discovery.listen(StageLinq.options.actingAs);
 
@@ -58,10 +94,10 @@ export class StageLinq {
 	 * Disconnect from the StageLinq network.
 	 * Close all open Servers
 	 */
-	static async disconnect() {
+	async disconnect() {
 		try {
 			Logger.warn('disconnecting');
-			await this.directory.stop();
+			await StageLinq.directory.stop();
 			const services = await StageLinq.devices.getDeviceServices();
 			for (const service of services) {
 				console.log(`closing ${service.name} on ${service.deviceId.string}`);

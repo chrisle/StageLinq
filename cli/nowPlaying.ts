@@ -18,8 +18,7 @@ async function main() {
 		],
 	}
 
-	//const stageLinq = new StageLinq(stageLinqOptions);
-	StageLinq.options = stageLinqOptions
+	const stageLinq = new StageLinq(stageLinqOptions);
 
 	async function downloadFile(sourceName: string, deviceId: DeviceId, path: string, dest?: string) {
 		while (!StageLinq.sources.hasSource(sourceName, deviceId)) {
@@ -72,7 +71,7 @@ async function main() {
 			console.info('... exiting');
 
 			try {
-				await StageLinq.disconnect();
+				await stageLinq.disconnect();
 			} catch (err: any) {
 				const message = err.stack.toString();
 				console.error(message);
@@ -80,7 +79,7 @@ async function main() {
 			process.exit(returnCode);
 		});
 
-		await StageLinq.connect();
+		await stageLinq.connect();
 
 		while (true) {
 			await sleep(250);
@@ -92,7 +91,7 @@ async function main() {
 		returnCode = 1;
 	}
 
-	await StageLinq.disconnect();
+	await stageLinq.disconnect();
 	process.exit(returnCode);
 }
 
