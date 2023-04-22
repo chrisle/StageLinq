@@ -28,7 +28,7 @@ export declare interface Discovery {
 export class Discovery extends EventEmitter {
 	private socket: Socket;
 	private address: IpAddress;
-	private broadcastAddress: IpAddress;
+	private broadcastAddresses: IpAddress[];
 	private options: DiscoveryMessageOptions = null;
 	private peers: Map<string, ConnectionInfo> = new Map();
 	private deviceId: DeviceId = null;
@@ -72,9 +72,10 @@ export class Discovery extends EventEmitter {
 		this.socket.setBroadcast(true);
 		const discoveryMessage = this.createDiscoveryMessage(Action.Login, this.options, port);
 		await sleep(500);
-		const ips = this.findBroadcastIPs();
+		this.broadcastAddresses = this.findBroadcastIPs();
 		const msg = this.writeDiscoveryMessage(discoveryMessage);
-		ips.forEach(ip => this.broadcastMessage(this.socket, msg, LISTEN_PORT, ip))
+
+		this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddresses)
 		this.emit('announcing', discoveryMessage);
 		Logger.debug(`Broadcast Discovery Message ${this.deviceId.string} ${discoveryMessage.source}`);
 		this.announceTimer = setInterval(
@@ -83,7 +84,7 @@ export class Discovery extends EventEmitter {
 			this.socket,
 			msg,
 			LISTEN_PORT,
-			this.broadcastAddress
+			this.broadcastAddresses
 		);
 	}
 
@@ -97,7 +98,7 @@ export class Discovery extends EventEmitter {
 		const discoveryMessage = this.createDiscoveryMessage(Action.Logout, this.options);
 		const msg = this.writeDiscoveryMessage(discoveryMessage);
 
-		await this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);
+		await this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddresses);
 		await this.socket.close();
 
 		Logger.debug('Broadcast Unannounce Message');
@@ -112,8 +113,10 @@ export class Discovery extends EventEmitter {
 	 * @param {number} port
 	 * @param {IpAddress} address
 	 */
-	private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress): Promise<void> {
-		await socket.send(msg, port, address);
+	private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress[]): Promise<void> {
+		for (const ip of address) {
+			await socket.send(msg, port, ip);
+		}
 	}
 
 	/**
