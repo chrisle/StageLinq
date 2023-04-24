@@ -4,7 +4,7 @@ import { strict as assert } from 'assert';
 import { ConnectionInfo, DiscoveryMessage, DiscoveryMessageOptions, IpAddress, Units, DeviceId } from '../types';
 import { sleep, WriteContext, ReadContext } from '../utils';
 import { Socket, RemoteInfo, createSocket } from 'dgram';
-import { subnet, SubnetInfo } from 'ip';
+import { subnet } from 'ip';
 import { networkInterfaces } from 'os';
 
 const ANNOUNCEMENT_INTERVAL = 1000;
@@ -28,7 +28,7 @@ export declare interface Discovery {
 export class Discovery extends EventEmitter {
 	private socket: Socket;
 	private address: IpAddress;
-	private broadcastAddress: IpAddress;
+	private broadcastAddresses: IpAddress[];
 	private options: DiscoveryMessageOptions = null;
 	private peers: Map<string, ConnectionInfo> = new Map();
 	private deviceId: DeviceId = null;
@@ -72,13 +72,10 @@ export class Discovery extends EventEmitter {
 		this.socket.setBroadcast(true);
 		const discoveryMessage = this.createDiscoveryMessage(Action.Login, this.options, port);
 		await sleep(500);
-		const ips = this.findBroadcastIPs();
-		const address = ips.filter((ip) => {
-			return ip.contains(this.address) === true;
-		});
-		this.broadcastAddress = address.shift().broadcastAddress;
+		this.broadcastAddresses = this.findBroadcastIPs();
 		const msg = this.writeDiscoveryMessage(discoveryMessage);
-		this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);
+
+		this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddresses)
 		this.emit('announcing', discoveryMessage);
 		Logger.debug(`Broadcast Discovery Message ${this.deviceId.string} ${discoveryMessage.source}`);
 		this.announceTimer = setInterval(
@@ -87,7 +84,7 @@ export class Discovery extends EventEmitter {
 			this.socket,
 			msg,
 			LISTEN_PORT,
-			this.broadcastAddress
+			this.broadcastAddresses
 		);
 	}
 
@@ -101,7 +98,7 @@ export class Discovery extends EventEmitter {
 		const discoveryMessage = this.createDiscoveryMessage(Action.Logout, this.options);
 		const msg = this.writeDiscoveryMessage(discoveryMessage);
 
-		await this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddress);
+		await this.broadcastMessage(this.socket, msg, LISTEN_PORT, this.broadcastAddresses);
 		await this.socket.close();
 
 		Logger.debug('Broadcast Unannounce Message');
@@ -116,8 +113,10 @@ export class Discovery extends EventEmitter {
 	 * @param {number} port
 	 * @param {IpAddress} address
 	 */
-	private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress): Promise<void> {
-		await socket.send(msg, port, address);
+	private async broadcastMessage(socket: Socket, msg: Buffer, port: number, address: IpAddress[]): Promise<void> {
+		for (const ip of address) {
+			await socket.send(msg, port, ip);
+		}
 	}
 
 	/**
@@ -220,7 +219,7 @@ export class Discovery extends EventEmitter {
 	 * Get list of Broadcast-enabled Network Interfaces
 	 * @returns {SubnetInfo[]}
 	 */
-	private findBroadcastIPs(): SubnetInfo[] {
+	private findBroadcastIPs(): string[] {
 		const interfaces = Object.values(networkInterfaces());
 		assert(interfaces.length);
 		const ips = [];
@@ -229,7 +228,7 @@ export class Discovery extends EventEmitter {
 			for (const entry of i) {
 				if (entry.family === 'IPv4' && entry.internal === false) {
 					const info = subnet(entry.address, entry.netmask);
-					ips.push(info);
+					ips.push(info.broadcastAddress);
 				}
 			}
 		}
