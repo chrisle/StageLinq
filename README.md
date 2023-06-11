@@ -221,7 +221,7 @@ const beatMethod = {
 };
 
 
-BeatInfo.emitter.on('newBeatInfoDevice', async (beatInfo: BeatInfo) => {
+BeatInfo.emitter.on('newDevice', async (beatInfo: BeatInfo) => {
   console.log(`[BEATINFO] New Device ${beatInfo.deviceId.string}`)
 
   if (beatMethod.useCallback) {
