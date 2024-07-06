@@ -8,7 +8,7 @@ import * as FileType from 'file-type';
 import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
-import Database = require('better-sqlite3');
+import Database = require('better-sqlite3-multiple-ciphers');
 
 
 interface SourceAndTrackPath {
@@ -155,7 +155,9 @@ export class NetworkDevice {
     const result = stmt.all();
     const albumArtExtensions: Record<string, string | null> = {};
     for (const entry of result) {
+      // @ts-ignore
       const filetype = await FileType.fromBuffer(entry.albumArt);
+      // @ts-ignore
       albumArtExtensions[entry.id] = filetype ? filetype.ext : null;
     }
 

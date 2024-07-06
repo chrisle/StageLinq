@@ -1,4 +1,4 @@
-import Database = require('better-sqlite3');
+import Database = require('better-sqlite3-multiple-ciphers');
 import { Track } from '../types';
 
 
@@ -23,6 +23,7 @@ export class DbConnection {
   querySource<T>(query: string, ...params: any[]): T[] {
     console.debug(`Querying ${this.dbPath}: ${query} (${params.join(', ')})`);
     const result = this.db.prepare(query);
+    // @ts-ignore
     return result.all(params);
   }
 

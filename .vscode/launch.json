@@ -7,7 +7,7 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch JS",
+			"name": "Stagelinq (JS)",
 			"program": "${workspaceFolder}/dist/cli.js",
 			"internalConsoleOptions": "openOnSessionStart",
 			"sourceMaps": true,
@@ -22,7 +22,7 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch TS",
+			"name": "Stagelinq (TS)",
 			"program": "${workspaceFolder}/cli/index.ts",
 			"preLaunchTask": "tsc: build - tsconfig.json",
 			"internalConsoleOptions": "openOnSessionStart",
