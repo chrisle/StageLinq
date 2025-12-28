@@ -1,83 +1,192 @@
 # StageLinq
 
-NodeJS library implementation to access information through the Denon StageLinq protocol.
+TypeScript library to connect to Denon DJ hardware via the StageLinq protocol.
 
-# Features
+## Installation
 
-* Tested with Denon two SC6000s, X1850, Prime 4, Prime 2, and Prime Go.
-* Event emitters for state changes, tracks getting loaded, and current playing track.
-* Event emitter for debug logging.
-* Downloads source databases for you.
-* You can implement handling the database yourself or use this library's BetterSqlite3 dependency.
-
----
-
-## Usage
-
-```ts
-import { StageLinq } from '../StageLinq';
-
-const options = { downloadDbSources: true };
-const stageLinq = new StageLinq(options);
-
-stageLinq.devices.on('ready', (connectionInfo) => {
-  console.log(`Device ${connectionInfo.software.name} on ` +
-    `${connectionInfo.address}:${connectionInfo.port} is ready.`);
-});
-
-stageLinq.devices.on('trackLoaded', (status) => {
-  console.log(`"${status.title}" - ${status.artist} loaded on player ` +
-    `${status.deck})`);
-});
-
-stageLinq.devices.on('nowPlaying', (status) => {
-  console.log(`Now Playing: "${status.title}" - ${status.artist})`);
-});
+```bash
+npm install stagelinq
 ```
 
-A [complete example](https://github.com/chrisle/StageLinq/blob/main/cli/index.ts) with all events and options can be found in the CLI.
+## Quick Start
 
----
+```ts
+import { StageLinq } from 'stagelinq';
 
-## Overview
+const stagelinq = new StageLinq({ downloadDbSources: true });
 
-The idea behind this library is to have a structure something like this:
+stagelinq.devices.on('trackLoaded', (status) => {
+  console.log(`${status.title} - ${status.artist} loaded on deck ${status.deck}`);
+});
 
-**StageLinq > Devices > Player > Deck**
+stagelinq.devices.on('nowPlaying', (status) => {
+  console.log(`Now Playing: ${status.title} - ${status.artist}`);
+});
 
-A StageLinq sets up a device listener and a class that handles all the
-devices (`StageLinqDevices`).
+await stagelinq.connect();
+```
 
-`StageLinqDevices` figures out if it wants to connect or not and handles
-connections. There may be one or more device on the network. For each device it
-will try to connect to it and subscribe to it's `StateMap`.
+## Features
 
-Currently there is only one type of device: `Player`. A `Player` may have up to
-4 decks A, B, C, D (aka "layers"). The `Player` handles incoming messages,
-parses them, groups them, and emits events. These events bubble up to the
-`Device`.
+| Feature | Description |
+|---------|-------------|
+| Device Discovery | Auto-discover StageLinq devices on the network |
+| StateMap Service | Track state, fader positions, device status |
+| BeatInfo Service | Real-time BPM, beat grid, timeline position |
+| FileTransfer Service | Download databases and files from devices |
+| TimeSync Service | Synchronize timing with devices |
+| Broadcast Service | Broadcast messages to network |
+| EAAS Support | Engine Library access via gRPC/HTTP |
+| Connection Health | Automatic reconnection on connection loss |
+| Windows Support | Per-interface broadcast for Windows compatibility |
+| Track Path Resolution | Handle files outside Engine Library/Music |
 
-## Database
+## Supported Devices
 
-You can use BetterSqlite3 bundled into this library or let this library
-download the files for you, then choose your own Sqlite library to
-query the database. See CLI example.
+- Denon SC6000 / SC6000M
+- Denon SC5000 / SC5000M
+- Denon Prime 4 / Prime 2 / Prime Go
+- Denon X1850 / X1800 mixers
+- Denon LC6000
 
-## Logging
+## API
 
-I needed the logging to be used outside of the library so I made them events
-that you can listen to.
+### Instance-based (recommended)
 
-* `error`: When something bad happens.
-* `warn`: When something happens but doesn't affect anything.
-* `info`/`log`: When we have something to say
-* `debug`: Spits out the parsed version of the packets.
-* `silly`: Dumps all kinds of internal stuff
+```ts
+import { StageLinq } from 'stagelinq';
 
-## About
+const stagelinq = new StageLinq({
+  downloadDbSources: true,
+  maxRetries: 3,
+});
 
-Forked from @MarByteBeep's code.
+// Device events
+stagelinq.devices.on('ready', (info) => {
+  console.log(`Connected to ${info.software.name}`);
+});
 
-Additional reverse engineering work: https://github.com/chrisle/stagelinq-pcap
+stagelinq.devices.on('trackLoaded', (status) => {
+  console.log(`Loaded: ${status.title} on deck ${status.deck}`);
+});
 
-Used in my app Now Playing https://www.nowplaying2.com
+stagelinq.devices.on('nowPlaying', (status) => {
+  console.log(`Playing: ${status.title}`);
+});
+
+// Database events
+stagelinq.devices.on('dbDownloaded', (sourceId, dbPath) => {
+  console.log(`Database saved to ${dbPath}`);
+});
+
+await stagelinq.connect();
+
+// Later...
+await stagelinq.disconnect();
+```
+
+### Static class
+
+```ts
+import { StageLinq } from 'stagelinq';
+
+StageLinq.options = { downloadDbSources: true };
+
+StageLinq.devices.on('nowPlaying', (status) => {
+  console.log(`Playing: ${status.title}`);
+});
+
+await StageLinq.connect();
+```
+
+## Events
+
+### Device Events
+
+```ts
+stagelinq.devices.on('ready', (info: ConnectionInfo) => {});
+stagelinq.devices.on('newDevice', (device: Device) => {});
+stagelinq.devices.on('deviceConnected', (info: ConnectionInfo) => {});
+stagelinq.devices.on('deviceDisconnected', (info: ConnectionInfo) => {});
+```
+
+### Track Events
+
+```ts
+stagelinq.devices.on('trackLoaded', (status: PlayerStatus) => {});
+stagelinq.devices.on('nowPlaying', (status: PlayerStatus) => {});
+stagelinq.devices.on('trackUnloaded', (deck: DeckInfo) => {});
+```
+
+### State Events
+
+```ts
+stagelinq.devices.on('stateChanged', (state: StateData) => {});
+stagelinq.devices.on('stateMessage', (data: StateData) => {});
+```
+
+### Database Events
+
+```ts
+stagelinq.devices.on('newSource', (source: SourceInfo) => {});
+stagelinq.devices.on('dbDownloading', (sourceId, dbPath) => {});
+stagelinq.devices.on('dbDownloaded', (sourceId, dbPath) => {});
+```
+
+## Examples
+
+See the [cli/](cli/) folder for complete examples:
+
+- [`cli/index.ts`](cli/index.ts) - Full example with all events
+- [`cli/discover.ts`](cli/discover.ts) - Network discovery demo
+- [`cli/beatinfo.ts`](cli/beatinfo.ts) - Real-time beat information
+
+Run examples:
+
+```bash
+# Main CLI
+npx ts-node cli/index.ts
+
+# Discovery
+npx ts-node cli/discover.ts
+
+# Beat info
+npx ts-node cli/beatinfo.ts
+```
+
+## Tools
+
+### Wireshark Dissector
+
+A Lua dissector for Wireshark is included for protocol debugging:
+
+```bash
+# Copy to Wireshark plugins folder
+cp tools/wireshark/stagelinq.lua ~/.local/lib/wireshark/plugins/
+```
+
+## Documentation
+
+- [Protocol Documentation](docs/protocol.md) - StageLinq protocol specification
+- [CHANGELOG](CHANGELOG.md) - Version history
+
+## Contributors
+
+- **Chris Le** ([@chrisle](https://github.com/chrisle)) - Maintainer
+- **Martijn Reuvers** - Core development
+- **MarByteBeep** ([@MarByteBeep](https://github.com/MarByteBeep)) - Original TypeScript implementation
+- **honusz** - BeatInfo, TimeSync, Broadcast services
+- **Kalle Kirjalainen** - Contributions
+- **docBliny** - Contributions
+
+## Attribution
+
+This library incorporates code and ideas from other StageLinq implementations:
+
+- **[go-stagelinq](https://github.com/icedream/go-stagelinq)** by Carl Kittelberger (icedream) - EAAS, Windows fix, token utilities
+- **[PyStageLinQ](https://github.com/Jaxc/PyStageLinQ)** by Jaxc - Wireshark dissector, protocol documentation
+- **[kyleawayan/StageLinq](https://github.com/kyleawayan/StageLinq)** by Kyle Awayan - Track path resolution fixes
+
+## License
+
+GPL-3.0
