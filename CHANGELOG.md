@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.0] - 2024-12-28
+## [2.0.0] - 2024-12-28
 
 ### Added
 
@@ -76,6 +76,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Dual API pattern** - Both instance-based and static class APIs
+  - `new StageLinq()` for instance-based usage
+  - `StageLinq.connect()` for static/singleton usage
+  - Maintains backward compatibility with existing code
 - Updated TypeScript to 5.3.0
 - Updated @types/node to 20.10.0
 - Updated package.json for npm publishing preparation
@@ -101,15 +105,6 @@ This release incorporates code and ideas from several StageLinq implementations:
 - **StageLinq fork** by kyleawayan
   - Track path resolution fix, disconnect freezing fix
   - https://github.com/kyleawayan/StageLinq
-
-## [2.0.0] - 2024
-
-### Changed
-
-- **Instance-based API** - Major refactor from static to instance-based architecture
-  - `new StageLinq()` for instance-based usage
-  - `StageLinq.connect()` for static/singleton usage (backward compatible)
-- Dual API pattern for flexibility
 
 ## [1.0.9] - Previous Release
 
