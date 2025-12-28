@@ -21,7 +21,7 @@ export class PlayerMessageQueue {
 
   private callback: DataQueueCallback;
   private data: PlayerLayerState[] = [];
-  private timeout: NodeJS.Timer | null = null;
+  private timeout: ReturnType<typeof setTimeout> | null = null;
   private layer: string;
 
   constructor(layer: string) {

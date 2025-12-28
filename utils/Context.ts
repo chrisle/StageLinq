@@ -1,11 +1,11 @@
 import { strict as assert } from 'assert';
 
 export class Context {
-	protected buffer: ArrayBuffer;
+	protected buffer: ArrayBufferLike;
 	protected pos: number;
 	protected readonly littleEndian: boolean;
 
-	constructor(p_buffer: ArrayBuffer, p_littleEndian?: boolean) {
+	constructor(p_buffer: ArrayBufferLike, p_littleEndian?: boolean) {
 		this.buffer = p_buffer;
 		this.pos = 0;
 		this.littleEndian = p_littleEndian === undefined || !!p_littleEndian;

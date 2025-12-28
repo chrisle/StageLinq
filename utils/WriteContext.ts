@@ -14,7 +14,7 @@ export class WriteContext extends Context {
 	constructor(p_options?: WriteContextConstructOptions) {
 		const buffer = new ArrayBuffer(p_options && p_options.size > 0 ? p_options.size : 128);
 		super(buffer, !p_options ? false : !!p_options.littleEndian);
-		this.autoGrow = !p_options || (p_options.autoGrow ? !!p_options.autoGrow : true);
+		this.autoGrow = !p_options || p_options.autoGrow !== false;
 	}
 
 	getBuffer(): Buffer {

@@ -78,7 +78,7 @@ export declare interface ConnectionHealth {
  */
 export class ConnectionHealth extends EventEmitter {
   private options: Required<ConnectionHealthOptions>;
-  private heartbeatTimer: NodeJS.Timer | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private lastActivityTime: number = Date.now();
   private missedHeartbeats: number = 0;
   private reconnectAttempt: number = 0;

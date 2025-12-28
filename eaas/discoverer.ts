@@ -59,7 +59,7 @@ export declare interface EAASDiscoverer {
 export class EAASDiscoverer extends EventEmitter {
   private options: Required<EAASDiscovererOptions>;
   private socket: UDPSocket | null = null;
-  private scanTimer: NodeJS.Timer | null = null;
+  private scanTimer: ReturnType<typeof setInterval> | null = null;
   private discoveredDevices: Map<string, EAASDevice> = new Map();
 
   constructor(options: EAASDiscovererOptions = {}) {

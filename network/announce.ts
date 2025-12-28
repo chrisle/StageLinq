@@ -69,7 +69,7 @@ let announceClient: UDPSocket | null = null;
 /** Per-interface sockets for Windows */
 let windowsSockets: Map<string, UDPSocket> = new Map();
 
-let announceTimer: NodeJS.Timer | null = null;
+let announceTimer: ReturnType<typeof setInterval> | null = null;
 
 /** Check if running on Windows */
 const isWindows = platform() === 'win32';
