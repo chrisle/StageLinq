@@ -179,9 +179,30 @@ A Lua dissector for Wireshark is included for protocol debugging:
 cp tools/wireshark/stagelinq.lua ~/.local/lib/wireshark/plugins/
 ```
 
+## Testing
+
+```bash
+npm test              # Run tests
+npm run test:watch    # Watch mode
+npm run test:coverage # Coverage report
+```
+
+**112 tests** across 5 test files.
+
 ## Documentation
 
-- [Protocol Documentation](docs/protocol.md) - StageLinq protocol specification
+### Guides
+- [Events Reference](docs/events.md) - All events and state data
+- [Protocol Specification](docs/protocol.md) - StageLinq protocol details
+
+### Services
+- [StateMap](docs/statemap.md) - Track state, playback, faders
+- [BeatInfo](docs/beatinfo.md) - Real-time beat and tempo
+- [FileTransfer](docs/filetransfer.md) - Database and file downloads
+- [EAAS](docs/eaas.md) - Engine Library gRPC/HTTP access
+- [Connection Health](docs/connection-health.md) - Auto-reconnection
+
+### Reference
 - [CHANGELOG](CHANGELOG.md) - Version history
 
 ## Contributors
