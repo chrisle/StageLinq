@@ -200,8 +200,7 @@ class StageLinqDevices extends events_1.EventEmitter {
         LogEmitter_1.Logger.debug(`Database download complete for ${connectionInfo.source}`);
     }
     sourceId(connectionInfo) {
-        return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-            .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
+        return (0, utils_1.formatToken)(connectionInfo.token);
     }
     /**
      * Setup stateMap.

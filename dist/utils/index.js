@@ -20,5 +20,6 @@ __exportStar(require("./hex"), exports);
 __exportStar(require("./ReadContext"), exports);
 __exportStar(require("./sleep"), exports);
 __exportStar(require("./tcp"), exports);
+__exportStar(require("./token"), exports);
 __exportStar(require("./WriteContext"), exports);
 //# sourceMappingURL=index.js.map

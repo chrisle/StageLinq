@@ -2,7 +2,7 @@ import { ConnectionInfo, IpAddress, PlayerStatus, ServiceMessage, StageLinqOptio
 import { EventEmitter } from 'events';
 import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
-import { sleep } from '../utils';
+import { formatToken, sleep } from '../utils';
 import { FileTransfer, StateData, StateMap } from '../services';
 import { Logger } from '../LogEmitter';
 import { Databases } from '../Databases';
@@ -236,8 +236,7 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   private sourceId(connectionInfo: ConnectionInfo) {
-    return /(\w{8})(\w{4})(\w{4})(\w{4})(\w{12})/i
-      .exec(Buffer.from(connectionInfo.token).toString('hex')).splice(1).join('-');
+    return formatToken(connectionInfo.token);
   }
 
   /**
