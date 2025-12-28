@@ -112,37 +112,40 @@ await StageLinq.connect();
 
 ## Events
 
-### Device Events
-
 ```ts
-stagelinq.devices.on('ready', (info: ConnectionInfo) => {});
-stagelinq.devices.on('newDevice', (device: Device) => {});
-stagelinq.devices.on('deviceConnected', (info: ConnectionInfo) => {});
-stagelinq.devices.on('deviceDisconnected', (info: ConnectionInfo) => {});
-```
-
-### Track Events
-
-```ts
+// Track events
 stagelinq.devices.on('trackLoaded', (status: PlayerStatus) => {});
 stagelinq.devices.on('nowPlaying', (status: PlayerStatus) => {});
-stagelinq.devices.on('trackUnloaded', (deck: DeckInfo) => {});
-```
 
-### State Events
+// Device events
+stagelinq.devices.on('ready', (info: ConnectionInfo) => {});
+stagelinq.devices.on('deviceConnected', (info: ConnectionInfo) => {});
 
-```ts
+// State events (200+ states per deck)
 stagelinq.devices.on('stateChanged', (state: StateData) => {});
-stagelinq.devices.on('stateMessage', (data: StateData) => {});
-```
 
-### Database Events
+// Beat events (real-time BPM, beat position)
+stagelinq.devices.on('beatMessage', (data: BeatData) => {});
 
-```ts
-stagelinq.devices.on('newSource', (source: SourceInfo) => {});
-stagelinq.devices.on('dbDownloading', (sourceId, dbPath) => {});
+// Database events
 stagelinq.devices.on('dbDownloaded', (sourceId, dbPath) => {});
 ```
+
+**[View all events →](docs/events.md)**
+
+## State Data
+
+The library tracks 200+ state values per deck:
+
+| Category | Example States |
+|----------|----------------|
+| **Track** | `ArtistName`, `SongName`, `TrackNetworkPath`, `TrackLength` |
+| **Playback** | `Play`, `PlayState`, `CurrentBPM`, `Speed` |
+| **Sync** | `SyncMode`, `DeckIsMaster`, `MasterTempo` |
+| **Loop** | `LoopEnableState`, `CurrentLoopSizeInBeats` |
+| **Mixer** | `ExternalMixerVolume`, `CrossfaderPosition` |
+
+**[View all states →](docs/events.md#full-state-list)**
 
 ## Examples
 
