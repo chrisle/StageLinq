@@ -1,4 +1,4 @@
-import Database = require('better-sqlite3-multiple-ciphers');
+import Database = require('better-sqlite3');
 import { Track } from '../types';
 
 

@@ -9,7 +9,7 @@ import * as FileType from 'file-type';
 import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
-import Database = require('better-sqlite3-multiple-ciphers');
+import Database = require('better-sqlite3');
 
 
 interface SourceAndTrackPath {
