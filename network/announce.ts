@@ -229,7 +229,8 @@ export async function unannounce(message: DiscoveryMessage): Promise<void> {
     Logger.warn('Announce timer has not started.');
     return;
   }
-  assert(announceTimer);
+  // Note: assertion removed to fix freezing issues on disconnect
+  // See: kyleawayan/StageLinq bb1ea5dfd
   clearInterval(announceTimer);
   announceTimer = null;
 

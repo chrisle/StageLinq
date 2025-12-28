@@ -24,6 +24,18 @@ export declare class NetworkDevice {
     dumpAlbumArt(p_sourceName: string): Promise<void>;
     querySource(p_sourceName: string, p_query: string, ...p_params: any[]): any[];
     getAlbumArtPath(p_networkPath: string): string;
+    /**
+     * Parse a network path into source and track path components.
+     *
+     * Handles various Engine DJ folder structures including:
+     * - Standard Engine Library/Music paths
+     * - Custom library locations
+     * - External USB drives
+     * - RekordBox conversions
+     *
+     * Track path resolution based on kyleawayan/StageLinq
+     * https://github.com/kyleawayan/StageLinq
+     */
     private getSourceAndTrackFromNetworkPath;
     private requestAllServicePorts;
 }

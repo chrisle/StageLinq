@@ -198,7 +198,8 @@ async function unannounce(message) {
         LogEmitter_1.Logger.warn('Announce timer has not started.');
         return;
     }
-    (0, assert_1.strict)(announceTimer);
+    // Note: assertion removed to fix freezing issues on disconnect
+    // See: kyleawayan/StageLinq bb1ea5dfd
     clearInterval(announceTimer);
     announceTimer = null;
     const ctx = new WriteContext_1.WriteContext();

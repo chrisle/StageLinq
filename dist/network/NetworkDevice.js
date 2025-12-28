@@ -5,6 +5,7 @@ const LogEmitter_1 = require("../LogEmitter");
 const ReadContext_1 = require("../utils/ReadContext");
 const types_1 = require("../types");
 const sleep_1 = require("../utils/sleep");
+const trackPath_1 = require("../utils/trackPath");
 const assert_1 = require("assert");
 const WriteContext_1 = require("../utils/WriteContext");
 const FileType = require("file-type");
@@ -178,24 +179,26 @@ class NetworkDevice {
     }
     ///////////////////////////////////////////////////////////////////////////
     // Private methods
+    /**
+     * Parse a network path into source and track path components.
+     *
+     * Handles various Engine DJ folder structures including:
+     * - Standard Engine Library/Music paths
+     * - Custom library locations
+     * - External USB drives
+     * - RekordBox conversions
+     *
+     * Track path resolution based on kyleawayan/StageLinq
+     * https://github.com/kyleawayan/StageLinq
+     */
     getSourceAndTrackFromNetworkPath(p_path) {
-        if (!p_path || p_path.length === 0) {
+        const parsed = (0, trackPath_1.parseNetworkPath)(p_path);
+        if (!parsed) {
             return null;
         }
-        const parts = p_path.split('/');
-        //assert(parts.length > )
-        (0, assert_1.strict)(parts[0] === 'net:');
-        (0, assert_1.strict)(parts[1] === '');
-        (0, assert_1.strict)(parts[2].length === 36);
-        const source = parts[3];
-        let trackPath = parts.slice(5).join('/');
-        if (parts[4] !== 'Engine Library') {
-            // This probably occurs with RekordBox conversions; tracks are outside Engine Library folder
-            trackPath = `../${parts[4]}/${trackPath}`;
-        }
         return {
-            source: source,
-            trackPath: trackPath,
+            source: parsed.sourceName,
+            trackPath: parsed.trackPath,
         };
     }
     async requestAllServicePorts() {

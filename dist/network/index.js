@@ -15,6 +15,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 __exportStar(require("./announce"), exports);
+__exportStar(require("./ConnectionHealth"), exports);
 __exportStar(require("./NetworkDevice"), exports);
 __exportStar(require("./StageLinqDevices"), exports);
 __exportStar(require("./StageLinqListener"), exports);

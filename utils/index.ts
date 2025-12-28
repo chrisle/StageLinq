@@ -5,4 +5,5 @@ export * from './ReadContext';
 export * from './sleep';
 export * from './tcp';
 export * from './token';
+export * from './trackPath';
 export * from './WriteContext';
