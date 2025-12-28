@@ -1,7 +1,7 @@
 import { ActingAsDevice, PlayerStatus } from '../types';
 import { DbConnection } from "../Databases";
 import { sleep } from '../utils/sleep';
-import { StageLinq } from '../StageLinq';
+import { StageLinqInstance } from '../StageLinq';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -17,7 +17,7 @@ require('console-stamp')(console, {
  * @param status Player to get track info from.
  * @returns Track info
  */
-function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
+function getTrackInfo(stageLinq: StageLinqInstance, status: PlayerStatus) {
   try {
     const dbPath = stageLinq.databases.getDbPath(status.dbSourceName)
     const connection = new DbConnection(dbPath);
@@ -37,7 +37,7 @@ function getTrackInfo(stageLinq: StageLinq, status: PlayerStatus) {
  * @param status Player to download the current song from.
  * @param dest Path to save file to.
  */
-async function downloadFile(stageLinq: StageLinq, status: PlayerStatus, dest: string) {
+async function downloadFile(stageLinq: StageLinqInstance, status: PlayerStatus, dest: string) {
   try {
     const data = await stageLinq.devices.downloadFile(status.deviceId, status.trackPathAbsolute);
     if (data) {
@@ -68,7 +68,7 @@ async function main() {
     actingAs: ActingAsDevice.NowPlaying
   }
 
-  const stageLinq = new StageLinq(stageLinqOptions);
+  const stageLinq = new StageLinqInstance(stageLinqOptions);
 
   // Setup how you want to handle logs coming from StageLinq
   stageLinq.logger.on('error', (...args: any) => {

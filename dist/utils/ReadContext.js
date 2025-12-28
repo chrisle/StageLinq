@@ -45,6 +45,16 @@ class ReadContext extends Context_1.Context {
         }
         return result;
     }
+    readFloat64() {
+        const offset = this.pos;
+        if (offset + 8 <= this.buffer.byteLength) {
+            const value = new DataView(this.buffer).getFloat64(this.pos, this.littleEndian);
+            this.pos += 8;
+            return value;
+        }
+        assert_1.strict.fail(`Read outside buffer`);
+        return null;
+    }
     readUInt64() {
         const offset = this.pos;
         if (offset + 8 <= this.buffer.byteLength) {

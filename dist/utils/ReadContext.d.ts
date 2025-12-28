@@ -7,6 +7,7 @@ export declare class ReadContext extends Context {
     readRemainingAsNewBuffer(): Buffer;
     getString(p_bytes: number): string;
     readNetworkStringUTF16(): string;
+    readFloat64(): number;
     readUInt64(): bigint;
     readUInt32(): number;
     readInt32(): number;

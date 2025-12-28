@@ -62,7 +62,7 @@ async function main() {
         // (default: Now Playing)
         actingAs: types_1.ActingAsDevice.NowPlaying
     };
-    const stageLinq = new StageLinq_1.StageLinq(stageLinqOptions);
+    const stageLinq = new StageLinq_1.StageLinqInstance(stageLinqOptions);
     // Setup how you want to handle logs coming from StageLinq
     stageLinq.logger.on('error', (...args) => {
         console.error(...args);

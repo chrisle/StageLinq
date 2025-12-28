@@ -52,6 +52,18 @@ export class ReadContext extends Context {
 		return result;
 	}
 
+	readFloat64(): number {
+		const offset = this.pos;
+		if (offset + 8 <= this.buffer.byteLength) {
+			const value = new DataView(this.buffer).getFloat64(this.pos, this.littleEndian);
+			this.pos += 8;
+			return value;
+		}
+
+		assert.fail(`Read outside buffer`);
+		return null;
+	}
+
 	readUInt64(): bigint {
 		const offset = this.pos;
 		if (offset + 8 <= this.buffer.byteLength) {
