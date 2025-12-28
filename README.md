@@ -187,7 +187,7 @@ npm run test:watch    # Watch mode
 npm run test:coverage # Coverage report
 ```
 
-**112 tests** across 5 test files.
+**193 tests** across 13 test files.
 
 ## Documentation
 
