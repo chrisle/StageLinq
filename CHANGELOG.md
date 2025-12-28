@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2024-12-28
+## [3.0.0] - 2025-12-28
 
 ### Added
 
@@ -106,6 +106,10 @@ This release incorporates code and ideas from several StageLinq implementations:
   - Track path resolution fix, disconnect freezing fix
   - https://github.com/kyleawayan/StageLinq
 
-## [1.0.9] - Previous Release
+## [2.0.0-Beta] - Previous Release
+
+Instance-based API refactor with dual API pattern. See git history for details.
+
+## [1.0.9] and earlier
 
 See git history for changes in 1.x releases.
