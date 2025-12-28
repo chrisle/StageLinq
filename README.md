@@ -28,18 +28,29 @@ await stagelinq.connect();
 
 ## Features
 
-| Feature | Description |
-|---------|-------------|
-| Device Discovery | Auto-discover StageLinq devices on the network |
-| StateMap Service | Track state, fader positions, device status |
-| BeatInfo Service | Real-time BPM, beat grid, timeline position |
-| FileTransfer Service | Download databases and files from devices |
-| TimeSync Service | Synchronize timing with devices |
-| Broadcast Service | Broadcast messages to network |
-| EAAS Support | Engine Library access via gRPC/HTTP |
-| Connection Health | Automatic reconnection on connection loss |
-| Windows Support | Per-interface broadcast for Windows compatibility |
-| Track Path Resolution | Handle files outside Engine Library/Music |
+| Feature | Go | Python | TS v2 |
+|---------|:--:|:------:|:-----:|
+| Device Discovery | ✅ | ✅ | ✅ |
+| StateMap Service | ✅ | ✅ | ✅ |
+| BeatInfo Service | ✅ | ❌ | ✅ |
+| FileTransfer Service | ✅ | ❌ | ✅ |
+| TimeSync Service | ✅ | ❌ | ✅ |
+| Broadcast Service | ✅ | ❌ | ✅ |
+| EAAS (gRPC library) | ✅ | ❌ | ✅ |
+| EAAS (HTTP files) | ✅ | ❌ | ✅ |
+| Windows Support | ✅ | ✅ | ✅ |
+| macOS Support | ✅ | ❌ | ✅ |
+| Linux Support | ✅ | ✅ | ✅ |
+| Multi-interface discovery | ✅ | ✅ | ✅ |
+| Database download | ✅ | ❌ | ✅ |
+| Track path resolution | ❌ | ❌ | ✅ |
+| Instance-based API | ✅ | ✅ | ✅ |
+| Static class API | ❌ | ❌ | ✅ |
+| CLI demo tools | ✅ | ✅ | ✅ |
+| Wireshark dissector | ❌ | ✅ | ✅ |
+| Unit tests | ✅ | ✅ | ✅ |
+
+*Go = [go-stagelinq](https://github.com/icedream/go-stagelinq), Python = [PyStageLinQ](https://github.com/Jaxc/PyStageLinQ)*
 
 ## Supported Devices
 
