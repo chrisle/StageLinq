@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ConnectionHealth } from './ConnectionHealth';
+import { ConnectionHealth } from '../../network/ConnectionHealth';
 
 // Mock the Logger to prevent console output during tests
-vi.mock('../LogEmitter', () => ({
+vi.mock('../../LogEmitter', () => ({
   Logger: {
     debug: vi.fn(),
     info: vi.fn(),

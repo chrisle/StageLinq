@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatToken, parseToken, tokensEqual, generateToken } from './token';
+import { formatToken, parseToken, tokensEqual, generateToken } from '../../utils/token';
 
 describe('token utilities', () => {
   // Sample token: 16 bytes that form a valid UUID

@@ -5,7 +5,7 @@ import {
   getSourceFromNetworkPath,
   getDeviceUuidFromNetworkPath,
   getDbSourceId,
-} from './trackPath';
+} from '../../utils/trackPath';
 
 describe('trackPath utilities', () => {
   const deviceUuid = '12345678-1234-1234-1234-123456789abc';

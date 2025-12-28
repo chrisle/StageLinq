@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { WriteContext } from './WriteContext';
+import { WriteContext } from '../../utils/WriteContext';
 
 describe('WriteContext', () => {
   describe('constructor', () => {
@@ -255,7 +255,7 @@ describe('WriteContext', () => {
 
   describe('roundtrip with ReadContext', () => {
     it('data written can be read back correctly', async () => {
-      const { ReadContext } = await import('./ReadContext');
+      const { ReadContext } = await import('../../utils/ReadContext');
       const writeCtx = new WriteContext();
 
       writeCtx.writeUInt32(12345);
