@@ -1,4 +1,3 @@
-//import { hex } from '../utils/hex';
 import { EventEmitter } from 'events';
 import { Logger } from '../LogEmitter';
 import { MessageId, MESSAGE_TIMEOUT, Tokens } from '../types';
@@ -8,6 +7,7 @@ import { strict as assert } from 'assert';
 import { WriteContext } from '../utils/WriteContext';
 import * as tcp from '../utils/tcp';
 import type { ServiceMessage } from '../types';
+import { getConfig } from '../config';
 
 export abstract class Service<T> extends EventEmitter {
 	private address: string;
@@ -54,8 +54,16 @@ export abstract class Service<T> extends EventEmitter {
 						const message = ctx.read(length);
 						// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
 						const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-						// Logger.info("RECV", length);
-						//hex(message);
+						const networkTap = getConfig().networkTap;
+						if (networkTap) {
+							networkTap({
+								direction: 'recv',
+								service: this.name,
+								address: this.address,
+								port: this.port,
+								data: message,
+							});
+						}
 						const parsedData = this.parseData(new ReadContext(data, false));
 
 						// Forward parsed data to message handler
@@ -117,8 +125,16 @@ export abstract class Service<T> extends EventEmitter {
 		assert(p_ctx.isLittleEndian() === false);
 		assert(this.connection);
 		const buf = p_ctx.getBuffer();
-		// Logger.info("SEND");
-		//hex(buf);
+		const networkTap = getConfig().networkTap;
+		if (networkTap) {
+			networkTap({
+				direction: 'send',
+				service: this.name,
+				address: this.address,
+				port: this.port,
+				data: buf,
+			});
+		}
 		const written = await this.connection.write(buf);
 		assert(written === buf.byteLength);
 		return written;

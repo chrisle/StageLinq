@@ -19,6 +19,7 @@ import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
 import { Logger } from '../LogEmitter';
 import { Action, ActingAsDevice, StageLinqOptions } from '../types';
+import { setConfig } from '../config';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
   maxRetries: 3,
@@ -42,6 +43,12 @@ export class StageLinqInstance extends EventEmitter {
   constructor(options?: StageLinqOptions) {
     super();
     this.instanceOptions = { ...DEFAULT_OPTIONS, ...options };
+
+    // Apply global config from options
+    if (this.instanceOptions.networkTap) {
+      setConfig({ networkTap: this.instanceOptions.networkTap });
+    }
+
     this.devices = new StageLinqDevices(this.instanceOptions);
 
     // Forward device events to this instance

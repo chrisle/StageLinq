@@ -1,3 +1,4 @@
+export * from './config';
 export * from './network';
 export * from './services';
 export * from './StageLinq';

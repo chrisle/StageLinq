@@ -1,4 +1,5 @@
 import { DiscoveryMessageOptions } from '../network';
+import type { NetworkTapCallback } from '../config';
 
 export * from './common';
 export * from './player';
@@ -51,4 +52,6 @@ export interface StageLinqOptions {
 	actingAs?: DiscoveryMessageOptions;
 	downloadDbSources?: boolean;
 	enableFileTranfer?: boolean;
+	/** Callback invoked for every packet sent/received. Use for debugging/logging. */
+	networkTap?: NetworkTapCallback;
 }

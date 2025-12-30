@@ -3,6 +3,7 @@ import { createSocket, RemoteInfo } from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER } from '../types/common';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
+import { getConfig } from '../config';
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
@@ -17,9 +18,18 @@ export class StageLinqListener {
    * @param callback Callback when new device is discovered.
    */
   listenForDevices(callback: DeviceDiscoveryCallback) {
-    
+
     const client = createSocket({type: 'udp4', reuseAddr: true});
     client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
+      const networkTap = getConfig().networkTap;
+      if (networkTap) {
+        networkTap({
+          direction: 'discovery',
+          address: p_remote.address,
+          port: p_remote.port,
+          data: p_announcement,
+        });
+      }
       const ctx = new ReadContext(p_announcement.buffer, false);
       const result = this.readConnectionInfo(ctx, p_remote.address);
       assert(ctx.tell() === p_remote.size);
