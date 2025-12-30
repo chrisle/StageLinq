@@ -7,9 +7,11 @@ import type { ServiceMessage } from '../types';
 // import { Logger } from '../LogEmitter';
 
 export const States = [
-  // Mixer
+  // Mixer - all 4 channel faders and crossfader
   StageLinqValue.MixerCH1faderPosition,
   StageLinqValue.MixerCH2faderPosition,
+  StageLinqValue.MixerCH3faderPosition,
+  StageLinqValue.MixerCH4faderPosition,
   StageLinqValue.MixerCrossfaderPosition,
 
   // Decks
