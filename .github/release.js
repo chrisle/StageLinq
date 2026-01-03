@@ -43,7 +43,8 @@ function exec(cmd, options = {}) {
     console.log('\x1b[33m[dry-run] Skipped\x1b[0m')
     return ''
   }
-  return execSync(cmd, { cwd: ROOT, encoding: 'utf-8', ...options }).trim()
+  const result = execSync(cmd, { cwd: ROOT, encoding: 'utf-8', ...options })
+  return result ? result.trim() : ''
 }
 
 function log(msg) {
