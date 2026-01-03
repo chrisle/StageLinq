@@ -222,6 +222,14 @@ This library incorporates code and ideas from other StageLinq implementations:
 - **[PyStageLinQ](https://github.com/Jaxc/PyStageLinQ)** by Jaxc - Wireshark dissector, protocol documentation
 - **[kyleawayan/StageLinq](https://github.com/kyleawayan/StageLinq)** by Kyle Awayan - Track path resolution fixes
 
+## Related Packages
+
+- [prolink-connect](https://github.com/chrisle/prolink-connect) — Pioneer Pro DJ Link integration
+- [rekordbox-connect](https://github.com/chrisle/rekordbox-connect) — Rekordbox database integration
+- [serato-connect](https://github.com/chrisle/serato-connect) — Serato DJ integration
+
+These libraries power [Now Playing](https://nowplayingapp.com) — a real-time track display app for DJs and streamers.
+
 ## License
 
-GPL-3.0
+MIT
