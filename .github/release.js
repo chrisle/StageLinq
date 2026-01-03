@@ -8,7 +8,8 @@
  * 2. Bumps the minor version in package.json
  * 3. Generates CHANGELOG.md from commit messages since last tag
  * 4. Commits the version bump and changelog
- * 5. Pushes to main (which triggers the publish workflow)
+ * 5. Pushes to main
+ * 6. Publishes to npm using token from 1Password
  *
  * Usage:
  *   node scripts/release.js [--major|--minor|--patch]
@@ -198,10 +199,15 @@ async function main() {
   log('Pushing to remote...')
   exec('git push && git push --tags')
 
+  // Get npm token from 1Password and publish
+  log('Getting npm token from 1Password...')
+  const npmToken = exec('op read "op://NPM/5f5d7gg4ptzjfhcllrygt734wi/add more/npm_access_token"', { allowInDryRun: true })
+
+  log('Publishing to npm...')
+  exec(`npm publish --access public --//registry.npmjs.org/:_authToken=${npmToken}`, { stdio: 'inherit' })
+
   console.log('')
-  log(`\x1b[32mRelease v${newVersion} complete!\x1b[0m`)
-  console.log('')
-  console.log('The publish workflow will now run on GitHub Actions.')
+  log(`\x1b[32mRelease v${newVersion} published to npm!\x1b[0m`)
   console.log('')
 }
 
