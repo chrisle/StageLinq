@@ -1,62 +1,62 @@
 {
-	"name": "stagelinq",
-	"version": "3.0.0",
-	"description": "TypeScript library to connect to Denon StageLinq devices",
-	"homepage": "https://github.com/chrisle/StageLinq",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/chrisle/StageLinq.git"
-	},
-	"keywords": [
-		"denon",
-		"stagelinq",
-		"dj",
-		"prime",
-		"engine",
-		"sc6000",
-		"sc5000",
-		"prime4"
-	],
-	"scripts": {
-		"test": "vitest run",
-		"test:watch": "vitest",
-		"test:coverage": "vitest run --coverage",
-		"start": "node dist/cli/index.js",
-		"build": "tsc --build tsconfig.json",
-		"watch": "tsc --build tsconfig.json -w",
-		"clean": "rm -rf dist",
-		"prepublishOnly": "npm run clean && npm run build && npm test",
-		"release": "node .github/release.js",
-		"release:patch": "node .github/release.js --patch",
-		"release:major": "node .github/release.js --major"
-	},
-	"author": "Chris Le (TRIODE)",
-	"license": "MIT",
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"files": [
-		"/dist"
-	],
-	"engines": {
-		"node": ">=22.0.0"
-	},
-	"dependencies": {
-		"better-sqlite3": "^12.5.0",
-		"console-stamp": "^3.0.3",
-		"file-type": "^16.5.3",
-		"ip": "^1.1.5",
-		"minimist": "^1.2.5",
-		"promise-socket": "^7.0.0"
-	},
-	"devDependencies": {
-		"@types/assert": "^1.5.5",
-		"@types/better-sqlite3": "^7.6.13",
-		"@types/ip": "^1.1.0",
-		"@types/minimist": "^1.2.2",
-		"@types/node": "^22.15.29",
-		"@vitest/coverage-v8": "^1.6.0",
-		"prettier": "^3.5.3",
-		"typescript": "^5.9.3",
-		"vitest": "^1.3.0"
-	}
+  "name": "stagelinq",
+  "version": "3.0.1",
+  "description": "TypeScript library to connect to Denon StageLinq devices",
+  "homepage": "https://github.com/chrisle/StageLinq",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrisle/StageLinq.git"
+  },
+  "keywords": [
+    "denon",
+    "stagelinq",
+    "dj",
+    "prime",
+    "engine",
+    "sc6000",
+    "sc5000",
+    "prime4"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "start": "node dist/cli/index.js",
+    "build": "tsc --build tsconfig.json",
+    "watch": "tsc --build tsconfig.json -w",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build && npm test",
+    "release": "node .github/release.js",
+    "release:patch": "node .github/release.js --patch",
+    "release:major": "node .github/release.js --major"
+  },
+  "author": "Chris Le (TRIODE)",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.5.0",
+    "console-stamp": "^3.0.3",
+    "file-type": "^16.5.3",
+    "ip": "^1.1.5",
+    "minimist": "^1.2.5",
+    "promise-socket": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/assert": "^1.5.5",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/ip": "^1.1.0",
+    "@types/minimist": "^1.2.2",
+    "@types/node": "^22.15.29",
+    "@vitest/coverage-v8": "^1.6.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.9.3",
+    "vitest": "^1.3.0"
+  }
 }

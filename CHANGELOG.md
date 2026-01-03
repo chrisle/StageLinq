@@ -1,3 +1,174 @@
+# Change log
+
+## v3.0.1
+
+- fix: handle null return from execSync in release script
+- chore: change license to MIT
+- chore: trigger CI
+- fix: correct 1Password secret path for npm token
+- Add release script for automated npm publishing
+- Use 1Password for NPM token in publish workflow
+- feat: subscribe to all 4 mixer channel faders
+- feat: add networkTap option for packet debugging
+- chore: update dependencies and lockfile
+- ci: add GitHub Actions for automated testing and npm publishing
+- test: add database module tests
+- chore: update dependencies for Node 22 compatibility
+- docs: update test count to 193 tests
+- test: add comprehensive unit tests for all modules
+- chore: remove stale prototype patch file
+- chore: bump version to 3.0.0
+- revert: restore CHANGELOG to 2.0.0 format
+- chore: bump version to 3.0.0
+- docs: add comprehensive service documentation
+- docs: add comprehensive events documentation with state data reference
+- docs: add feature comparison matrix to README
+- docs: update README with features, examples, and contributors
+- feat: add unit test suite and prepare for npm publishing
+- feat: add Wireshark dissector, protocol docs, track path fix, and connection health
+- feat: add EAAS support, Windows broadcast fix, token utilities, and CLI tools
+- feat: add BeatInfo, TimeSync, Broadcast services and dual API pattern
+- Include dist
+- Upgrade sqlite3
+- Support typescript in library
+- Add dist to gitignore
+- Remove dist
+- Bump version
+- Handle when announce timer hasn't started
+- Bump version
+- Ignore log.txt
+- Add option to disable FileTransfer
+- Add compiled dist.
+- reuseAddr for UDP socket bindings
+- Add debug msg for Service.disconnect()
+- Handle Shutdown msg (0x9) from FileTransfer svc
+- Check ftx availability for DownloadDB
+- Also release block if error
+- FileTransfer.getFile() blocks until complete
+- Bump version
+- Temporary roll back sending timestamp message until further testing.
+- File service needs to be setup even without db
+- New song stage change needs both
+- Remove album art code
+- Refactor CLI.
+- Move type to another directory
+- Refine when to fire trackLoaded
+- Return only one result
+- Refactor connection out of downloadDatabase.
+- Fix typos.
+- Add explanation.
+- Bump version
+- Use events only if db option enabled.
+- Throw exception when no data sources have been downloaded.
+- Add additional logging
+- Code style
+- Bump version
+- At least one device.
+- Reply to TimeStamp Messages
+- Increase the update rate
+- Fix issue with song loading
+- Bump version
+- Clean up and restore file download in CLI
+- Move connected event
+- Clean up comments
+- Fix race condition loading track on 2nd player.
+- POC made of POS code to handle race condition
+- Added notes about ip/port vs token here.
+- Bump version
+- Possible hack to get metadata from streaming files
+- Bump version
+- Handle streaming files
+- Add track's absolute path
+- Bump verison
+- Update pkacage description
+- Update readme
+- Update readme
+- Update docs
+- Download and read databases
+- Add file transfer progress
+- Add new tokens.
+- Decrease update refresh time
+- Allow the option to download and use db.
+- Tell me which one is failing.
+- Add ability to get data from DB
+- There! Remove dist!
+- get rid of dist
+- Exclude dist from git
+- Clean up
+- Add debug info
+- Increase download time to 60 seconds.
+- Update dist
+- Updating prettier settings
+- Moved constant location
+- Fix possible undefined data types.
+- Fix data type for CLI
+- Refactor client token
+- Ignore SoundSwitchEmbedded Discovery Messages
+- Download database.
+- Update readme
+- Pass along messages up to the main class.
+- Doc changes
+- Show connection in CLI
+- Emit all the things
+- Clean up CLI example
+- Pushed log to an emitter.
+- Change log labels
+- Fix connection, change stuff to Logger
+- Export Stagelinq
+- Package and dist
+- Ignore soundswitch and resolume.
+- Documentation update
+- Update readme doc
+- More documentation.
+- Documentation for Player
+- Added some comments.
+- Support for multiple players and layers.
+- Handle multiple Denon devices on the network.
+- Changes to make it easier to consume as library.
+- Update FileTransfer.ts
+- support for v2 only db sources
+- ADD: as proposed by @honusz we need a wait at these placed to increase stability
+- ADD: check if there are any broadcast ips
+- FIX: No need for await to be there
+- FIX: Broadcast announcement to all network interfaces
+- FIX: Send the Service request AFTER I'm allowed too.
+- Wait for serviceRequestAllowed signal received from device, before we poll the device.
+- CHG: Handle null checking in getSourceAndTrackFromNetworkPath. CHG: if there is no album art return TrackLocalAlbumArtPath = {"string": "", "type":-1}, not {"string": null, "type":-1}
+- Update README.md
+- Skip album art lookup in case no track loaded to deck
+- Bind socket to a random port and setBroadcast to true when initializing the UDP socket used for announcing oneself.
+- Added npm start command and TypeScript compile as pre-start routine
+- ADD: --disableFileTransfer commandline option FIX: Correctly handle no album-art case
+- ADD: prettier to package.json
+- DEL: Unused import
+- CHG: Set default EOL behavior to LF
+- ADD: prettier config files CHG: prettified all sources (no code changes)
+- CHG: Enabled skipSync again
+- FIX: incorrect placement of "
+- ADD: support for album art downloading ADD: when loading a new track onto a deck, a newly created TrackLocalAlbumArtPath now indicates where the album art can be found. E.g.,:
+- CHG: Replaced with MAGIC_MARKER const
+- CHG: Do FileTransfer before StateMap. Somehow StateMap becomes confused if we do FileTransfer afterwards. Not sure why (yet) FIX: Reset this.receivedFile at end of getFile() DEL: Removed some debug prints
+- CHG: FileTransfer is now able to retrieve the source database and display its number of album arts using SQLite.
+- ADD: FileTransfer service WIP ADD: Services are now created through a factory method connectToService in Controller.ts ADD: Message event handling
+- ADD: readUInt8
+- ADD: hex helper (based on https://www.npmjs.com/package/hex)
+- CHG: Contexts use big endian by default CHG: connectToService returns service
+- FIX: incorrect check for OfflineAnalyzer
+- ADD: automatic watcher as described here: https://stackoverflow.com/questions/29996145/visual-studio-code-compile-on-save/60374212#60374212
+- Update README.md
+- ADD: set internalConsoleOptions to openOnSessionStart when launching
+- ADD: watcher task for background compilation
+- Update README.md
+- Update README.md
+- CHG: Also output error during unannounce.
+- CHG: 'OfflineAnalyzer', which is a Engine OS 2.0+ service, should be skipped
+- CHG: Demoted info to log
+- FIX: Also properly output interval
+- ADD: Support for different 'smaa' messages (JSON or interval?)
+- ADD: readInt32
+- FIX: resolve doesn't exit the while-loop, so break as well ADD: display all services
+- Update README.md
+
 # Changelog
 
 ## [3.0.0] - 2025-12-28
