@@ -1,5 +1,5 @@
 import { ConnectionInfo } from '../types';
-import { createSocket, RemoteInfo } from 'dgram';
+import { createSocket, RemoteInfo, Socket } from 'dgram';
 import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER } from '../types/common';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
@@ -12,6 +12,7 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
  * execute a callback.
  */
 export class StageLinqListener {
+  private socket: Socket | null = null;
 
   /**
    * Listen for new devices on the network and callback when a new one is found.
@@ -20,6 +21,7 @@ export class StageLinqListener {
   listenForDevices(callback: DeviceDiscoveryCallback) {
 
     const client = createSocket({type: 'udp4', reuseAddr: true});
+    this.socket = client;
     client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
       const networkTap = getConfig().networkTap;
       if (networkTap) {
@@ -36,6 +38,16 @@ export class StageLinqListener {
       callback(result);
     });
     client.bind(LISTEN_PORT);
+  }
+
+  /**
+   * Stop listening for devices and close the UDP socket.
+   */
+  stop() {
+    if (this.socket) {
+      this.socket.close();
+      this.socket = null;
+    }
   }
 
   private readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {

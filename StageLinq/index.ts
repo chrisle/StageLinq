@@ -111,6 +111,7 @@ export class StageLinqInstance extends EventEmitter {
 
     try {
       this.devices.disconnectAll();
+      this.listener?.stop();
       const msg = createDiscoveryMessage(Action.Logout, this.instanceOptions.actingAs);
       await unannounce(msg);
       this._isConnected = false;
