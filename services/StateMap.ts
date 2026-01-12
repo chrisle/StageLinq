@@ -101,7 +101,7 @@ export class StateMap extends Service<StateData> {
     }
   }
 
-  protected parseData(p_ctx: ReadContext): ServiceMessage<StateData> {
+  protected parseData(p_ctx: ReadContext): ServiceMessage<StateData> | null {
     const marker = p_ctx.getString(4);
     assert(marker === MAGIC_MARKER);
 
@@ -161,11 +161,11 @@ export class StateMap extends Service<StateData> {
     {
       const ctx = new WriteContext();
       ctx.writeUInt32(message.length);
-      const written = await this.connection.write(ctx.getBuffer());
+      const written = await this.connection!.write(ctx.getBuffer());
       assert(written === 4);
     }
     {
-      const written = await this.connection.write(message);
+      const written = await this.connection!.write(message);
       assert(written === message.length);
     }
   }

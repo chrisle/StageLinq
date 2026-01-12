@@ -35,7 +35,7 @@ export class StageLinqListener {
       const ctx = new ReadContext(p_announcement.buffer, false);
       const result = this.readConnectionInfo(ctx, p_remote.address);
       assert(ctx.tell() === p_remote.size);
-      callback(result);
+      if (result) callback(result);
     });
     client.bind(LISTEN_PORT);
   }
@@ -50,7 +50,7 @@ export class StageLinqListener {
     }
   }
 
-  private readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo {
+  private readConnectionInfo(p_ctx: ReadContext, p_address: string): ConnectionInfo | null {
     const magic = p_ctx.getString(4);
     if (magic !== DISCOVERY_MESSAGE_MARKER) {
       return null;

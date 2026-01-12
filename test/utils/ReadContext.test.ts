@@ -20,13 +20,13 @@ describe('ReadContext', () => {
       expect(result).toEqual(new Uint8Array([3, 4]));
     });
 
-    it('returns null when no bytes left', () => {
+    it('returns empty Uint8Array when no bytes left', () => {
       const buffer = new Uint8Array([1, 2]).buffer;
       const ctx = new ReadContext(buffer);
 
       ctx.read(2);
       const result = ctx.read(1);
-      expect(result).toBeNull();
+      expect(result).toEqual(new Uint8Array(0));
     });
 
     it('reads only remaining bytes when requesting more', () => {

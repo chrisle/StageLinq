@@ -9,7 +9,7 @@ import * as FileType from 'file-type';
 import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
-import Database = require('better-sqlite3');
+import Database from 'better-sqlite3';
 
 
 interface SourceAndTrackPath {
@@ -18,7 +18,7 @@ interface SourceAndTrackPath {
 }
 
 export class NetworkDevice {
-  private connection: tcp.Connection = null;
+  private connection: tcp.Connection | null = null;
   //private source: string = null;
   private serviceRequestAllowed = false;
   private servicePorts: ServicePorts = {};
@@ -67,7 +67,7 @@ export class NetworkDevice {
     // Disconnect all services
     for (const [key, service] of Object.entries(this.services)) {
       service.disconnect();
-      this.services[key] = null;
+      delete this.services[key];
     }
 
     assert(this.connection);
@@ -154,12 +154,12 @@ export class NetworkDevice {
     // Get all album art extensions
     const stmt = db.prepare('SELECT * FROM AlbumArt WHERE albumArt NOT NULL');
     const result = stmt.all();
-    const albumArtExtensions: Record<string, string | null> = {};
+    const albumArtExtensions: Record<string, string> = {};
     for (const entry of result) {
       // @ts-ignore
       const filetype = await FileType.fromBuffer(entry.albumArt);
       // @ts-ignore
-      albumArtExtensions[entry.id] = filetype ? filetype.ext : null;
+      if (filetype) albumArtExtensions[entry.id] = filetype.ext;
     }
 
     this.connectedSources[p_sourceName] = {
@@ -205,7 +205,7 @@ export class NetworkDevice {
     return stmt.all(p_params);
   }
 
-  getAlbumArtPath(p_networkPath: string): string {
+  getAlbumArtPath(p_networkPath: string): string | null {
     const result = this.getSourceAndTrackFromNetworkPath(p_networkPath);
     if (!result) {
       return null;
@@ -242,7 +242,7 @@ export class NetworkDevice {
    * Track path resolution based on kyleawayan/StageLinq
    * https://github.com/kyleawayan/StageLinq
    */
-  private getSourceAndTrackFromNetworkPath(p_path: string): SourceAndTrackPath {
+  private getSourceAndTrackFromNetworkPath(p_path: string): SourceAndTrackPath | null {
     const parsed = parseNetworkPath(p_path);
 
     if (!parsed) {
@@ -277,7 +277,7 @@ export class NetworkDevice {
       const ctx = new WriteContext();
       ctx.writeUInt32(MessageId.ServicesRequest);
       ctx.write(Tokens.SoundSwitch);
-      const written = await this.connection.write(ctx.getBuffer());
+      const written = await this.connection!.write(ctx.getBuffer());
       assert(written === ctx.tell());
 
       while (true) {

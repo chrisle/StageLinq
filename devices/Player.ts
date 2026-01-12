@@ -43,11 +43,11 @@ interface SourceAndTrackPath {
  */
 export class Player extends EventEmitter {
 
-  private player: number;           // Player number as reported by the device.
+  private player: number = 0;       // Player number as reported by the device.
   private address: string;          // IP address
   private port: number;             // Port
-  private masterTempo: number;      // Current master tempo BPM
-  private masterStatus: boolean;    // If this device has the matser tempo
+  private masterTempo: number = 0;  // Current master tempo BPM
+  private masterStatus: boolean = false;  // If this device has the master tempo
   private decks: Map<string, PlayerLayerState> = new Map();
   private lastTrackNetworkPath: Map<string, string> = new Map();
   private queue: {[layer: string]: PlayerMessageQueue} = {};
@@ -124,7 +124,7 @@ export class Player extends EventEmitter {
       : (/PlayerJogColor[A-D]$/.test(name)) ? { jogColor: json.color }
       : null;
 
-    if (cueData) {
+    if (cueData && deck) {
       this.queue[deck].push({ layer: deck, ...cueData });
     }
   }
@@ -147,7 +147,7 @@ export class Player extends EventEmitter {
         isNewTrack = false;
       }
     }
-    this.lastTrackNetworkPath.set(layer, data.trackNetworkPath);
+    this.lastTrackNetworkPath.set(layer, data.trackNetworkPath ?? '');
 
     // This will be true once a song has been fully downloaded / loaded.
     const isSongLoaded = data.hasOwnProperty('songLoaded');
@@ -162,9 +162,11 @@ export class Player extends EventEmitter {
     }
 
     const result = this.decks.get(layer);
+    if (!result) return;
     const deck = `${this.player}${result.layer}`;
 
     const output = {
+      ...result,
       deck: deck,
       player: this.player,
       layer: layer,
@@ -173,7 +175,6 @@ export class Player extends EventEmitter {
       masterTempo: this.masterTempo,
       masterStatus: this.masterStatus,
       deviceId: `net://${this.deviceId}`,
-      ...result
     };
 
     // We're casting here because we originally built it up piecemeal.
@@ -195,7 +196,7 @@ export class Player extends EventEmitter {
       this.emit('trackLoaded', currentState);
 
     // If the song is actually playing emit the nowPlaying event.
-    if (result.playState) this.emit('nowPlaying', currentState);
+    if (result?.playState) this.emit('nowPlaying', currentState);
 
     // Emit that the state has changed.
     this.emit('stateChanged', currentState);

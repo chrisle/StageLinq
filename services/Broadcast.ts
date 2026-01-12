@@ -49,7 +49,7 @@ export class Broadcast extends Service<BroadcastData> {
   /**
    * Parse incoming broadcast data
    */
-  protected parseData(ctx: ReadContext): ServiceMessage<BroadcastData> {
+  protected parseData(ctx: ReadContext): ServiceMessage<BroadcastData> | null {
     const length = ctx.readUInt32();
 
     if (length === 0 && ctx.sizeLeft() > 0) {

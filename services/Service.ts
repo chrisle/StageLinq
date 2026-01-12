@@ -14,7 +14,7 @@ export abstract class Service<T> extends EventEmitter {
 	private port: number;
 	public readonly name: string;
 	protected controller: NetworkDevice;
-	protected connection: tcp.Connection = null;
+	protected connection: tcp.Connection | null = null;
 
 	constructor(p_address: string, p_port: number, p_controller: NetworkDevice) {
 		super();
@@ -27,10 +27,10 @@ export abstract class Service<T> extends EventEmitter {
 	async connect(): Promise<void> {
 		assert(!this.connection);
 		this.connection = await tcp.connect(this.address, this.port);
-		let queue: Buffer = null;
+		let queue: Buffer | null = null;
 
 		this.connection.socket.on('data', (p_data: Buffer) => {
-			let buffer: Buffer = null;
+			let buffer: Buffer;
 			if (queue && queue.length > 0) {
 				buffer = Buffer.concat([queue, p_data]);
 			} else {
@@ -67,8 +67,10 @@ export abstract class Service<T> extends EventEmitter {
 						const parsedData = this.parseData(new ReadContext(data, false));
 
 						// Forward parsed data to message handler
-						this.messageHandler(parsedData);
-						this.emit('message', parsedData);
+						if (parsedData) {
+							this.messageHandler(parsedData);
+							this.emit('message', parsedData);
+						}
 					} else {
 						ctx.seek(-4); // Rewind 4 bytes to include the length again
 						queue = ctx.readRemainingAsNewBuffer();
@@ -86,7 +88,7 @@ export abstract class Service<T> extends EventEmitter {
 		ctx.writeUInt32(MessageId.ServicesAnnouncement);
 		ctx.write(Tokens.SoundSwitch);
 		ctx.writeNetworkStringUTF16(this.name);
-		ctx.writeUInt16(this.connection.socket.localPort); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
+		ctx.writeUInt16(this.connection.socket.localPort ?? 0); // FIXME: In the Go code this is the local TCP port, but 0 or any other 16 bit value seems to work fine as well
 		await this.write(ctx);
 
 		await this.init();
@@ -155,7 +157,7 @@ export abstract class Service<T> extends EventEmitter {
 		assert.fail('Implement this');
 	}
 
-	protected abstract parseData(p_ctx: ReadContext): ServiceMessage<T>;
+	protected abstract parseData(p_ctx: ReadContext): ServiceMessage<T> | null;
 
 	protected abstract messageHandler(p_data: ServiceMessage<T>): void;
 }

@@ -19,7 +19,7 @@ export type DataQueueCallback = (data: PlayerLayerState) => void;
  */
 export class PlayerMessageQueue {
 
-  private callback: DataQueueCallback;
+  private callback: DataQueueCallback = () => {};
   private data: PlayerLayerState[] = [];
   private timeout: ReturnType<typeof setTimeout> | null = null;
   private layer: string;
@@ -46,7 +46,7 @@ export class PlayerMessageQueue {
     let output: any = { layer: this.layer };
     this.data.map(d => { output = { ...output, ...d }; });
     this.data = [];
-    clearTimeout(this.timeout);
+    if (this.timeout) clearTimeout(this.timeout);
     this.timeout = null;
     this.callback(output as PlayerLayerState);
   }

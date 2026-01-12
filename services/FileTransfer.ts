@@ -36,7 +36,7 @@ export declare interface FileTransfer {
 }
 
 export class FileTransfer extends Service<FileTransferData> {
-  private receivedFile: WriteContext = null;
+  private receivedFile: WriteContext | null = null;
   private _available: boolean = true;
 
   async init() {}
@@ -187,7 +187,7 @@ export class FileTransfer extends Service<FileTransferData> {
 
       if (total === 0) {
         Logger.warn(`${p_location} doesn't exist or is a streaming file`);
-        return;
+        return new Uint8Array(0);
       }
 
       await this.requestChunkRange(txinfo.txid, 0, totalChunks - 1);
@@ -198,11 +198,11 @@ export class FileTransfer extends Service<FileTransferData> {
             reject(new Error(`Failed to download '${p_location}'`));
           }, DOWNLOAD_TIMEOUT);
 
-          while (this.receivedFile.isEOF() === false) {
+          while (this.receivedFile && this.receivedFile.isEOF() === false) {
             const bytesDownloaded = total - this.receivedFile.sizeLeft();
             const percentComplete = (bytesDownloaded / total) * 100;
             this.emit('fileTransferProgress', {
-              sizeLeft: this.receivedFile.sizeLeft(),
+              sizeLeft: this.receivedFile?.sizeLeft() ?? 0,
               total: txinfo.size,
               bytesDownloaded: bytesDownloaded,
               percentComplete: percentComplete
@@ -214,7 +214,7 @@ export class FileTransfer extends Service<FileTransferData> {
           resolve(true);
         });
       } catch (err) {
-        const msg = `Could not read database from ${p_location}: ${err.message}`
+        const msg = `Could not read database from ${p_location}: ${err instanceof Error ? err.message : err}`
         Logger.error(msg);
         this._available = true;
         throw new Error(msg);
@@ -225,9 +225,9 @@ export class FileTransfer extends Service<FileTransferData> {
       this._available = true;
     }
 
-    const buf = this.receivedFile ? this.receivedFile.getBuffer() : null;
+    const buf = this.receivedFile ? this.receivedFile.getBuffer() : new Uint8Array(0);
     this.receivedFile = null;
-  
+
     return buf;
   }
 

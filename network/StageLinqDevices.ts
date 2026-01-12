@@ -85,6 +85,9 @@ export class StageLinqDevices extends EventEmitter {
   async downloadFile(deviceId: string, path: string) {
     if (this.options.enableFileTranfer) {
       const device = this.devices.get(deviceId);
+      if (!device?.fileTransferService) {
+        throw new Error(`Device ${deviceId} not found or file transfer not available`);
+      }
       // Wait until FileTransfer.getFile is free
       await device.fileTransferService.waitTillAvailable();
       const file = await device.fileTransferService.getFile(path);
@@ -134,7 +137,7 @@ export class StageLinqDevices extends EventEmitter {
       if (foundDevices && allConnected) {
         Logger.log('All devices found!');
         Logger.debug(`Devices found: ${values.length} ${JSON.stringify(entries)}`);
-        clearInterval(this.deviceWatchTimeout);
+        if (this.deviceWatchTimeout) clearInterval(this.deviceWatchTimeout);
         for (const cb of this.stateMapCallback) {
           this.setupStateMap(cb.connectionInfo, cb.networkDevice);
         }
@@ -157,7 +160,7 @@ export class StageLinqDevices extends EventEmitter {
     this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTING);
 
     let attempt = 1;
-    while (attempt < this.options.maxRetries) {
+    while (attempt < (this.options.maxRetries ?? 3)) {
       try {
 
         // Connect to the device.
@@ -297,7 +300,7 @@ export class StageLinqDevices extends EventEmitter {
 
   private isIgnored(device: ConnectionInfo) {
     return (
-      device.source === this.options.actingAs.source
+      device.source === this.options.actingAs?.source
       || device.software.name === 'OfflineAnalyzer'
       || /^SoundSwitch/i.test(device.software.name)
       || /^Resolume/i.test(device.software.name)

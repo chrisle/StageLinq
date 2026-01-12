@@ -2,7 +2,7 @@ import { strict as assert } from 'assert';
 import { Context } from './Context';
 
 function fromCString(p_buffer: Uint8Array): string {
-	const arr = String.fromCharCode.apply(null, p_buffer).split('\0');
+	const arr = String.fromCharCode.apply(null, Array.from(p_buffer)).split('\0');
 	assert(arr.length > 0);
 	return arr[0];
 }
@@ -15,7 +15,7 @@ export class ReadContext extends Context {
 	read(p_bytes: number): Uint8Array {
 		const bytesToRead = Math.min(this.sizeLeft(), p_bytes);
 		if (bytesToRead <= 0) {
-			return null;
+			return new Uint8Array(0);
 		}
 
 		const view = new Uint8Array(this.buffer, this.pos, bytesToRead);
@@ -61,7 +61,7 @@ export class ReadContext extends Context {
 		}
 
 		assert.fail(`Read outside buffer`);
-		return null;
+		return 0; // unreachable
 	}
 
 	readUInt64(): bigint {
@@ -73,7 +73,7 @@ export class ReadContext extends Context {
 		}
 
 		assert.fail(`Read outside buffer`);
-		return null;
+		return 0n; // unreachable
 	}
 
 	readUInt32(): number {
@@ -85,7 +85,7 @@ export class ReadContext extends Context {
 		}
 
 		assert.fail(`Read outside buffer`);
-		return null;
+		return 0; // unreachable
 	}
 
 	readInt32(): number {
@@ -97,7 +97,7 @@ export class ReadContext extends Context {
 		}
 
 		assert.fail(`Read outside buffer`);
-		return null;
+		return 0; // unreachable
 	}
 
 	readUInt16(): number {
@@ -109,7 +109,7 @@ export class ReadContext extends Context {
 		}
 
 		assert.fail(`Read outside buffer`);
-		return null;
+		return 0; // unreachable
 	}
 
 	readUInt8(): number {
@@ -121,6 +121,6 @@ export class ReadContext extends Context {
 		}
 
 		assert.fail(`Read outside buffer`);
-		return null;
+		return 0; // unreachable
 	}
 }

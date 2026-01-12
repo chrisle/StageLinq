@@ -84,7 +84,7 @@ export class BeatInfo extends Service<BeatData> {
   /**
    * Parse incoming beat data
    */
-  protected parseData(ctx: ReadContext): ServiceMessage<BeatData> {
+  protected parseData(ctx: ReadContext): ServiceMessage<BeatData> | null {
     // BeatInfo messages are at least 72 bytes
     // Format: id (4) + clock (8) + deckCount (4) + deckData (deckCount * 24) + samples (deckCount * 8)
     if (ctx.sizeLeft() < 20) {

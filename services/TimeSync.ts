@@ -77,7 +77,7 @@ export class TimeSync extends Service<TimeSyncData> {
   /**
    * Parse incoming time sync data
    */
-  protected parseData(ctx: ReadContext): ServiceMessage<TimeSyncData> {
+  protected parseData(ctx: ReadContext): ServiceMessage<TimeSyncData> | null {
     const localTimestamp = this.getTimestamp();
     const size = ctx.readUInt32();
 

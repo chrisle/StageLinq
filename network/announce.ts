@@ -204,7 +204,7 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
           reject(new Error('Failed to send announcement'));
         }, CONNECT_TIMEOUT);
 
-        announceClient.send(p_message, LISTEN_PORT, broadcastIP, (err) => {
+        announceClient!.send(p_message, LISTEN_PORT, broadcastIP, (err) => {
           clearTimeout(timeout);
           if (err) {
             Logger.warn(`Failed to send to ${broadcastIP}: ${err}`);
