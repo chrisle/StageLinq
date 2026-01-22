@@ -1,5 +1,20 @@
 # Change log
 
+## v3.0.2
+
+- fix: handle yarn.lock and improve changelog generation
+- ci: auto-version bump and publish on push to main
+- docs: update prolink-connect reference to alphatheta-connect
+- chore: update package-lock.json
+- fix: resolve TypeScript strict mode type errors
+- chore: update TypeScript configuration
+- fix: properly close UDP socket when stopping StageLinq listener
+- chore: update dependencies for better performance
+- chore: regenerate package-lock.json
+- docs: add related packages section to README
+- chore: remove GitHub Actions, publish locally via 1Password
+
+
 ## v3.0.1
 
 - fix: handle null return from execSync in release script
