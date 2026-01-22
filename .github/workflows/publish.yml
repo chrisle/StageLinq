@@ -33,7 +33,15 @@ jobs:
           NODE_AUTH_TOKEN: op://NPM/5f5d7gg4ptzjfhcllrygt734wi/npm_access_token
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          if [ -f "yarn.lock" ]; then
+            npm install -g yarn
+            yarn install --frozen-lockfile
+          elif [ -f "package-lock.json" ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Run tests
         run: npm test
@@ -100,24 +108,42 @@ jobs:
             RANGE="${LAST_TAG}..HEAD"
           fi
 
-          # Get commits for changelog
+          # Get commits for changelog (one per line, prefixed with "- ")
           COMMITS=$(git log $RANGE --pretty=format:"- %s" --no-merges)
 
-          # Create new changelog entry
-          NEW_ENTRY="## v${NEW_VERSION}\n\n${COMMITS}\n"
+          # Build new changelog content using a temp file to avoid sed issues
+          {
+            echo "## v${NEW_VERSION}"
+            echo ""
+            echo "$COMMITS"
+            echo ""
+          } > /tmp/new_entry.txt
 
-          # Update CHANGELOG.md
           if [ -f "CHANGELOG.md" ]; then
-            # Insert after the header
-            if grep -q "^# " CHANGELOG.md; then
-              sed -i "0,/^# .*$/a\\
-          \\
-          ${NEW_ENTRY}" CHANGELOG.md
+            # Prepend new entry after the first header line
+            if head -1 CHANGELOG.md | grep -q "^# "; then
+              {
+                head -1 CHANGELOG.md
+                echo ""
+                cat /tmp/new_entry.txt
+                tail -n +2 CHANGELOG.md
+              } > /tmp/changelog_new.md
+              mv /tmp/changelog_new.md CHANGELOG.md
             else
-              echo -e "# Changelog\n\n${NEW_ENTRY}\n$(cat CHANGELOG.md)" > CHANGELOG.md
+              {
+                echo "# Changelog"
+                echo ""
+                cat /tmp/new_entry.txt
+                cat CHANGELOG.md
+              } > /tmp/changelog_new.md
+              mv /tmp/changelog_new.md CHANGELOG.md
             fi
           else
-            echo -e "# Changelog\n\n${NEW_ENTRY}" > CHANGELOG.md
+            {
+              echo "# Changelog"
+              echo ""
+              cat /tmp/new_entry.txt
+            } > CHANGELOG.md
           fi
 
       - name: Commit and tag
