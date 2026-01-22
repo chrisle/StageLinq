@@ -1,5 +1,10 @@
 # Change log
 
+## v3.0.3
+
+- fix: add contents write permission for git push
+
+
 ## v3.0.2
 
 - fix: handle yarn.lock and improve changelog generation
