@@ -260,6 +260,103 @@ export class FileTransfer extends Service<FileTransferData> {
     return result;
   }
 
+  /**
+   * Get the size of a file without downloading it
+   */
+  async getFileSize(p_location: string): Promise<number> {
+    await this.requestStat(p_location);
+    const fstatMessage = await this.waitForMessage(MessageId.FileStat);
+    return fstatMessage.size;
+  }
+
+  /**
+   * Read a specific byte range from a file
+   * This only downloads the chunks needed for the requested range
+   *
+   * @param p_location - File path on the device
+   * @param offset - Starting byte offset
+   * @param length - Number of bytes to read
+   * @returns Buffer containing the requested bytes
+   */
+  async getFileRange(p_location: string, offset: number, length: number): Promise<Buffer> {
+    await this.waitTillAvailable();
+    this._available = false;
+
+    try {
+      // Request file transfer ID to get file size and txid
+      await this.requestFileTransferId(p_location);
+      const txinfo = await this.waitForMessage(MessageId.FileTransferId);
+
+      if (!txinfo || txinfo.size === 0) {
+        Logger.warn(`${p_location} doesn't exist or is a streaming file`);
+        return Buffer.alloc(0);
+      }
+
+      // Clamp the requested range to file size
+      const fileSize = txinfo.size;
+      const endOffset = Math.min(offset + length, fileSize);
+      const actualLength = Math.max(0, endOffset - offset);
+
+      if (actualLength === 0 || offset >= fileSize) {
+        await this.signalTransferComplete();
+        return Buffer.alloc(0);
+      }
+
+      // Calculate which chunks we need
+      const startChunk = Math.floor(offset / CHUNK_SIZE);
+      const endChunk = Math.floor((endOffset - 1) / CHUNK_SIZE);
+      const totalChunks = endChunk - startChunk + 1;
+
+      // Create buffer for the chunks we need
+      const chunkBuffer = Buffer.alloc(totalChunks * CHUNK_SIZE);
+      let chunksReceived = 0;
+
+      // Set up chunk listener
+      const chunkPromise = new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.removeListener('message', chunkListener);
+          reject(new Error(`Timeout reading range from '${p_location}'`));
+        }, DOWNLOAD_TIMEOUT);
+
+        const chunkListener = (p_message: ServiceMessage<FileTransferData>) => {
+          if (p_message.id === MessageId.FileTransferChunk) {
+            const chunkOffset = p_message.message.offset;
+            const chunkIndex = Math.floor(chunkOffset / CHUNK_SIZE) - startChunk;
+
+            if (chunkIndex >= 0 && chunkIndex < totalChunks) {
+              const bufferOffset = chunkIndex * CHUNK_SIZE;
+              p_message.message.data.copy(chunkBuffer, bufferOffset);
+              chunksReceived++;
+
+              if (chunksReceived >= totalChunks) {
+                clearTimeout(timeout);
+                this.removeListener('message', chunkListener);
+                resolve();
+              }
+            }
+          }
+        };
+
+        this.addListener('message', chunkListener);
+      });
+
+      // Request the specific chunk range
+      await this.requestChunkRange(txinfo.txid, startChunk, endChunk);
+
+      // Wait for all chunks
+      await chunkPromise;
+
+      // Signal transfer complete
+      await this.signalTransferComplete();
+
+      // Extract the exact bytes requested
+      const startInBuffer = offset - (startChunk * CHUNK_SIZE);
+      return chunkBuffer.subarray(startInBuffer, startInBuffer + actualLength);
+    } finally {
+      this._available = true;
+    }
+  }
+
   ///////////////////////////////////////////////////////////////////////////
   // Private methods
 

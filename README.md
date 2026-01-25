@@ -225,6 +225,7 @@ This library incorporates code and ideas from other StageLinq implementations:
 ## Related Packages
 
 - [alphatheta-connect](https://github.com/chrisle/alphatheta-connect) — Pioneer Pro DJ Link integration
+- [metadata-connect](https://github.com/chrisle/metadata-connect) — Audio metadata extraction with partial file reads
 - [rekordbox-connect](https://github.com/chrisle/rekordbox-connect) — Rekordbox database integration
 - [serato-connect](https://github.com/chrisle/serato-connect) — Serato DJ integration
 
