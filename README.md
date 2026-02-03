@@ -28,7 +28,7 @@ await stagelinq.connect();
 
 ## Features
 
-| Feature | Go | Python | TS v2 |
+| Feature | Go | Python | This repo |
 |---------|:--:|:------:|:-----:|
 | Device Discovery | ✅ | ✅ | ✅ |
 | StateMap Service | ✅ | ✅ | ✅ |
