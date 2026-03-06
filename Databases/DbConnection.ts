@@ -1,15 +1,19 @@
 import Database from 'better-sqlite3';
 import { Track } from '../types';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 
 
 export class DbConnection {
 
   private db: Database.Database;
   private dbPath: string;
+  private logger: Logger;
 
-  constructor(dbPath: string) {
+  constructor(dbPath: string, logger: Logger = noopLogger) {
     this.dbPath = dbPath;
-    console.debug(`Opening ${this.dbPath}`);
+    this.logger = logger;
+    this.logger.debug(`Opening ${this.dbPath}`);
     this.db = new Database(this.dbPath);
   }
 
@@ -21,7 +25,7 @@ export class DbConnection {
    * @returns
    */
   querySource<T>(query: string, ...params: any[]): T[] {
-    console.debug(`Querying ${this.dbPath}: ${query} (${params.join(', ')})`);
+    this.logger.debug(`Querying ${this.dbPath}: ${query} (${params.join(', ')})`);
     const result = this.db.prepare(query);
     // @ts-ignore
     return result.all(params);
@@ -45,7 +49,7 @@ export class DbConnection {
   }
 
   close() {
-    console.debug(`Closing ${this.dbPath}`);
+    this.logger.debug(`Closing ${this.dbPath}`);
     this.db.close();
   }
 
