@@ -4,7 +4,8 @@ import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { formatToken, sleep } from '../utils';
 import { FileTransfer, StateData, StateMap } from '../services';
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { Databases } from '../Databases';
 
 enum ConnectionStatus { CONNECTING, CONNECTED, FAILED };
@@ -39,14 +40,16 @@ export class StageLinqDevices extends EventEmitter {
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
   private discoveryStatus: Map<string, ConnectionStatus> = new Map();
   private options: StageLinqOptions;
+  private logger: Logger;
 
   private deviceWatchTimeout: NodeJS.Timeout | null = null;
   private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
 
-  constructor(options: StageLinqOptions) {
+  constructor(options: StageLinqOptions, logger: Logger = noopLogger) {
     super();
     this.options = options;
-    this._databases = new Databases();
+    this.logger = logger;
+    this._databases = new Databases(logger);
     this.waitForAllDevices = this.waitForAllDevices.bind(this);
     this.waitForAllDevices();
   }
@@ -57,7 +60,7 @@ export class StageLinqDevices extends EventEmitter {
    * @param connectionInfo Connection info.
    */
   async handleDevice(connectionInfo: ConnectionInfo) {
-    Logger.silly(this.showDiscoveryStatus(connectionInfo));
+    this.logger.trace(this.showDiscoveryStatus(connectionInfo));
 
     // Ignore this discovery message if we've already connected to it,
     // are still connecting, if it has failed, or if it's blacklisted.
@@ -94,7 +97,7 @@ export class StageLinqDevices extends EventEmitter {
       return file;
     } else {
       const err = `File transfer service is not enabled. Cannot download ${path}`
-      Logger.error(err);
+      this.logger.error(err);
       throw new Error(err);
     }
   }
@@ -125,25 +128,25 @@ export class StageLinqDevices extends EventEmitter {
    *
    */
   private waitForAllDevices() {
-    Logger.log('Start watching for devices ...');
+    this.logger.debug('Start watching for devices ...');
     this.deviceWatchTimeout = setInterval(async () => {
       // Check if any devices are still connecting.
       const values = Array.from(this.discoveryStatus.values());
       const foundDevices = values.length >= 1;
       const allConnected = !values.includes(ConnectionStatus.CONNECTING);
       const entries = Array.from(this.discoveryStatus.entries());
-      Logger.debug(`Waiting devices: ${JSON.stringify(entries)}`);
+      this.logger.debug(`Waiting devices: ${JSON.stringify(entries)}`);
 
       if (foundDevices && allConnected) {
-        Logger.log('All devices found!');
-        Logger.debug(`Devices found: ${values.length} ${JSON.stringify(entries)}`);
+        this.logger.debug('All devices found!');
+        this.logger.debug(`Devices found: ${values.length} ${JSON.stringify(entries)}`);
         if (this.deviceWatchTimeout) clearInterval(this.deviceWatchTimeout);
         for (const cb of this.stateMapCallback) {
           this.setupStateMap(cb.connectionInfo, cb.networkDevice);
         }
         this.emit('ready');
       } else {
-        Logger.log(`Waiting for devices ...`);
+        this.logger.debug(`Waiting for devices ...`);
       }
     }, WAIT_FOR_DEVICES_TIMEOUT_MS);
   }
@@ -164,9 +167,9 @@ export class StageLinqDevices extends EventEmitter {
       try {
 
         // Connect to the device.
-        Logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
+        this.logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
           `Attempt ${attempt}/${this.options.maxRetries}`);
-        const networkDevice = new NetworkDevice(connectionInfo);
+        const networkDevice = new NetworkDevice(connectionInfo, this.logger);
         await networkDevice.connect();
 
         // Setup file transfer service
@@ -195,7 +198,7 @@ export class StageLinqDevices extends EventEmitter {
       } catch(e) {
 
         // Failed connection. Sleep then retry.
-        Logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
+        this.logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
           `(${attempt}/${this.options.maxRetries}): ${e}`);
         attempt += 1;
         sleep(500);
@@ -210,7 +213,7 @@ export class StageLinqDevices extends EventEmitter {
     const sourceId = this.sourceId(connectionInfo);
 
     if (this.options.enableFileTranfer) {
-      Logger.info(`Starting file transfer for ${this.deviceId(connectionInfo)}`);
+      this.logger.info(`Starting file transfer for ${this.deviceId(connectionInfo)}`);
       const fileTransferService = await networkDevice.connectToService(FileTransfer);
       this.devices.set(`net://${sourceId}`, {
         networkDevice: networkDevice,
@@ -234,8 +237,8 @@ export class StageLinqDevices extends EventEmitter {
    */
   private async downloadDatabase(networkDevice: NetworkDevice, connectionInfo: ConnectionInfo) {
     const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
-    Logger.debug(`Database sources: ${sources.join(', ')}`);
-    Logger.debug(`Database download complete for ${connectionInfo.source}`);
+    this.logger.debug(`Database sources: ${sources.join(', ')}`);
+    this.logger.debug(`Database download complete for ${connectionInfo.source}`);
   }
 
   private sourceId(connectionInfo: ConnectionInfo) {
@@ -250,7 +253,7 @@ export class StageLinqDevices extends EventEmitter {
    */
   private async setupStateMap(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
     // Setup StateMap
-    Logger.debug(`Setting up stateMap for ${connectionInfo.address}`);
+    this.logger.debug(`Setting up stateMap for ${connectionInfo.address}`);
 
     const stateMap = await networkDevice.connectToService(StateMap);
     stateMap.on('message', (data) => {
@@ -262,7 +265,8 @@ export class StageLinqDevices extends EventEmitter {
       stateMap: stateMap,
       address: connectionInfo.address,
       port: connectionInfo.port,
-      deviceId: this.sourceId(connectionInfo)
+      deviceId: this.sourceId(connectionInfo),
+      logger: this.logger,
     });
 
     player.on('trackLoaded', (status) => {

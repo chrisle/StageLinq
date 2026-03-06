@@ -1,5 +1,4 @@
 import { DOWNLOAD_TIMEOUT } from '../types';
-import { Logger } from '../LogEmitter';
 import { ReadContext } from '../utils/ReadContext';
 import { Service } from './Service';
 import { sleep } from '../utils/sleep';
@@ -186,7 +185,7 @@ export class FileTransfer extends Service<FileTransferData> {
       const total = parseInt(txinfo.size);
 
       if (total === 0) {
-        Logger.warn(`${p_location} doesn't exist or is a streaming file`);
+        this.logger.warn(`${p_location} doesn't exist or is a streaming file`);
         return new Uint8Array(0);
       }
 
@@ -207,20 +206,20 @@ export class FileTransfer extends Service<FileTransferData> {
               bytesDownloaded: bytesDownloaded,
               percentComplete: percentComplete
             })
-            Logger.debug(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
+            this.logger.debug(`Reading ${p_location} progressComplete=${Math.ceil(percentComplete)}% ${bytesDownloaded}/${total}`);
             await sleep(200);
           }
-          Logger.debug(`Download complete.`);
+          this.logger.debug(`Download complete.`);
           resolve(true);
         });
       } catch (err) {
         const msg = `Could not read database from ${p_location}: ${err instanceof Error ? err.message : err}`
-        Logger.error(msg);
+        this.logger.error(msg);
         this._available = true;
         throw new Error(msg);
       }
 
-      Logger.debug(`Signaling transfer complete.`);
+      this.logger.debug(`Signaling transfer complete.`);
       await this.signalTransferComplete();
       this._available = true;
     }
@@ -288,7 +287,7 @@ export class FileTransfer extends Service<FileTransferData> {
       const txinfo = await this.waitForMessage(MessageId.FileTransferId);
 
       if (!txinfo || txinfo.size === 0) {
-        Logger.warn(`${p_location} doesn't exist or is a streaming file`);
+        this.logger.warn(`${p_location} doesn't exist or is a streaming file`);
         return Buffer.alloc(0);
       }
 

@@ -1,7 +1,9 @@
 import { DiscoveryMessageOptions } from '../network';
 import type { NetworkTapCallback } from '../config';
+import type { Logger } from './logger';
 
 export * from './common';
+export * from './logger';
 export * from './player';
 export * from './tokens';
 export * from './models';
@@ -54,4 +56,6 @@ export interface StageLinqOptions {
 	enableFileTranfer?: boolean;
 	/** Callback invoked for every packet sent/received. Use for debugging/logging. */
 	networkTap?: NetworkTapCallback;
+	/** Logger implementation. If not provided, a no-op logger is used (silent). */
+	logger?: Logger;
 }

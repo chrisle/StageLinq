@@ -1,4 +1,5 @@
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { ReadContext } from '../utils/ReadContext';
 import { ServicePorts, ConnectionInfo, LISTEN_TIMEOUT, MessageId, Tokens } from '../types';
 import { sleep } from '../utils/sleep';
@@ -37,9 +38,11 @@ export class NetworkDevice {
   } = {};
 
   private connectionInfo: ConnectionInfo;
+  private logger: Logger;
 
-  constructor(info: ConnectionInfo) {
+  constructor(info: ConnectionInfo, logger: Logger = noopLogger) {
     this.connectionInfo = info;
+    this.logger = logger;
   }
 
   private get address() {
@@ -55,8 +58,8 @@ export class NetworkDevice {
 
   async connect(): Promise<void> {
     const info = this.connectionInfo;
-    Logger.debug(`Attempting to connect to ${info.address}:${info.port}`)
-    this.connection = await tcp.connect(info.address, info.port);
+    this.logger.debug(`Attempting to connect to ${info.address}:${info.port}`)
+    this.connection = await tcp.connect(info.address, info.port, this.logger);
     this.connection.socket.on('data', (p_message: Buffer) => {
       this.messageHandler(p_message);
     });
@@ -121,7 +124,7 @@ export class NetworkDevice {
 
   // Factory function
   async connectToService<T extends InstanceType<typeof services.Service>>(ctor: {
-    new (p_address: string, p_port: number, p_controller: NetworkDevice): T;
+    new (p_address: string, p_port: number, p_controller: NetworkDevice, logger?: Logger): T;
   }): Promise<T> {
     assert(this.connection);
     // FIXME: find out why we need these waits before connecting to a service
@@ -137,7 +140,7 @@ export class NetworkDevice {
     assert(this.servicePorts[serviceName] > 0);
     const port = this.servicePorts[serviceName];
 
-    const service = new ctor(this.address, port, this);
+    const service = new ctor(this.address, port, this, this.logger);
 
     await service.connect();
     this.services[serviceName] = service;
@@ -189,7 +192,7 @@ export class NetworkDevice {
       const filepath = `${path}/${entry.id}${ext}`;
       fs.writeFileSync(filepath, entry.albumArt);
     }
-    Logger.info(`dumped ${result.length} albums arts in '${path}'`);
+    this.logger.info(`dumped ${result.length} albums arts in '${path}'`);
   }
 
   // Database helpers
@@ -283,9 +286,9 @@ export class NetworkDevice {
       while (true) {
         // FIXME: How to determine when all services have been announced?
         if (Object.keys(this.servicePorts).length > 3) {
-          Logger.debug(`Discovered the following services on ${this.address}:${this.port}`);
+          this.logger.debug(`Discovered the following services on ${this.address}:${this.port}`);
           for (const [name, port] of Object.entries(this.servicePorts)) {
-            Logger.debug(`\tport: ${port} => ${name}`);
+            this.logger.debug(`\tport: ${port} => ${name}`);
           }
           resolve();
           break;

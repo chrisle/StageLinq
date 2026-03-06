@@ -13,7 +13,6 @@ import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import type { ServiceMessage } from '../types';
 import { NetworkDevice } from '../network/NetworkDevice';
-import { Logger } from '../LogEmitter';
 import { performance } from 'perf_hooks';
 
 export interface TimeSyncData {
@@ -126,7 +125,7 @@ export class TimeSync extends Service<TimeSyncData> {
         break;
 
       default:
-        Logger.debug(`TimeSync: Unknown message id ${msg.id}`);
+        this.logger.debug(`TimeSync: Unknown message id ${msg.id}`);
         break;
     }
   }
@@ -145,7 +144,7 @@ export class TimeSync extends Service<TimeSyncData> {
     if (this.avgTimeArray.length >= MAX_SAMPLES) {
       const sum = this.avgTimeArray.reduce((a, b) => a + b, 0n);
       const avg = sum / BigInt(this.avgTimeArray.length);
-      Logger.silly(`TimeSync: Average time offset ${avg}ms`);
+      this.logger.trace(`TimeSync: Average time offset ${avg}ms`);
     }
   }
 

@@ -17,8 +17,9 @@
 import { announce, createDiscoveryMessage, StageLinqListener, unannounce } from '../network';
 import { EventEmitter } from 'events';
 import { StageLinqDevices } from '../network/StageLinqDevices';
-import { Logger } from '../LogEmitter';
 import { Action, ActingAsDevice, StageLinqOptions } from '../types';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { setConfig } from '../config';
 
 const DEFAULT_OPTIONS: StageLinqOptions = {
@@ -34,7 +35,7 @@ const DEFAULT_OPTIONS: StageLinqOptions = {
  */
 export class StageLinqInstance extends EventEmitter {
   devices: StageLinqDevices;
-  instanceLogger: Logger = Logger.instance;
+  instanceLogger: Logger;
   instanceOptions: StageLinqOptions;
 
   private listener: StageLinqListener;
@@ -43,13 +44,14 @@ export class StageLinqInstance extends EventEmitter {
   constructor(options?: StageLinqOptions) {
     super();
     this.instanceOptions = { ...DEFAULT_OPTIONS, ...options };
+    this.instanceLogger = options?.logger ?? noopLogger;
 
     // Apply global config from options
     if (this.instanceOptions.networkTap) {
       setConfig({ networkTap: this.instanceOptions.networkTap });
     }
 
-    this.devices = new StageLinqDevices(this.instanceOptions);
+    this.devices = new StageLinqDevices(this.instanceOptions, this.instanceLogger);
 
     // Forward device events to this instance
     this.devices.on('connected', (info) => this.emit('connected', info));
@@ -86,13 +88,13 @@ export class StageLinqInstance extends EventEmitter {
    */
   async connect(): Promise<void> {
     if (this._isConnected) {
-      Logger.warn('Already connected');
+      this.instanceLogger.warn('Already connected');
       return;
     }
 
     this.listener = new StageLinqListener();
     const msg = createDiscoveryMessage(Action.Login, this.instanceOptions.actingAs);
-    await announce(msg);
+    await announce(msg, this.instanceLogger);
     this.listener.listenForDevices(async (connectionInfo) => {
       await this.devices.handleDevice(connectionInfo);
     });
@@ -105,7 +107,7 @@ export class StageLinqInstance extends EventEmitter {
    */
   async disconnect(): Promise<void> {
     if (!this._isConnected) {
-      Logger.warn('Not connected');
+      this.instanceLogger.warn('Not connected');
       return;
     }
 
@@ -113,7 +115,7 @@ export class StageLinqInstance extends EventEmitter {
       this.devices.disconnectAll();
       this.listener?.stop();
       const msg = createDiscoveryMessage(Action.Logout, this.instanceOptions.actingAs);
-      await unannounce(msg);
+      await unannounce(msg, this.instanceLogger);
       this._isConnected = false;
       this.emit('disconnected');
     } catch (e) {
@@ -256,7 +258,7 @@ export class StageLinq {
   static reset(): void {
     if (this._instance) {
       if (this._instance.isConnected) {
-        Logger.warn('Cannot reset while connected. Call disconnect() first.');
+        this._instance.instanceLogger.warn('Cannot reset while connected. Call disconnect() first.');
         return;
       }
       this._instance = null;

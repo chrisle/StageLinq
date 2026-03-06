@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { MessageId, MESSAGE_TIMEOUT, Tokens } from '../types';
 import { NetworkDevice } from '../network/NetworkDevice';
 import { ReadContext } from '../utils/ReadContext';
@@ -15,13 +16,15 @@ export abstract class Service<T> extends EventEmitter {
 	public readonly name: string;
 	protected controller: NetworkDevice;
 	protected connection: tcp.Connection | null = null;
+	protected logger: Logger;
 
-	constructor(p_address: string, p_port: number, p_controller: NetworkDevice) {
+	constructor(p_address: string, p_port: number, p_controller: NetworkDevice, logger: Logger = noopLogger) {
 		super();
 		this.address = p_address;
 		this.port = p_port;
 		this.name = this.constructor.name;
 		this.controller = p_controller;
+		this.logger = logger;
 	}
 
 	async connect(): Promise<void> {
@@ -79,7 +82,7 @@ export abstract class Service<T> extends EventEmitter {
 				}
 			} catch (err) {
 				// FIXME: Rethrow based on the severity?
-				Logger.error(err);
+				this.logger.error(err instanceof Error ? err.message : String(err));
 			}
 		});
 
@@ -93,16 +96,16 @@ export abstract class Service<T> extends EventEmitter {
 
 		await this.init();
 
-		Logger.debug(`Connected to service '${this.name}' at port ${this.port}`);
+		this.logger.debug(`Connected to service '${this.name}' at port ${this.port}`);
 	}
 
 	disconnect() {
 		assert(this.connection);
 		try {
-			Logger.debug(`Disconnecting ${this.name} Service on ${this.address}`);
+			this.logger.debug(`Disconnecting ${this.name} Service on ${this.address}`);
 			this.connection.destroy();
 		} catch (e) {
-			Logger.error('Error disconnecting', e);
+			this.logger.error('Error disconnecting', e);
 		} finally {
 			this.connection = null;
 		}

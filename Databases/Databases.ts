@@ -2,7 +2,8 @@ import { ConnectionInfo, Source } from '../types';
 import { EventEmitter } from 'stream';
 import { FileTransfer } from '../services';
 import { getTempFilePath } from '../utils';
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { NetworkDevice } from '../network';
 import * as fs from 'fs';
 
@@ -15,9 +16,11 @@ export declare interface Databases {
 export class Databases extends EventEmitter {
 
   sources: Map<string, string> = new Map();
+  private logger: Logger;
 
-  constructor() {
+  constructor(logger: Logger = noopLogger) {
     super();
+    this.logger = logger;
   }
 
   async downloadSourcesFromDevice(connectionInfo: ConnectionInfo, networkDevice: NetworkDevice) {
@@ -29,9 +32,9 @@ export class Databases extends EventEmitter {
         .exec(Buffer.from(connectionInfo.token).toString('hex'));
       const deviceId = match ? match.slice(1).join('-') : 'unknown';
       const dbConnectionName = `net://${deviceId}/${source.name}`;
-      Logger.debug(`DB network path: ${dbConnectionName}`);
+      this.logger.debug(`DB network path: ${dbConnectionName}`);
       if (this.sources.has(dbConnectionName)) {
-        Logger.debug(`Already seen ${source} on ${connectionInfo.address}:${connectionInfo.port}`);
+        this.logger.debug(`Already seen ${source} on ${connectionInfo.address}:${connectionInfo.port}`);
       } else {
         await this.downloadDb(dbConnectionName, service, source);
         output.push(dbConnectionName);
@@ -47,7 +50,7 @@ export class Databases extends EventEmitter {
     const dbPath = getTempFilePath(`${sourceId}/m.db`);
 
     // Read database from source
-    Logger.debug(`Reading database ${sourceId}`);
+    this.logger.debug(`Reading database ${sourceId}`);
     this.emit('dbDownloading', sourceId, dbPath);
 
     service.on('fileTransferProgress', (progress) => {
@@ -57,11 +60,11 @@ export class Databases extends EventEmitter {
     // Save database to a file
     await service.waitTillAvailable();
     const file = await service.getFile(source.database.location);
-    Logger.debug(`Saving ${sourceId} to ${dbPath}`);
+    this.logger.debug(`Saving ${sourceId} to ${dbPath}`);
     fs.writeFileSync(dbPath, Buffer.from(file));
     this.sources.set(sourceId, dbPath);
 
-    Logger.debug(`Downloaded ${sourceId} to ${dbPath}`);
+    this.logger.debug(`Downloaded ${sourceId} to ${dbPath}`);
     this.emit('dbDownloaded', sourceId, dbPath);
   }
 
@@ -76,7 +79,7 @@ export class Databases extends EventEmitter {
       // return the first internal database we find.
       for (const entry of Array.from(this.sources.entries())) {
         if (/\(Internal\)/.test(entry[0])) {
-          Logger.debug(`Returning copy of internal database`);
+          this.logger.debug(`Returning copy of internal database`);
           return this.sources.get(entry[0]);
         }
       }

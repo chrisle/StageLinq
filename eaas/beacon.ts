@@ -13,7 +13,8 @@ import { createSocket, Socket as UDPSocket, RemoteInfo } from 'dgram';
 import { EventEmitter } from 'events';
 import { networkInterfaces } from 'os';
 
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { generateToken } from '../utils/token';
 import {
   EAASBeaconOptions,
@@ -56,9 +57,11 @@ export class EAASBeacon extends EventEmitter {
   private options: Required<EAASBeaconOptions>;
   private socket: UDPSocket | null = null;
   private responseMessage: Uint8Array;
+  private logger: Logger;
 
-  constructor(options: EAASBeaconOptions) {
+  constructor(options: EAASBeaconOptions, logger: Logger = noopLogger) {
     super();
+    this.logger = logger;
 
     // Generate token if not provided
     const token = options.token ?? generateToken();
@@ -101,7 +104,7 @@ export class EAASBeacon extends EventEmitter {
    */
   async start(): Promise<void> {
     if (this.socket) {
-      Logger.warn('EAAS Beacon: Already started');
+      this.logger.warn('EAAS Beacon: Already started');
       return;
     }
 
@@ -110,7 +113,7 @@ export class EAASBeacon extends EventEmitter {
         this.socket = createSocket({ type: 'udp4', reuseAddr: true });
 
         this.socket.on('error', (err) => {
-          Logger.error(`EAAS Beacon socket error: ${err}`);
+          this.logger.error(`EAAS Beacon socket error: ${err}`);
           this.emit('error', err);
         });
 
@@ -120,7 +123,7 @@ export class EAASBeacon extends EventEmitter {
 
         this.socket.on('listening', () => {
           const addr = this.socket!.address();
-          Logger.info(`EAAS Beacon: Listening on ${addr.address}:${addr.port}`);
+          this.logger.info(`EAAS Beacon: Listening on ${addr.address}:${addr.port}`);
 
           // Build response message with correct host
           const host = this.options.grpcHost || this.getLocalIP();
@@ -152,10 +155,10 @@ export class EAASBeacon extends EventEmitter {
       try {
         this.socket.close();
       } catch (err) {
-        Logger.warn(`EAAS Beacon: Error closing socket: ${err}`);
+        this.logger.warn(`EAAS Beacon: Error closing socket: ${err}`);
       }
       this.socket = null;
-      Logger.info('EAAS Beacon: Stopped');
+      this.logger.info('EAAS Beacon: Stopped');
     }
   }
 
@@ -167,7 +170,7 @@ export class EAASBeacon extends EventEmitter {
       return; // Not a discovery request
     }
 
-    Logger.debug(`EAAS Beacon: Discovery request from ${rinfo.address}:${rinfo.port}`);
+    this.logger.debug(`EAAS Beacon: Discovery request from ${rinfo.address}:${rinfo.port}`);
     this.emit('request', rinfo.address, rinfo.port);
 
     // Send response
@@ -177,7 +180,7 @@ export class EAASBeacon extends EventEmitter {
       rinfo.address,
       (err) => {
         if (err) {
-          Logger.warn(`EAAS Beacon: Failed to send response to ${rinfo.address}: ${err}`);
+          this.logger.warn(`EAAS Beacon: Failed to send response to ${rinfo.address}: ${err}`);
         }
       }
     );

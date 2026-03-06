@@ -14,7 +14,8 @@ import { EventEmitter } from 'events';
 import { networkInterfaces } from 'os';
 import { subnet } from 'ip';
 
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import {
   EAASDevice,
   EAASDiscovererOptions,
@@ -61,9 +62,11 @@ export class EAASDiscoverer extends EventEmitter {
   private socket: UDPSocket | null = null;
   private scanTimer: ReturnType<typeof setInterval> | null = null;
   private discoveredDevices: Map<string, EAASDevice> = new Map();
+  private logger: Logger;
 
-  constructor(options: EAASDiscovererOptions = {}) {
+  constructor(options: EAASDiscovererOptions = {}, logger: Logger = noopLogger) {
     super();
+    this.logger = logger;
     this.options = {
       timeout: options.timeout ?? DEFAULT_TIMEOUT,
       scanInterval: options.scanInterval ?? DEFAULT_SCAN_INTERVAL,
@@ -95,7 +98,7 @@ export class EAASDiscoverer extends EventEmitter {
    */
   async startScanning(): Promise<void> {
     if (this.scanTimer) {
-      Logger.warn('EAAS: Already scanning');
+      this.logger.warn('EAAS: Already scanning');
       return;
     }
 
@@ -113,7 +116,7 @@ export class EAASDiscoverer extends EventEmitter {
       }
     }, this.options.scanInterval);
 
-    Logger.info('EAAS: Started scanning for devices');
+    this.logger.info('EAAS: Started scanning for devices');
   }
 
   /**
@@ -126,7 +129,7 @@ export class EAASDiscoverer extends EventEmitter {
     }
 
     this.closeSocket();
-    Logger.info('EAAS: Stopped scanning for devices');
+    this.logger.info('EAAS: Stopped scanning for devices');
   }
 
   /**
@@ -149,7 +152,7 @@ export class EAASDiscoverer extends EventEmitter {
         this.socket = createSocket({ type: 'udp4', reuseAddr: true });
 
         this.socket.on('error', (err) => {
-          Logger.error(`EAAS discovery socket error: ${err}`);
+          this.logger.error(`EAAS discovery socket error: ${err}`);
           this.emit('error', err);
         });
 
@@ -177,7 +180,7 @@ export class EAASDiscoverer extends EventEmitter {
       try {
         this.socket.close();
       } catch (err) {
-        Logger.warn(`EAAS: Error closing socket: ${err}`);
+        this.logger.warn(`EAAS: Error closing socket: ${err}`);
       }
       this.socket = null;
     }
@@ -191,14 +194,14 @@ export class EAASDiscoverer extends EventEmitter {
     const targets = this.getBroadcastTargets();
 
     if (targets.length === 0) {
-      Logger.warn('EAAS: No broadcast targets found');
+      this.logger.warn('EAAS: No broadcast targets found');
       return;
     }
 
     const promises = targets.map((target) => this.sendTo(request, target));
     await Promise.all(promises);
 
-    Logger.debug(`EAAS: Broadcast discovery request to ${targets.length} interfaces`);
+    this.logger.debug(`EAAS: Broadcast discovery request to ${targets.length} interfaces`);
   }
 
   /**
@@ -213,7 +216,7 @@ export class EAASDiscoverer extends EventEmitter {
 
       this.socket.send(data, EAAS_DISCOVERY_PORT, address, (err) => {
         if (err) {
-          Logger.warn(`EAAS: Failed to send to ${address}: ${err}`);
+          this.logger.warn(`EAAS: Failed to send to ${address}: ${err}`);
         }
         resolve();
       });
@@ -235,7 +238,7 @@ export class EAASDiscoverer extends EventEmitter {
 
     if (!this.discoveredDevices.has(key)) {
       this.discoveredDevices.set(key, device);
-      Logger.info(`EAAS: Discovered device: ${device.hostname} at ${device.address}:${device.grpcPort}`);
+      this.logger.info(`EAAS: Discovered device: ${device.hostname} at ${device.address}:${device.grpcPort}`);
       this.emit('discovered', device);
     }
   }
@@ -256,7 +259,7 @@ export class EAASDiscoverer extends EventEmitter {
             const info = subnet(entry.address, entry.netmask);
             targets.push(info.broadcastAddress);
           } catch (err) {
-            Logger.warn(`EAAS: Failed to get broadcast for ${entry.address}: ${err}`);
+            this.logger.warn(`EAAS: Failed to get broadcast for ${entry.address}: ${err}`);
           }
         }
       }

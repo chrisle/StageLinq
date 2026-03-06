@@ -9,7 +9,8 @@
  * License: MIT
  */
 
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { EAASDevice } from './types';
 
 export interface EAASHttpClientOptions {
@@ -40,13 +41,15 @@ export class EAASHttpClient {
   private device: EAASDevice;
   private options: Required<EAASHttpClientOptions>;
   private baseUrl: string;
+  private logger: Logger;
 
-  constructor(device: EAASDevice, options: EAASHttpClientOptions = {}) {
+  constructor(device: EAASDevice, options: EAASHttpClientOptions = {}, logger: Logger = noopLogger) {
     this.device = device;
     this.options = {
       timeout: options.timeout ?? 30000,
     };
     this.baseUrl = `http://${device.address}:${device.httpPort}`;
+    this.logger = logger;
   }
 
   /**
@@ -75,7 +78,7 @@ export class EAASHttpClient {
       });
       return response.ok;
     } catch (err) {
-      Logger.debug(`EAAS HTTP: Ping failed: ${err}`);
+      this.logger.debug(`EAAS HTTP: Ping failed: ${err}`);
       return false;
     }
   }
@@ -131,7 +134,7 @@ export class EAASHttpClient {
 
       return { size, contentType };
     } catch (err) {
-      Logger.debug(`EAAS HTTP: Failed to get file info: ${err}`);
+      this.logger.debug(`EAAS HTTP: Failed to get file info: ${err}`);
       return null;
     }
   }

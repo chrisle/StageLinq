@@ -10,14 +10,6 @@ vi.mock('../../network', () => ({
   NetworkDevice: vi.fn(),
 }));
 
-vi.mock('../../LogEmitter', () => ({
-  Logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
 
 vi.mock('fs', () => ({
   writeFileSync: vi.fn(),

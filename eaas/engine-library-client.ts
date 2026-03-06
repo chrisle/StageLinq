@@ -16,7 +16,8 @@
  */
 
 import { EventEmitter } from 'events';
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 import { EAASDevice } from './types';
 import {
   GetLibrariesRequest,
@@ -77,14 +78,16 @@ export class EngineLibraryClient extends EventEmitter {
   private device: EAASDevice;
   private _options: Required<EngineLibraryClientOptions>;
   private connected = false;
+  private logger: Logger;
   // private grpcClient: any = null; // Placeholder for actual gRPC client
 
-  constructor(device: EAASDevice, options: EngineLibraryClientOptions = {}) {
+  constructor(device: EAASDevice, options: EngineLibraryClientOptions = {}, logger: Logger = noopLogger) {
     super();
     this.device = device;
     this._options = {
       timeout: options.timeout ?? 10000,
     };
+    this.logger = logger;
   }
 
   /**
@@ -115,12 +118,12 @@ export class EngineLibraryClient extends EventEmitter {
    */
   async connect(): Promise<void> {
     if (this.connected) {
-      Logger.warn('EAAS: Already connected');
+      this.logger.warn('EAAS: Already connected');
       return;
     }
 
     const endpoint = `${this.device.address}:${this.device.grpcPort}`;
-    Logger.info(`EAAS: Connecting to ${endpoint}`);
+    this.logger.info(`EAAS: Connecting to ${endpoint}`);
 
     // TODO: Implement actual gRPC connection
     // This requires @grpc/grpc-js and generated proto bindings
@@ -156,7 +159,7 @@ export class EngineLibraryClient extends EventEmitter {
 
     this.connected = false;
     this.emit('disconnected');
-    Logger.info('EAAS: Disconnected');
+    this.logger.info('EAAS: Disconnected');
   }
 
   /**
@@ -247,7 +250,7 @@ export class EngineLibraryClient extends EventEmitter {
     //   }
     // });
     // stream.on('error', (err) => this.emit('error', err));
-    // stream.on('end', () => Logger.info('EAAS: Event stream ended'));
+    // stream.on('end', () => this.logger.info('EAAS: Event stream ended'));
 
     throw new Error('gRPC not implemented');
   }

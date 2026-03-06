@@ -1,15 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConnectionHealth } from '../../network/ConnectionHealth';
 
-// Mock the Logger to prevent console output during tests
-vi.mock('../../LogEmitter', () => ({
-  Logger: {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  },
-}));
 
 describe('ConnectionHealth', () => {
   let health: ConnectionHealth;

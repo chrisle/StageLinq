@@ -7,7 +7,8 @@
  */
 
 import { EventEmitter } from 'events';
-import { Logger } from '../LogEmitter';
+import type { Logger } from '../types/logger';
+import { noopLogger } from '../types/logger';
 
 export interface ConnectionHealthOptions {
   /** Interval between heartbeat checks in milliseconds (default: 5000) */
@@ -85,9 +86,11 @@ export class ConnectionHealth extends EventEmitter {
   private isRunning: boolean = false;
   private _isHealthy: boolean = true;
   private reconnectCallback: (() => Promise<boolean>) | null = null;
+  private logger: Logger;
 
-  constructor(options: ConnectionHealthOptions = {}) {
+  constructor(options: ConnectionHealthOptions = {}, logger: Logger = noopLogger) {
     super();
+    this.logger = logger;
     this.options = {
       heartbeatInterval: options.heartbeatInterval ?? 5000,
       staleTimeout: options.staleTimeout ?? 15000,
@@ -130,7 +133,7 @@ export class ConnectionHealth extends EventEmitter {
    */
   start(): void {
     if (this.isRunning) {
-      Logger.warn('ConnectionHealth: Already running');
+      this.logger.warn('ConnectionHealth: Already running');
       return;
     }
 
@@ -143,7 +146,7 @@ export class ConnectionHealth extends EventEmitter {
       this.checkHealth();
     }, this.options.heartbeatInterval);
 
-    Logger.debug('ConnectionHealth: Started monitoring');
+    this.logger.debug('ConnectionHealth: Started monitoring');
   }
 
   /**
@@ -155,7 +158,7 @@ export class ConnectionHealth extends EventEmitter {
       this.heartbeatTimer = null;
     }
     this.isRunning = false;
-    Logger.debug('ConnectionHealth: Stopped monitoring');
+    this.logger.debug('ConnectionHealth: Stopped monitoring');
   }
 
   /**
@@ -166,7 +169,7 @@ export class ConnectionHealth extends EventEmitter {
     this.lastActivityTime = Date.now();
 
     if (this.missedHeartbeats > 0) {
-      Logger.debug(`ConnectionHealth: Activity restored after ${this.missedHeartbeats} missed heartbeats`);
+      this.logger.debug(`ConnectionHealth: Activity restored after ${this.missedHeartbeats} missed heartbeats`);
       this.missedHeartbeats = 0;
     }
 
@@ -196,7 +199,7 @@ export class ConnectionHealth extends EventEmitter {
 
     // Missed a heartbeat
     this.missedHeartbeats++;
-    Logger.debug(`ConnectionHealth: Missed heartbeat (${this.missedHeartbeats})`);
+    this.logger.debug(`ConnectionHealth: Missed heartbeat (${this.missedHeartbeats})`);
 
     if (timeSinceActivity >= this.options.staleTimeout) {
       // Connection is stale
@@ -221,13 +224,13 @@ export class ConnectionHealth extends EventEmitter {
       this.reconnectAttempt++;
       this.emit('reconnecting', this.reconnectAttempt);
 
-      Logger.info(`ConnectionHealth: Reconnect attempt ${this.reconnectAttempt}/${this.options.maxReconnectAttempts}`);
+      this.logger.info(`ConnectionHealth: Reconnect attempt ${this.reconnectAttempt}/${this.options.maxReconnectAttempts}`);
 
       try {
         const success = await this.reconnectCallback!();
 
         if (success) {
-          Logger.info('ConnectionHealth: Reconnected successfully');
+          this.logger.info('ConnectionHealth: Reconnected successfully');
           this._isHealthy = true;
           this.reconnectAttempt = 0;
           this.lastActivityTime = Date.now();
@@ -236,7 +239,7 @@ export class ConnectionHealth extends EventEmitter {
           return;
         }
       } catch (err) {
-        Logger.warn(`ConnectionHealth: Reconnect failed: ${err}`);
+        this.logger.warn(`ConnectionHealth: Reconnect failed: ${err}`);
       }
 
       // Wait before next attempt
@@ -246,7 +249,7 @@ export class ConnectionHealth extends EventEmitter {
     }
 
     // All attempts failed
-    Logger.error('ConnectionHealth: All reconnect attempts failed');
+    this.logger.error('ConnectionHealth: All reconnect attempts failed');
     this.emit('reconnectFailed');
   }
 
@@ -255,7 +258,7 @@ export class ConnectionHealth extends EventEmitter {
    */
   async forceReconnect(): Promise<boolean> {
     if (!this.reconnectCallback) {
-      Logger.warn('ConnectionHealth: No reconnect callback set');
+      this.logger.warn('ConnectionHealth: No reconnect callback set');
       return false;
     }
 
