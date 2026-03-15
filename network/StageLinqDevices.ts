@@ -85,6 +85,16 @@ export class StageLinqDevices extends EventEmitter {
     return this._databases;
   }
 
+  /**
+   * Get the FileTransfer service for a specific device.
+   * @param deviceId Device ID (e.g., "net://uuid-token")
+   * @returns FileTransfer service or null if not available
+   */
+  getFileTransferService(deviceId: string): FileTransfer | null {
+    const device = this.devices.get(deviceId);
+    return device?.fileTransferService ?? null;
+  }
+
   async downloadFile(deviceId: string, path: string) {
     if (this.options.enableFileTranfer) {
       const device = this.devices.get(deviceId);
