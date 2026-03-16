@@ -156,6 +156,10 @@ export class Player extends EventEmitter {
     // This will be true once a song has been fully downloaded / loaded.
     const isSongLoaded = data.hasOwnProperty('songLoaded');
 
+    // Capture previous play state before merging
+    const previousState = this.decks.get(layer);
+    const wasPlaying = previousState?.playState === true;
+
     // If a new song is loaded drop all the previous track data.
     if (isNewTrack && isSongLoaded) {
       this.logger.debug(`Replacing state ${layer}`);
@@ -199,8 +203,14 @@ export class Player extends EventEmitter {
     if (isSongLoaded && currentState.trackNetworkPath)
       this.emit('trackLoaded', currentState);
 
-    // If the song is actually playing emit the nowPlaying event.
-    if (result?.playState) this.emit('nowPlaying', currentState);
+    // Only emit nowPlaying when play state transitions to true, or when a new
+    // track starts playing. Previously this fired on every state update
+    // (fader moves, BPM changes, etc.) which caused track duplication.
+    const isNowPlaying = result?.playState === true;
+    const playJustStarted = isNowPlaying && !wasPlaying;
+    const newTrackWhilePlaying = isNowPlaying && isNewTrack && isSongLoaded;
+    if (playJustStarted || newTrackWhilePlaying)
+      this.emit('nowPlaying', currentState);
 
     // Emit that the state has changed.
     this.emit('stateChanged', currentState);
