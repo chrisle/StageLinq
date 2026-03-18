@@ -15,9 +15,11 @@ interface StageLinqDevice {
   fileTransferService: FileTransfer | null;
 };
 
-// This time needs to be just long enough for discovery messages from all to
-// come through.
-const WAIT_FOR_DEVICES_TIMEOUT_MS = 3000;
+// Initial poll interval for device discovery — just long enough for discovery
+// messages from all devices to come through.
+const WAIT_FOR_DEVICES_INITIAL_MS = 3000;
+// Max poll interval after backoff when no devices are found
+const WAIT_FOR_DEVICES_MAX_MS = 30000;
 
 export declare interface StageLinqDevices {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
@@ -43,6 +45,7 @@ export class StageLinqDevices extends EventEmitter {
   private logger: Logger;
 
   private deviceWatchTimeout: NodeJS.Timeout | null = null;
+  private deviceWatchInterval: number = WAIT_FOR_DEVICES_INITIAL_MS;
   private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
 
   constructor(options: StageLinqOptions, logger: Logger = noopLogger) {
@@ -76,6 +79,10 @@ export class StageLinqDevices extends EventEmitter {
    * Disconnect from all connected devices
    */
   disconnectAll() {
+    if (this.deviceWatchTimeout) {
+      clearTimeout(this.deviceWatchTimeout);
+      this.deviceWatchTimeout = null;
+    }
     for (const device of this.devices.values()) {
       device.networkDevice.disconnect();
     }
@@ -139,26 +146,47 @@ export class StageLinqDevices extends EventEmitter {
    */
   private waitForAllDevices() {
     this.logger.debug('Start watching for devices ...');
-    this.deviceWatchTimeout = setInterval(async () => {
+    this.scheduleDeviceWatch();
+  }
+
+  private scheduleDeviceWatch() {
+    this.deviceWatchTimeout = setTimeout(async () => {
       // Check if any devices are still connecting.
       const values = Array.from(this.discoveryStatus.values());
       const foundDevices = values.length >= 1;
       const allConnected = !values.includes(ConnectionStatus.CONNECTING);
       const entries = Array.from(this.discoveryStatus.entries());
-      this.logger.debug(`Waiting devices: ${JSON.stringify(entries)}`);
 
       if (foundDevices && allConnected) {
         this.logger.debug('All devices found!');
         this.logger.debug(`Devices found: ${values.length} ${JSON.stringify(entries)}`);
-        if (this.deviceWatchTimeout) clearInterval(this.deviceWatchTimeout);
+        this.deviceWatchTimeout = null;
         for (const cb of this.stateMapCallback) {
           this.setupStateMap(cb.connectionInfo, cb.networkDevice);
         }
         this.emit('ready');
       } else {
-        this.logger.debug(`Waiting for devices ...`);
+        // Log at trace when idle (no devices), debug when devices are connecting
+        if (foundDevices) {
+          this.logger.debug(`Waiting devices: ${JSON.stringify(entries)}`);
+        } else {
+          this.logger.trace('Waiting for devices ...');
+        }
+
+        // Backoff: increase interval up to max when no devices are found
+        if (!foundDevices && this.deviceWatchInterval < WAIT_FOR_DEVICES_MAX_MS) {
+          this.deviceWatchInterval = Math.min(
+            this.deviceWatchInterval * 2,
+            WAIT_FOR_DEVICES_MAX_MS
+          );
+        } else if (foundDevices) {
+          // Reset to fast polling when devices are actively connecting
+          this.deviceWatchInterval = WAIT_FOR_DEVICES_INITIAL_MS;
+        }
+
+        this.scheduleDeviceWatch();
       }
-    }, WAIT_FOR_DEVICES_TIMEOUT_MS);
+    }, this.deviceWatchInterval);
   }
 
   /**

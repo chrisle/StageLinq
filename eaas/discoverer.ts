@@ -255,6 +255,9 @@ export class EAASDiscoverer extends EventEmitter {
 
       for (const entry of iface) {
         if (entry.family === 'IPv4' && !entry.internal) {
+          // Skip link-local addresses (169.254.x.x)
+          if (entry.address.startsWith('169.254.')) continue;
+
           try {
             const info = subnet(entry.address, entry.netmask);
             targets.push(info.broadcastAddress);

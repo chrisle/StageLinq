@@ -50,6 +50,10 @@ function findBroadcastTargets(): BroadcastTarget[] {
     if (!i || !i.length) continue;
     for (const entry of i) {
       if (entry.family === 'IPv4' && entry.internal === false) {
+        // Skip link-local addresses (169.254.x.x) — these are auto-configured
+        // interfaces that rarely host StageLinq devices
+        if (entry.address.startsWith('169.254.')) continue;
+
         const info = subnet(entry.address, entry.netmask);
         targets.push({
           broadcastIP: info.broadcastAddress,
@@ -77,6 +81,9 @@ const isWindows = platform() === 'win32';
 
 /** Module-level logger, set by announce/unannounce */
 let moduleLogger: Logger = noopLogger;
+
+/** Track targets that have already warned about send failures */
+const warnedTargets: Set<string> = new Set();
 
 function writeDiscoveryMessage(p_ctx: WriteContext, p_message: DiscoveryMessage): number {
   let written = 0;
@@ -190,9 +197,15 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
         socket.send(p_message, LISTEN_PORT, target.broadcastIP, (err) => {
           clearTimeout(timeout);
           if (err) {
-            moduleLogger.warn(`Failed to send to ${target.broadcastIP}: ${err}`);
+            if (!warnedTargets.has(target.broadcastIP)) {
+              moduleLogger.warn(`Failed to send to ${target.broadcastIP}: ${err}`);
+              warnedTargets.add(target.broadcastIP);
+            } else {
+              moduleLogger.debug(`Failed to send to ${target.broadcastIP}: ${err}`);
+            }
             resolve(); // Don't reject, just log and continue
           } else {
+            warnedTargets.delete(target.broadcastIP);
             resolve();
           }
         });
@@ -211,9 +224,16 @@ async function broadcastMessage(p_message: Uint8Array): Promise<void> {
         announceClient!.send(p_message, LISTEN_PORT, broadcastIP, (err) => {
           clearTimeout(timeout);
           if (err) {
-            moduleLogger.warn(`Failed to send to ${broadcastIP}: ${err}`);
+            if (!warnedTargets.has(broadcastIP)) {
+              moduleLogger.warn(`Failed to send to ${broadcastIP}: ${err}`);
+              warnedTargets.add(broadcastIP);
+            } else {
+              moduleLogger.debug(`Failed to send to ${broadcastIP}: ${err}`);
+            }
             resolve();
           } else {
+            // Clear warned state if a previously failing target recovers
+            warnedTargets.delete(broadcastIP);
             resolve();
           }
         });
