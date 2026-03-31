@@ -20,9 +20,17 @@ cp stagelinq.lua ~/.local/lib/wireshark/plugins/
 ```
 
 ### Windows
-Copy `stagelinq.lua` to:
+
+From Command Prompt:
+```cmd
+mkdir "%APPDATA%\Wireshark\plugins"
+copy stagelinq.lua "%APPDATA%\Wireshark\plugins\"
 ```
-%APPDATA%\Wireshark\plugins\
+
+From PowerShell:
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:APPDATA\Wireshark\plugins"
+Copy-Item stagelinq.lua "$env:APPDATA\Wireshark\plugins\"
 ```
 
 ## Usage
