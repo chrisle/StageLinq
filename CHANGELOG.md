@@ -1,5 +1,30 @@
 # Change log
 
+## v3.1.0
+
+- ci: check out metadata-connect sibling so publish workflow can build
+- ci: switch publish workflow to OIDC trusted publishing
+- fix(ci): publish no longer fails when several connect repos release together
+- chore: regenerate lockfile after dependency install
+- chore: update lockfile
+- chore: update lockfile
+- fix: reduce noise from idle StageLinQ polling
+- test: add nowPlaying emission tests for Player
+- fix: only emit nowPlaying on actual track changes
+- chore: regenerate lockfile for metadata-connect 1.1.4
+- feat: expose FileTransfer service for artwork extraction
+- chore: add npm publish verification step
+- chore: update lockfiles
+- fix: replace console.debug with pluggable logger in DbConnection
+- refactor: replace stagelinq EventEmitter logger with pluggable logger interface
+- chore: bump metadata-connect to 1.1.2
+- fix: resolve security vulnerabilities in dependencies
+- Update feature table header for TypeScript version
+- chore: update lockfiles
+- chore: update package-lock.json
+- feat: add metadata extraction with partial file reads
+
+
 ## v3.0.4
 
 - ci: trigger fresh workflow run
