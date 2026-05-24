@@ -1,5 +1,10 @@
 # Change log
 
+## v3.1.1
+
+- ci: upgrade npm before publishing so OIDC trusted publishing works
+
+
 ## v3.1.0
 
 - ci: check out metadata-connect sibling so publish workflow can build
