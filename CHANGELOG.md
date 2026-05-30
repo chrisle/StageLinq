@@ -1,5 +1,10 @@
 # Change log
 
+## v3.1.2
+
+- chore: drop transient peer:true flags from lock file
+
+
 ## v3.1.1
 
 - ci: upgrade npm before publishing so OIDC trusted publishing works
