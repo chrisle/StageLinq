@@ -41,7 +41,7 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "better-sqlite3": "^12.5.0",
+    "better-sqlite3-multiple-ciphers": "^12.9.0",
     "console-stamp": "^3.0.3",
     "file-type": "^16.5.3",
     "ip": "^1.1.5",

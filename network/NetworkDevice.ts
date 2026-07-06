@@ -10,7 +10,7 @@ import * as FileType from 'file-type';
 import * as fs from 'fs';
 import * as services from '../services';
 import * as tcp from '../utils/tcp';
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 
 
 interface SourceAndTrackPath {

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import Database from 'better-sqlite3-multiple-ciphers';
 import { Track } from '../types';
 import type { Logger } from '../types/logger';
 import { noopLogger } from '../types/logger';
