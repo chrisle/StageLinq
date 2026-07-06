@@ -1,5 +1,11 @@
 # Change log
 
+## v3.1.4
+
+- build: bump better-sqlite3-multiple-ciphers to 12.11.1 for Electron 43
+- refactor: use better-sqlite3-multiple-ciphers for Electron 43 compatibility
+
+
 ## v3.1.3
 
 - chore: bump metadata-connect to 1.1.10 in lockfile
