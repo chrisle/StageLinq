@@ -1,5 +1,10 @@
 # Change log
 
+## v3.1.3
+
+- chore: bump metadata-connect to 1.1.10 in lockfile
+
+
 ## v3.1.2
 
 - chore: drop transient peer:true flags from lock file
