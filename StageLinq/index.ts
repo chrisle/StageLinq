@@ -60,6 +60,7 @@ export class StageLinqInstance extends EventEmitter {
     this.devices.on('nowPlaying', (status) => this.emit('nowPlaying', status));
     this.devices.on('stateChanged', (status) => this.emit('stateChanged', status));
     this.devices.on('message', (info, data) => this.emit('message', info, data));
+    this.devices.on('beatMessage', (info, data) => this.emit('beatMessage', info, data));
   }
 
   /**

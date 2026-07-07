@@ -3,7 +3,8 @@ import { EventEmitter } from 'events';
 import { NetworkDevice } from '.';
 import { Player } from '../devices/Player';
 import { formatToken, sleep } from '../utils';
-import { FileTransfer, StateData, StateMap } from '../services';
+import { BeatInfo, FileTransfer, StateData, StateMap } from '../services';
+import type { BeatData } from '../services';
 import type { Logger } from '../types/logger';
 import { noopLogger } from '../types/logger';
 import { Databases } from '../Databases';
@@ -27,6 +28,7 @@ export declare interface StageLinqDevices {
   on(event: 'nowPlaying', listener: (status: PlayerStatus) => void): this;
   on(event: 'connected', listener: (connectionInfo: ConnectionInfo) => void): this;
   on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
+  on(event: 'beatMessage', listener: (connectionInfo: ConnectionInfo, data: BeatData) => void): this;
   on(event: 'ready', listener: () => void): this;
 }
 
@@ -318,6 +320,17 @@ export class StageLinqDevices extends EventEmitter {
     player.on('nowPlaying', (status) => {
       this.emit('nowPlaying', status);
     });
+
+    // Setup BeatInfo for realtime beat/BPM data. Not every device advertises
+    // this service, so failures here must not break state/track handling.
+    try {
+      const beatInfo = await networkDevice.connectToService(BeatInfo);
+      beatInfo.on('beatMessage', (data: BeatData) => {
+        this.emit('beatMessage', connectionInfo, data);
+      });
+    } catch (e) {
+      this.logger.debug(`BeatInfo not available for ${connectionInfo.address}: ${e}`);
+    }
   }
 
   private deviceId(device: ConnectionInfo) {

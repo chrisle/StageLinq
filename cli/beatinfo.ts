@@ -54,16 +54,17 @@ async function main() {
     console.log(`  Artist: ${status.artist}`);
   });
 
-  // Display state changes (includes beat/BPM info)
-  stageLinq.devices.on('stateChanged', (status) => {
-    // Only show if we have BPM info
-    if (status.currentBpm) {
-      const playState = status.playState ? 'playing' : 'paused';
-      process.stdout.write(
-        `\r[${status.deck}] BPM: ${status.currentBpm.toFixed(1).padStart(6)} | ` +
-        `State: ${playState.padEnd(10)}`
-      );
-    }
+  // Display realtime beat info from the BeatInfo service
+  const deckNames = ['A', 'B', 'C', 'D'];
+  stageLinq.devices.on('beatMessage', (_info, data) => {
+    const line = data.decks
+      .map((deck, i) => {
+        const bar = Math.floor(deck.beat / 4) + 1;
+        const beatInBar = Math.floor(deck.beat % 4) + 1;
+        return `[${deckNames[i]}] Bar ${bar} Beat ${beatInBar} ${deck.bpm.toFixed(1)} BPM`;
+      })
+      .join('  ');
+    process.stdout.write(`\r${line}`);
   });
 
   // Handle graceful shutdown
