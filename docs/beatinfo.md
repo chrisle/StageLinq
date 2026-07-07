@@ -2,91 +2,105 @@
 
 The BeatInfo service provides real-time beat and tempo information from DJ decks, useful for visualizations and beat-synced effects.
 
+Not every device advertises the BeatInfo service. When a connected device does, its beat stream is surfaced through the `beatMessage` event; devices without it simply never emit the event.
+
 ## Usage
 
 ```ts
-import { StageLinq } from 'stagelinq';
+import { StageLinq, ActingAsDevice } from 'stagelinq';
 
-const stagelinq = new StageLinq();
+StageLinq.options = { actingAs: ActingAsDevice.NowPlaying };
 
-stagelinq.devices.on('beatMessage', (data) => {
-  console.log(`Deck ${data.deck}: Beat ${data.beat}/4 at ${data.bpm} BPM`);
+StageLinq.devices.on('beatMessage', (connectionInfo, data) => {
+  data.decks.forEach((deck, i) => {
+    console.log(`Deck ${i}: beat ${deck.beat.toFixed(2)} at ${deck.bpm.toFixed(1)} BPM`);
+  });
 });
 
-await stagelinq.connect();
+await StageLinq.connect();
 ```
 
 ## BeatData Interface
 
+Each `beatMessage` carries one `BeatData` snapshot covering **all** decks on the device (not one event per deck):
+
 ```ts
 interface BeatData {
-  deck: number;        // Deck index (0-3)
-  beat: number;        // Current beat in bar (1-4)
-  totalBeats: number;  // Total beats since track start
+  clock: bigint;          // Device clock value for this update
+  deckCount: number;      // Number of decks in `decks`
+  decks: DeckBeatData[];  // Per-deck beat data (index = deck number)
+}
+
+interface DeckBeatData {
+  beat: number;        // Current beat position within the track (fractional, counts up continuously)
+  totalBeats: number;  // Total number of beats in the track
   bpm: number;         // Current BPM
-  timeline: number;    // Timeline position in seconds
+  samples?: number;    // Sample position (if reported by the device)
 }
 ```
+
+Bar and beat-in-bar are derived from `beat`:
+
+```ts
+const bar        = Math.floor(deck.beat / 4) + 1;
+const beatInBar  = Math.floor(deck.beat % 4) + 1;
+```
+
+## Emit Frequency
+
+By default `beatMessage` fires on every update from the device. There is no configuration hook on the static `StageLinq` API today; if you only care about beat boundaries, throttle in your own handler by watching `Math.floor(deck.beat)` change.
 
 ## Example: Beat Visualizer
 
 ```ts
-import { StageLinq } from 'stagelinq';
+import { StageLinq, ActingAsDevice } from 'stagelinq';
 
-const stagelinq = new StageLinq();
 const deckNames = ['A', 'B', 'C', 'D'];
 
-stagelinq.devices.on('beatMessage', (data) => {
-  const bar = Math.floor(data.totalBeats / 4) + 1;
-  const beat = (data.totalBeats % 4) + 1;
+StageLinq.options = { actingAs: ActingAsDevice.NowPlaying };
 
-  console.log(
-    `Deck ${deckNames[data.deck]}: ` +
-    `Bar ${bar}, Beat ${beat} | ` +
-    `${data.bpm.toFixed(1)} BPM | ` +
-    `${formatTime(data.timeline)}`
-  );
+StageLinq.devices.on('beatMessage', (_connectionInfo, data) => {
+  data.decks.forEach((deck, i) => {
+    const bar = Math.floor(deck.beat / 4) + 1;
+    const beatInBar = Math.floor(deck.beat % 4) + 1;
+
+    console.log(
+      `Deck ${deckNames[i]}: ` +
+      `Bar ${bar}, Beat ${beatInBar} | ` +
+      `${deck.bpm.toFixed(1)} BPM`
+    );
+  });
 });
 
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-await stagelinq.connect();
+await StageLinq.connect();
 ```
 
 ## Example: Beat-synced Effects
 
 ```ts
-stagelinq.devices.on('beatMessage', (data) => {
-  // Flash on every beat
-  if (data.beat === 1) {
-    triggerFlash('downbeat');
-  } else {
-    triggerFlash('beat');
-  }
+const lastBeat: number[] = [];
 
-  // Change color every 4 bars
-  if (data.totalBeats % 16 === 0) {
-    cycleColor();
-  }
+StageLinq.devices.on('beatMessage', (_connectionInfo, data) => {
+  data.decks.forEach((deck, i) => {
+    const currentBeat = Math.floor(deck.beat);
+
+    // Only fire once per whole beat.
+    if (currentBeat === lastBeat[i]) return;
+    lastBeat[i] = currentBeat;
+
+    // Flash on the downbeat of each bar.
+    if (currentBeat % 4 === 0) {
+      triggerFlash('downbeat');
+    } else {
+      triggerFlash('beat');
+    }
+
+    // Change color every 4 bars.
+    if (currentBeat % 16 === 0) {
+      cycleColor();
+    }
+  });
 });
-```
-
-## CLI Demo
-
-```bash
-npx ts-node cli/beatinfo.ts
-```
-
-Output:
-```
-Deck A: Beat 1/4 | 128.0 BPM | 0:32
-Deck A: Beat 2/4 | 128.0 BPM | 0:32
-Deck A: Beat 3/4 | 128.0 BPM | 0:33
-Deck A: Beat 4/4 | 128.0 BPM | 0:33
 ```
 
 ## Attribution

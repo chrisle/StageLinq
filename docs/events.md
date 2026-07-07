@@ -80,21 +80,31 @@ stagelinq.devices.on('/Engine/Deck1/CurrentBPM', (value: number) => {});
 
 ## Beat Events (BeatInfo Service)
 
+Emitted when a connected device advertises the BeatInfo service. Each event
+carries one snapshot covering **all** decks (not one event per deck).
+
 ```ts
-stagelinq.devices.on('beatMessage', (data: BeatData) => {});
+StageLinq.devices.on('beatMessage', (connectionInfo: ConnectionInfo, data: BeatData) => {});
 ```
 
 ### BeatData
 
 ```ts
 interface BeatData {
-  deck: number;           // 0-3
-  beat: number;           // Current beat in bar (1-4)
-  totalBeats: number;     // Total beats played
+  clock: bigint;          // Device clock value for this update
+  deckCount: number;      // Number of decks in `decks`
+  decks: DeckBeatData[];  // Per-deck beat data (index = deck number)
+}
+
+interface DeckBeatData {
+  beat: number;           // Current beat position in the track (fractional, counts up)
+  totalBeats: number;     // Total beats in the track
   bpm: number;            // Current BPM
-  timeline: number;       // Timeline position in seconds
+  samples?: number;       // Sample position (if reported)
 }
 ```
+
+See [beatinfo.md](./beatinfo.md) for full examples.
 
 ## Database Events
 
