@@ -1,5 +1,11 @@
 # Change log
 
+## v3.2.0
+
+- docs: correct BeatInfo examples to the working beatMessage API
+- feat: emit realtime beat and BPM data via the beatMessage event
+
+
 ## v3.1.4
 
 - build: bump better-sqlite3-multiple-ciphers to 12.11.1 for Electron 43
