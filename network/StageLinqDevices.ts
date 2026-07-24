@@ -21,6 +21,14 @@ interface StageLinqDevice {
 const WAIT_FOR_DEVICES_INITIAL_MS = 3000;
 // Max poll interval after backoff when no devices are found
 const WAIT_FOR_DEVICES_MAX_MS = 30000;
+// Base linear backoff between device connection attempts (attempt N waits
+// N * this). A device that is still booting needs real time between tries.
+const RETRY_BACKOFF_MS = 500;
+// How long a device stays in FAILED before a fresh discovery message is
+// allowed to retry it. Without this a device that is briefly unreachable at
+// startup is ignored for the entire session, so its channel faders never
+// reach the mix processor and the overlay stops respecting them (NP3-310).
+const RETRY_AFTER_FAILURE_MS = 10000;
 
 export declare interface StageLinqDevices {
   on(event: 'trackLoaded', listener: (status: PlayerStatus) => void): this;
@@ -43,6 +51,8 @@ export class StageLinqDevices extends EventEmitter {
   private _databases: Databases;
   private devices: Map<IpAddress, StageLinqDevice> = new Map();
   private discoveryStatus: Map<string, ConnectionStatus> = new Map();
+  /** When each FAILED device last failed, for the retry cooldown. */
+  private failedAt: Map<string, number> = new Map();
   private options: StageLinqOptions;
   private logger: Logger;
 
@@ -74,7 +84,14 @@ export class StageLinqDevices extends EventEmitter {
       || this.isFailed(connectionInfo)
       || this.isIgnored(connectionInfo)) return;
 
-    this.connectToDevice(connectionInfo);
+    // Deliberately not awaited — discovery must stay responsive — but the
+    // rejection has to be handled here or a failed connection surfaces as an
+    // unhandled promise rejection instead of a logged, recoverable failure.
+    void this.connectToDevice(connectionInfo).catch((e) => {
+      this.logger.warn(
+        `Giving up on ${this.deviceId(connectionInfo)} for now ` +
+        `(retry in ${RETRY_AFTER_FAILURE_MS / 1000}s): ${e}`);
+    });
   }
 
   /**
@@ -202,13 +219,14 @@ export class StageLinqDevices extends EventEmitter {
     // Mark this device as connecting.
     this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTING);
 
+    const maxRetries = this.options.maxRetries ?? 3;
     let attempt = 1;
-    while (attempt < (this.options.maxRetries ?? 3)) {
+    while (attempt <= maxRetries) {
       try {
 
         // Connect to the device.
         this.logger.info(`Connecting to ${this.deviceId(connectionInfo)}. ` +
-          `Attempt ${attempt}/${this.options.maxRetries}`);
+          `Attempt ${attempt}/${maxRetries}`);
         const networkDevice = new NetworkDevice(connectionInfo, this.logger);
         await networkDevice.connect();
 
@@ -237,15 +255,22 @@ export class StageLinqDevices extends EventEmitter {
         return; // Don't forget to return!
       } catch(e) {
 
-        // Failed connection. Sleep then retry.
+        // Failed connection. Sleep then retry. The await matters: without it
+        // the backoff is a no-op and every attempt fires in the same tick, so
+        // a device that just needs a moment to settle burns all its retries in
+        // microseconds and is marked FAILED.
         this.logger.warn(`Could not connect to ${this.deviceId(connectionInfo)} ` +
-          `(${attempt}/${this.options.maxRetries}): ${e}`);
+          `(${attempt}/${maxRetries}): ${e}`);
         attempt += 1;
-        sleep(500);
+        if (attempt <= maxRetries) {
+          await sleep(RETRY_BACKOFF_MS * (attempt - 1));
+        }
       }
     }
-    // We failed 3 times. Throw exception.
+    // Every attempt failed. Mark it and stamp the time so the cooldown in
+    // isFailed() can let a later discovery message retry the device.
     this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.FAILED);
+    this.failedAt.set(this.deviceId(connectionInfo), Date.now());
     throw new Error(`Could not connect to ${this.deviceId(connectionInfo)}`);
   }
 
@@ -348,9 +373,24 @@ export class StageLinqDevices extends EventEmitter {
       === ConnectionStatus.CONNECTED;
   }
 
+  /**
+   * True while a device is in its post-failure cooldown.
+   *
+   * FAILED used to be terminal, which meant one unreachable moment at startup
+   * removed a device for the whole session. Once the cooldown expires we drop
+   * the status so the next discovery message reconnects it.
+   */
   private isFailed(device: ConnectionInfo) {
-    return this.discoveryStatus.get(this.deviceId(device))
-      === ConnectionStatus.FAILED;
+    const id = this.deviceId(device);
+    if (this.discoveryStatus.get(id) !== ConnectionStatus.FAILED) return false;
+
+    const failedAt = this.failedAt.get(id) ?? 0;
+    if (Date.now() - failedAt < RETRY_AFTER_FAILURE_MS) return true;
+
+    this.logger.info(`Retrying previously failed device ${id}`);
+    this.discoveryStatus.delete(id);
+    this.failedAt.delete(id);
+    return false;
   }
 
   private isIgnored(device: ConnectionInfo) {
