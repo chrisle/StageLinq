@@ -53,6 +53,8 @@ export class StageLinqDevices extends EventEmitter {
   private discoveryStatus: Map<string, ConnectionStatus> = new Map();
   /** When each FAILED device last failed, for the retry cooldown. */
   private failedAt: Map<string, number> = new Map();
+  /** Ignored mixers we have already warned about, so the log fires once each. */
+  private loggedIgnoredMixers: Set<string> = new Set();
   private options: StageLinqOptions;
   private logger: Logger;
 
@@ -394,12 +396,30 @@ export class StageLinqDevices extends EventEmitter {
   }
 
   private isIgnored(device: ConnectionInfo) {
+    // X1800/X1850 mixers (software.name JM08) are ignored. On an SC-players +
+    // X1850 rig this mixer is the ONLY device carrying channel faders, so
+    // ignoring it may be why such a rig's fader is not respected in the overlay
+    // (NP3-333 — an unverified suspicion; needs Denon hardware to confirm).
+    // Behaviour is unchanged for now, but we surface each ignored mixer once so
+    // a real user of this hardware shows up in telemetry instead of silently
+    // degrading. Do NOT remove the ignore without checking why JM08 was added.
+    if (device.software.name === 'JM08') {
+      const id = this.deviceId(device);
+      if (!this.loggedIgnoredMixers.has(id)) {
+        this.loggedIgnoredMixers.add(id);
+        this.logger.warn(
+          `Ignoring StageLinQ mixer ${id} (X1800/X1850). If this rig relies on ` +
+          `the mixer for channel faders, the overlay may not respect them (NP3-333).`
+        );
+      }
+      return true;
+    }
+
     return (
       device.source === this.options.actingAs?.source
       || device.software.name === 'OfflineAnalyzer'
       || /^SoundSwitch/i.test(device.software.name)
       || /^Resolume/i.test(device.software.name)
-      || device.software.name === 'JM08' // Ignore X1800/X1850 mixers
       || device.software.name === 'SSS0' // Ignore SoundSwitchEmbedded on players
     )
   }
