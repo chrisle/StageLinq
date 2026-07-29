@@ -225,9 +225,13 @@ This library incorporates code and ideas from other StageLinq implementations:
 ## Related Packages
 
 - [alphatheta-connect](https://github.com/chrisle/alphatheta-connect) — Pioneer Pro DJ Link integration
+- [djay-connect](https://github.com/chrisle/djay-connect) — djay Pro track change events from NowPlaying.txt
 - [metadata-connect](https://github.com/chrisle/metadata-connect) — Audio metadata extraction with partial file reads
+- [onelibrary-connect](https://github.com/chrisle/onelibrary-connect) — Rekordbox OneLibrary (exportLibrary.db) database access
 - [rekordbox-connect](https://github.com/chrisle/rekordbox-connect) — Rekordbox database integration
-- [serato-connect](https://github.com/chrisle/serato-connect) — Serato DJ integration
+- [serato-connect](https://github.com/chrisle/serato-connect) — Serato DJ history, cues, beatgrids, crates, and library
+- [traktor-connect](https://github.com/chrisle/traktor-connect) — Traktor Pro track metadata via OGG Vorbis broadcast
+- [virtualdj-connect](https://github.com/chrisle/virtualdj-connect) — VirtualDJ track change events from M3U history
 
 These libraries power [Now Playing](https://nowplayingapp.com) — a real-time track display app for DJs and streamers.
 
