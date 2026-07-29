@@ -31,7 +31,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.13.0'
+          # Node 24, matching the consuming app's .nvmrc. The next step installs
+          # npm@latest for OIDC trusted publishing, and npm 12 requires
+          # ^22.22.2 || ^24.15.0 || >=26.0.0 — the previous 22.13.0 pin failed
+          # that check, so every push to main died before it could publish.
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Upgrade npm for OIDC trusted publishing
