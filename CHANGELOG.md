@@ -1,5 +1,16 @@
 # Change log
 
+## v3.3.0
+
+- ci: stagelinq releases reach npm again instead of failing on every push
+- fix: a malformed StageLinQ message no longer discards the rest of the network read
+- fix: Denon tracks on Engine OS 5.x get their album art and metadata back
+- docs: readers can find every Now Playing connector library from the StageLinq README
+- docs: Windows users can install the Wireshark dissector without hitting a missing-folder error (#11)
+- feat: surface ignored X1800/X1850 mixers so a real user becomes visible (NP3-333)
+- fix: a DJ device that is briefly unreachable at startup is no longer ignored for the whole session
+
+
 ## v3.2.0
 
 - docs: correct BeatInfo examples to the working beatMessage API
