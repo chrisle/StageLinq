@@ -17,6 +17,8 @@ export abstract class Service<T> extends EventEmitter {
 	protected controller: NetworkDevice;
 	protected connection: tcp.Connection | null = null;
 	protected logger: Logger;
+	/** Trailing bytes of a partially-received message, held for the next read. */
+	private queue: Buffer | null = null;
 
 	constructor(p_address: string, p_port: number, p_controller: NetworkDevice, logger: Logger = noopLogger) {
 		super();
@@ -27,64 +29,78 @@ export abstract class Service<T> extends EventEmitter {
 		this.logger = logger;
 	}
 
+	/**
+	 * Split one TCP read into length-prefixed messages and dispatch each.
+	 *
+	 * Any trailing partial message is held in `queue` and prepended to the next
+	 * read. Parsing a single message is isolated so that one malformed or
+	 * unsupported message costs only itself — previously a throw unwound past
+	 * the framing loop, discarding every later message in the same read *and*
+	 * the pending `queue`, which corrupted reassembly rather than skipping a
+	 * message.
+	 */
+	protected handleData(p_data: Buffer): void {
+		const buffer = this.queue && this.queue.length > 0 ? Buffer.concat([this.queue, p_data]) : p_data;
+
+		// FIXME: Clean up this arraybuffer confusion mess
+		const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+		const ctx = new ReadContext(arrayBuffer, false);
+		this.queue = null;
+
+		try {
+			while (ctx.isEOF() === false) {
+				if (ctx.sizeLeft() < 4) {
+					this.queue = ctx.readRemainingAsNewBuffer();
+					break;
+				}
+
+				const length = ctx.readUInt32();
+				if (length > ctx.sizeLeft()) {
+					ctx.seek(-4); // Rewind 4 bytes to include the length again
+					this.queue = ctx.readRemainingAsNewBuffer();
+					break;
+				}
+
+				const message = ctx.read(length);
+				// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
+				const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
+				const networkTap = getConfig().networkTap;
+				if (networkTap) {
+					networkTap({
+						direction: 'recv',
+						service: this.name,
+						address: this.address,
+						port: this.port,
+						data: message,
+					});
+				}
+
+				try {
+					const parsedData = this.parseData(new ReadContext(data, false));
+
+					// Forward parsed data to message handler
+					if (parsedData) {
+						this.messageHandler(parsedData);
+						this.emit('message', parsedData);
+					}
+				} catch (err) {
+					// Skip this message only; framing and `queue` are outside this catch.
+					this.logger.error(err instanceof Error ? err.message : String(err));
+				}
+			}
+		} catch (err) {
+			// Framing itself failed — the read is unusable, so drop it rather than
+			// letting the throw escape into the socket's 'data' handler.
+			this.logger.error(err instanceof Error ? err.message : String(err));
+		}
+	}
+
 	async connect(): Promise<void> {
 		assert(!this.connection);
 		this.connection = await tcp.connect(this.address, this.port);
-		let queue: Buffer | null = null;
+		this.queue = null;
 
-		this.connection.socket.on('data', (p_data: Buffer) => {
-			let buffer: Buffer;
-			if (queue && queue.length > 0) {
-				buffer = Buffer.concat([queue, p_data]);
-			} else {
-				buffer = p_data;
-			}
-
-			// FIXME: Clean up this arraybuffer confusion mess
-			const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-			const ctx = new ReadContext(arrayBuffer, false);
-			queue = null;
-
-			try {
-				while (ctx.isEOF() === false) {
-					if (ctx.sizeLeft() < 4) {
-						queue = ctx.readRemainingAsNewBuffer();
-						break;
-					}
-
-					const length = ctx.readUInt32();
-					if (length <= ctx.sizeLeft()) {
-						const message = ctx.read(length);
-						// Use slice to get an actual copy of the message instead of working on the shared underlying ArrayBuffer
-						const data = message.buffer.slice(message.byteOffset, message.byteOffset + length);
-						const networkTap = getConfig().networkTap;
-						if (networkTap) {
-							networkTap({
-								direction: 'recv',
-								service: this.name,
-								address: this.address,
-								port: this.port,
-								data: message,
-							});
-						}
-						const parsedData = this.parseData(new ReadContext(data, false));
-
-						// Forward parsed data to message handler
-						if (parsedData) {
-							this.messageHandler(parsedData);
-							this.emit('message', parsedData);
-						}
-					} else {
-						ctx.seek(-4); // Rewind 4 bytes to include the length again
-						queue = ctx.readRemainingAsNewBuffer();
-						break;
-					}
-				}
-			} catch (err) {
-				// FIXME: Rethrow based on the severity?
-				this.logger.error(err instanceof Error ? err.message : String(err));
-			}
-		});
+		this.connection.socket.on('data', (p_data: Buffer) => this.handleData(p_data));
 
 		// FIXME: Is this required for all Services?
 		const ctx = new WriteContext();
