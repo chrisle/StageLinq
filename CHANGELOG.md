@@ -1,5 +1,10 @@
 # Change log
 
+## v3.3.1
+
+- chore: lockfile picks up metadata-connect 1.1.11
+
+
 ## v3.3.0
 
 - ci: stagelinq releases reach npm again instead of failing on every push
