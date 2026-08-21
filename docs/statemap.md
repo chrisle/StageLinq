@@ -36,6 +36,10 @@ await stagelinq.connect();
 | `TrackName` | string | Full track name |
 | `Genre` | string | Genre |
 | `TrackLength` | number | Duration in seconds |
+| `TrackBytes` | number | File size in bytes |
+| `SampleRate` | number | Sample rate |
+| `FileName` | string | File name |
+| `AlbumArtPath` | string | Path to album art |
 | `TrackNetworkPath` | string | Network path to track |
 | `TrackUri` | string | Track URI |
 

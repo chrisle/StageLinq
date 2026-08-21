@@ -1,3 +1,11 @@
+/**
+ * A row of the Track table in an Engine database (m.db).
+ *
+ * Matches Engine schema 3.0.2, as shipped by Engine DJ 5. That release moved
+ * the per-track performance blobs — waveform, beat grid, quick cues, loops —
+ * out of this table into PerformanceData and the OverviewData directory, so
+ * they are no longer columns here.
+ */
 export interface Track {
   id: number,
   playOrder: number,
@@ -38,13 +46,8 @@ export interface Track {
   isBeatGridLocked: boolean,
   originDatabaseUuid: string,
   originTrackId: number,
-  trackData: Buffer,
-  overviewWaveFormData: Buffer,
-  beatData: Buffer,
-  quickCues: Buffer,
-  loops: Buffer,
-  thirdPartySourceId: number,
   streamingFlags: number,
   explicitLyrics: boolean,
-  activeOnLoadLoops: number
+  lastEditTime: string,
+  albumArtSourceHash: string
 }
