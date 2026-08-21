@@ -11,3 +11,4 @@ export * as EAAS from './eaas';
 // Export metadata extraction
 export { extractMetadataFromDevice } from './metadata';
 export type { ExtractedMetadata } from './metadata';
+export * from './Databases';
