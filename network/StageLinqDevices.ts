@@ -143,27 +143,24 @@ export class StageLinqDevices extends EventEmitter {
   ////////////////////////////////////////////////////////////////////////////
 
   /**
-   * Waits for all devices to be connected with databases downloaded
-   * then connects to the StateMap.
+   * Waits for all devices to finish connecting, then connects to the StateMap.
    *
-   * Explained:
+   * Why wait for all devices? If there are two SC6000 players on the network
+   * both send broadcast packets, so their StateMap could be initialized at any
+   * time in any order. Waiting until none are still CONNECTING keeps that
+   * ordering predictable.
    *
-   * Why wait for all devices? Because a race condition exists when using the
-   * database methods.
+   * Note this no longer waits for database downloads. It used to: the download
+   * was awaited inside connectToDevice, so a device stayed CONNECTING until its
+   * database landed, which closed a race where player 2 could be asked about a
+   * track living on player 1's USB drive before player 1's database was ready.
    *
-   * If there are two SC6000 players on the network both will be sending
-   * broadcast packets and so their StateMap can be initialized at any time
-   * in any order.
-   *
-   * Assume you have player 1 and player 2 linked. Player 2 has a track that
-   * is loaded from a USB drive plugged into player 1. Player 2 will be
-   * ready before Player 1 because Player 1 will still be downloading a large
-   * database. The race condition is if you try to read from the database on
-   * the track that is plugged into Player 1 that isn't ready yet.
-   *
-   * This method prevents that by waiting for both players to connect and
-   * have their databases loaded before initializing the StateMap.
-   *
+   * That cost every user a delayed first track — the whole transfer runs before
+   * any track can be detected — to protect metadata that is not needed for
+   * detection at all. The download now runs in the background, and the race it
+   * guarded resolves the other way: a track played before its database arrives
+   * is emitted without a record label instead of arriving late. Callers reading
+   * the database must tolerate it not being there yet.
    */
   private waitForAllDevices() {
     this.logger.debug('Start watching for devices ...');
@@ -235,9 +232,20 @@ export class StageLinqDevices extends EventEmitter {
         // Setup file transfer service
         await this.setupFileTransferService(networkDevice, connectionInfo);
 
-        // Download the database
+        // Download the database, but do not wait for it. StateMap is set up
+        // immediately after this, so awaiting a multi-megabyte transfer delays
+        // the first detected track by the length of the download. The database
+        // only carries metadata the wire does not (the record label), so tracks
+        // that play before it lands are emitted without it rather than late.
+        //
+        // A failure here must not fail the connection either: it would send a
+        // perfectly good device back through the retry loop over metadata.
         if (this.options.enableFileTranfer && this.options.downloadDbSources) {
-          await this.downloadDatabase(networkDevice, connectionInfo);
+          void this.downloadDatabase(networkDevice, connectionInfo)
+            .catch((e) => {
+              this.logger.warn(`Could not download database from ` +
+                `${this.deviceId(connectionInfo)}: ${e}`);
+            });
         }
 
         // Setup other services that should be initialized before StateMap here.
