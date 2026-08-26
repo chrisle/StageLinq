@@ -8,17 +8,11 @@
  * https://github.com/icedream/go-stagelinq
  */
 
-import {
-  ANNOUNCEMENT_INTERVAL,
-  CONNECT_TIMEOUT,
-  DISCOVERY_MESSAGE_MARKER,
-  LISTEN_PORT,
-} from '../types';
+import { ANNOUNCEMENT_INTERVAL, CONNECT_TIMEOUT, DISCOVERY_MESSAGE_MARKER, LISTEN_PORT } from '../types';
 import { createSocket, Socket as UDPSocket } from 'dgram';
 import type { Logger } from '../types/logger';
 import { noopLogger } from '../types/logger';
 import { networkInterfaces, platform } from 'os';
-import { strict as assert } from 'assert';
 import { subnet } from 'ip';
 import { WriteContext } from '../utils/WriteContext';
 import type { DiscoveryMessage } from '../types';
@@ -66,8 +60,6 @@ function findBroadcastTargets(): BroadcastTarget[] {
   return targets;
 }
 
-
-
 /** Single socket for non-Windows platforms */
 let announceClient: UDPSocket | null = null;
 
@@ -84,6 +76,9 @@ let moduleLogger: Logger = noopLogger;
 
 /** Track targets that have already warned about send failures */
 const warnedTargets: Set<string> = new Set();
+
+/** True while we are skipping announcements for want of a usable interface */
+let warnedNoTargets = false;
 
 function writeDiscoveryMessage(p_ctx: WriteContext, p_message: DiscoveryMessage): number {
   let written = 0;
@@ -106,7 +101,7 @@ function writeDiscoveryMessage(p_ctx: WriteContext, p_message: DiscoveryMessage)
 async function initUdpSocket(localIP?: string): Promise<UDPSocket> {
   return new Promise<UDPSocket>((resolve, reject) => {
     try {
-      const client = createSocket({type: 'udp4', reuseAddr: true});
+      const client = createSocket({ type: 'udp4', reuseAddr: true });
 
       client.on('error', (err) => {
         moduleLogger.error(`UDP socket error: ${err}`);
@@ -178,9 +173,29 @@ function closeWindowsSockets(): void {
  */
 async function broadcastMessage(p_message: Uint8Array): Promise<void> {
   const targets = findBroadcastTargets();
-  assert(targets.length > 0, 'No broadcast targets have been found');
+
+  // Wi-Fi asleep, cable unplugged, VPN-only: no interface to broadcast on. That
+  // is a state to sit out, not an error — throwing here used to escape the
+  // announce interval as an unhandled rejection on every tick.
+  if (targets.length === 0) {
+    if (!warnedNoTargets) {
+      moduleLogger.warn('No broadcast targets found; pausing announcements until an interface appears');
+      warnedNoTargets = true;
+    }
+    return;
+  }
+
+  if (warnedNoTargets) {
+    moduleLogger.info('Broadcast target available again; resuming announcements');
+    warnedNoTargets = false;
+  }
 
   if (isWindows) {
+    // An interface that appeared after announce() started has no socket yet.
+    if (targets.some((target) => !windowsSockets.has(target.localIP))) {
+      await initWindowsSockets();
+    }
+
     // Windows: send from each interface's socket to its broadcast address
     const promises = targets.map(async (target) => {
       const socket = windowsSockets.get(target.localIP);
@@ -273,7 +288,7 @@ export async function unannounce(message: DiscoveryMessage, logger: Logger = noo
     announceClient = null;
   }
 
-  moduleLogger.info("Unannounced myself");
+  moduleLogger.info('Unannounced myself');
 }
 
 /**
@@ -283,7 +298,7 @@ export async function announce(message: DiscoveryMessage, logger: Logger = noopL
   moduleLogger = logger;
 
   if (announceTimer) {
-    moduleLogger.debug('Already has an announce timer.')
+    moduleLogger.debug('Already has an announce timer.');
     return;
   }
 
@@ -303,8 +318,14 @@ export async function announce(message: DiscoveryMessage, logger: Logger = noopL
   // Immediately announce myself
   await broadcastMessage(msg);
 
-  announceTimer = setInterval(broadcastMessage, ANNOUNCEMENT_INTERVAL, msg);
-  moduleLogger.info("Announced myself");
+  announceTimer = setInterval(() => {
+    // The timer callback is the top of its own stack: anything that escapes
+    // becomes an unhandled rejection, so it has to be caught here.
+    broadcastMessage(msg).catch((err) => {
+      moduleLogger.error(`Failed to announce: ${err instanceof Error ? err.message : String(err)}`);
+    });
+  }, ANNOUNCEMENT_INTERVAL);
+  moduleLogger.info('Announced myself');
 }
 
 export interface DiscoveryMessageOptions {
@@ -312,7 +333,7 @@ export interface DiscoveryMessageOptions {
   version: string;
   source: string;
   token: Uint8Array;
-};
+}
 
 export function createDiscoveryMessage(action: string, discoveryMessageOptions: DiscoveryMessageOptions) {
   const msg: DiscoveryMessage = {
@@ -320,10 +341,10 @@ export function createDiscoveryMessage(action: string, discoveryMessageOptions: 
     port: 0,
     software: {
       name: discoveryMessageOptions.name,
-      version: discoveryMessageOptions.version
+      version: discoveryMessageOptions.version,
     },
     source: discoveryMessageOptions.source,
-    token: discoveryMessageOptions.token
+    token: discoveryMessageOptions.token,
   };
   return msg;
 }
