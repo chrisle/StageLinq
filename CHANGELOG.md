@@ -1,5 +1,11 @@
 # Change log
 
+## v3.3.2
+
+- fix: going offline no longer floods error reporting once a second
+- fix: Denon players no longer drop out when a discovery message splits across packets
+
+
 ## v3.3.1
 
 - chore: lockfile picks up metadata-connect 1.1.11
