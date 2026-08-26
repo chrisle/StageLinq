@@ -12,7 +12,6 @@ import * as services from '../services';
 import * as tcp from '../utils/tcp';
 import Database from 'better-sqlite3-multiple-ciphers';
 
-
 interface SourceAndTrackPath {
   source: string;
   trackPath: string;
@@ -40,6 +39,22 @@ export class NetworkDevice {
   private connectionInfo: ConnectionInfo;
   private logger: Logger;
 
+  /** Trailing bytes of a partially-received message, held for the next read. */
+  private queue: Buffer | null = null;
+
+  /** Message ids already warned about, so a desync logs once and not per read. */
+  private readonly warnedMessageIds = new Set<number>();
+
+  /** uint32 message id + 16 byte device token. */
+  private static readonly HEADER_BYTES = 20;
+
+  /**
+   * Longest UTF-16 service name a ServicesAnnouncement may claim, in bytes.
+   * A larger prefix means framing is lost rather than that a big message is
+   * still on its way, and without the cap the queue would grow forever.
+   */
+  private static readonly MAX_SERVICE_NAME_BYTES = 1024;
+
   constructor(info: ConnectionInfo, logger: Logger = noopLogger) {
     this.connectionInfo = info;
     this.logger = logger;
@@ -58,8 +73,9 @@ export class NetworkDevice {
 
   async connect(): Promise<void> {
     const info = this.connectionInfo;
-    this.logger.debug(`Attempting to connect to ${info.address}:${info.port}`)
+    this.logger.debug(`Attempting to connect to ${info.address}:${info.port}`);
     this.connection = await tcp.connect(info.address, info.port, this.logger);
+    this.queue = null;
     this.connection.socket.on('data', (p_message: Buffer) => {
       this.messageHandler(p_message);
     });
@@ -76,39 +92,122 @@ export class NetworkDevice {
     assert(this.connection);
     this.connection.destroy();
     this.connection = null;
+    this.queue = null;
   }
 
   ///////////////////////////////////////////////////////////////////////////
   // Message Handler
 
+  /**
+   * Split one TCP read into whole messages and apply each.
+   *
+   * A read is an arbitrary slice of the stream, not a tidy list of messages:
+   * one message can straddle two reads and several can arrive in one. Anything
+   * left incomplete is held in `queue` and prepended to the next read. Before
+   * this, a split message ran the parser off the end of the buffer and the
+   * resulting assert escaped into the socket's 'data' handler, where it became
+   * an uncaught exception.
+   */
   messageHandler(p_message: Buffer): void {
-    const ctx = new ReadContext(p_message.buffer, false);
-    while (ctx.isEOF() === false) {
-      const id = ctx.readUInt32();
-      // const deviceToken = ctx.read(16);
-      ctx.seek(16);
-      switch (id) {
-        case MessageId.TimeStamp:
-          ctx.seek(16);
-          // const secondToken = ctx.read(16); // should be 00..
-          // we _shouldn't_ be receiving anything but blank tokens in the 2nd field
-          // assert(secondToken.every((x) => x === 0));
+    const buffer = this.queue && this.queue.length > 0 ? Buffer.concat([this.queue, p_message]) : p_message;
 
-          // Time Alive is in nanoseconds; convert back to seconds
-          this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
-          // this.sendTimeStampMsg(deviceToken, Tokens.SoundSwitch);
+    // Bound the view to this Buffer's own bytes. `.buffer` alone is the whole
+    // backing store, which for a pooled or concatenated Buffer holds bytes that
+    // are not part of this message.
+    const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    const ctx = new ReadContext(arrayBuffer, false);
+    this.queue = null;
+
+    try {
+      while (ctx.isEOF() === false) {
+        const start = ctx.tell();
+        const result = this.readMessage(ctx);
+
+        if (result === 'need-more') {
+          ctx.set(start);
+          this.queue = ctx.readRemainingAsNewBuffer();
           break;
-        case MessageId.ServicesAnnouncement:
-          const service = ctx.readNetworkStringUTF16();
-          const port = ctx.readUInt16();
-          this.servicePorts[service] = port;
+        }
+
+        if (result === 'desync') {
+          // The id is unknown, so the message length is too, and there is no
+          // way to tell where the next one starts. Drop the rest of this read.
+          ctx.set(start);
+          this.logger.warn(`Lost framing on ${this.address}:${this.port}; dropping ${ctx.sizeLeft()} bytes`);
           break;
-        case MessageId.ServicesRequest:
-          this.serviceRequestAllowed = true;
-          break;
-        default:
-          assert.fail(`NetworkDevice Unhandled message id '${id}'`);
+        }
       }
+    } catch (err) {
+      // Never let a parse failure reach the socket's 'data' handler, where it
+      // would surface as an uncaught exception and take out the whole process.
+      this.logger.error(
+        `Failed to parse message from ${this.address}:${this.port}: ` +
+          (err instanceof Error ? err.message : String(err))
+      );
+      this.queue = null;
+    }
+  }
+
+  /**
+   * Read exactly one message, or report why it could not be read.
+   *
+   * `need-more` means the bytes are valid but incomplete; the caller rewinds
+   * and waits. `desync` means the stream no longer lines up with the protocol.
+   */
+  private readMessage(ctx: ReadContext): 'ok' | 'need-more' | 'desync' {
+    if (ctx.sizeLeft() < NetworkDevice.HEADER_BYTES) {
+      return 'need-more';
+    }
+
+    const id = ctx.readUInt32();
+    // const deviceToken = ctx.read(16);
+    ctx.seek(16);
+
+    switch (id) {
+      case MessageId.TimeStamp: {
+        // 16 byte second token, then the uptime as a uint64
+        if (ctx.sizeLeft() < 24) {
+          return 'need-more';
+        }
+        // const secondToken = ctx.read(16); // should be 00..
+        // we _shouldn't_ be receiving anything but blank tokens in the 2nd field
+        // assert(secondToken.every((x) => x === 0));
+        ctx.seek(16);
+
+        // Time Alive is in nanoseconds; convert back to seconds
+        this.timeAlive = Number(ctx.readUInt64() / (1000n * 1000n * 1000n));
+        // this.sendTimeStampMsg(deviceToken, Tokens.SoundSwitch);
+        return 'ok';
+      }
+      case MessageId.ServicesAnnouncement: {
+        if (ctx.sizeLeft() < 4) {
+          return 'need-more';
+        }
+        const nameBytes = ctx.readUInt32();
+        ctx.seek(-4);
+
+        if (nameBytes % 2 !== 0 || nameBytes > NetworkDevice.MAX_SERVICE_NAME_BYTES) {
+          return 'desync';
+        }
+        // the length prefix, the name itself, and the uint16 port
+        if (ctx.sizeLeft() < 4 + nameBytes + 2) {
+          return 'need-more';
+        }
+
+        const service = ctx.readNetworkStringUTF16();
+        const port = ctx.readUInt16();
+        this.servicePorts[service] = port;
+        return 'ok';
+      }
+      case MessageId.ServicesRequest:
+        this.serviceRequestAllowed = true;
+        return 'ok';
+      default:
+        if (!this.warnedMessageIds.has(id)) {
+          this.warnedMessageIds.add(id);
+          this.logger.warn(`Unhandled message id '${id}' from ${this.address}:${this.port}`);
+        }
+        return 'desync';
     }
   }
 
@@ -263,9 +362,13 @@ export class NetworkDevice {
 
     return new Promise(async (resolve, reject) => {
       setTimeout(() => {
-        reject(new Error(`Failed to requestServices for ` +
-          `${this.connectionInfo.source} ` +
-          `${this.connectionInfo.address}:${this.connectionInfo.port}`));
+        reject(
+          new Error(
+            `Failed to requestServices for ` +
+              `${this.connectionInfo.source} ` +
+              `${this.connectionInfo.address}:${this.connectionInfo.port}`
+          )
+        );
       }, LISTEN_TIMEOUT);
 
       // Wait for serviceRequestAllowed
