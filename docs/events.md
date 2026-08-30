@@ -175,9 +175,12 @@ health.on('reconnectFailed', () => {});
 The library tracks ~200+ state values per deck. See [protocol.md](protocol.md) for the complete protocol specification.
 
 ### Track States
-- `ArtistName`, `SongName`, `TrackName`, `AlbumName`
-- `TrackURI`, `TrackNetworkPath`, `TrackLength`, `TrackBytes`
-- `Genre`, `Label`, `Comment`, `Rating`
+- `ArtistName`, `SongName`, `TrackName`
+- `TrackUri`, `TrackNetworkPath`, `TrackLength`, `TrackBytes`
+- `Genre`, `Rating`
+
+`Label`, `AlbumName` and `Comment` were listed here but do not exist in any
+Engine build — see [statemap.md](statemap.md).
 
 ### Playback States
 - `Play`, `PlayState`, `PlayStatePath`

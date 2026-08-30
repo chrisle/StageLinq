@@ -34,12 +34,18 @@ await stagelinq.connect();
 | `ArtistName` | string | Track artist |
 | `SongName` | string | Track title |
 | `TrackName` | string | Full track name |
-| `AlbumName` | string | Album name |
 | `Genre` | string | Genre |
-| `Label` | string | Record label |
 | `TrackLength` | number | Duration in seconds |
 | `TrackNetworkPath` | string | Network path to track |
-| `TrackURI` | string | Track URI |
+| `TrackUri` | string | Track URI |
+
+There is no `Label`, `AlbumName` or `Comment` state. Earlier revisions of this
+table listed all three; none has ever existed in any Engine build. Verified
+against the Engine OS 5.0.4 SC6000 firmware and Engine DJ desktop 5.0.0: the
+only `Label` paths under a deck prefix are `AutoLoopLabel%2` and
+`BeatJump/BeatJumpLabel%2`, which are loop-button UI text. The device does hold
+a track's record label — `Track.label` in the Engine library database — it just
+never publishes it over StageLinQ (NP3-364).
 
 ### Playback State
 
