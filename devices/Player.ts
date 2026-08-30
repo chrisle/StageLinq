@@ -122,6 +122,10 @@ export class Player extends EventEmitter {
       : (/Track\/ArtistName$/.test(name)) ? { artist: json.string }
       : (/Track\/TrackData$/.test(name)) ? { hasTrackData: json.state }
       : (/Track\/TrackName$/.test(name)) ? { fileLocation: json.string }
+      : (/Track\/Genre$/.test(name)) ? { genre: json.string }
+      : (/Track\/CurrentKey$/.test(name)) ? { key: json.string }
+      : (/Track\/TrackLength$/.test(name)) ? { trackLength: json.value }
+      : (/Track\/TrackUri$/.test(name)) ? { trackUri: json.string }
       : (/CurrentBPM$/.test(name)) ? { currentBpm: json.value }
       : (/ExternalMixerVolume$/.test(name)) ? { externalMixerVolume: json.value }
       : (/Play$/.test(name)) ? { play: json.state }

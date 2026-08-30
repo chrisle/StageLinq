@@ -5,6 +5,20 @@ import { WriteContext } from '../utils/WriteContext';
 import { Service } from './Service';
 import type { ServiceMessage } from '../types';
 
+/**
+ * The states we ask every device to push to us.
+ *
+ * Engine OS exposes roughly 115 states per deck. This list is deliberately a
+ * small allowlist rather than the whole namespace: most of what is left out is
+ * high-frequency transport data — playhead and track positions, scratching,
+ * slip mode, waveform views, loop regions and quick cues — which would flood
+ * the state channel every few milliseconds and tell a now-playing consumer
+ * nothing it does not already know.
+ *
+ * What is here is either transport state we act on (play, loaded, fader) or
+ * track metadata that has somewhere to go. See docs/statemap.md for the states
+ * that exist but are deliberately not subscribed to, and why.
+ */
 export const States = [
   // Mixer - all 4 channel faders and crossfader
   StageLinqValue.MixerCH1faderPosition,
@@ -25,6 +39,10 @@ export const States = [
   StageLinqValue.EngineDeck1TrackTrackName,
   StageLinqValue.EngineDeck1CurrentBPM,
   StageLinqValue.EngineDeck1ExternalMixerVolume,
+  StageLinqValue.EngineDeck1TrackGenre,
+  StageLinqValue.EngineDeck1TrackCurrentKey,
+  StageLinqValue.EngineDeck1TrackTrackLength,
+  StageLinqValue.EngineDeck1TrackTrackURI,
 
   StageLinqValue.EngineDeck2Play,
   StageLinqValue.EngineDeck2PlayState,
@@ -37,6 +55,10 @@ export const States = [
   StageLinqValue.EngineDeck2TrackTrackName,
   StageLinqValue.EngineDeck2CurrentBPM,
   StageLinqValue.EngineDeck2ExternalMixerVolume,
+  StageLinqValue.EngineDeck2TrackGenre,
+  StageLinqValue.EngineDeck2TrackCurrentKey,
+  StageLinqValue.EngineDeck2TrackTrackLength,
+  StageLinqValue.EngineDeck2TrackTrackURI,
 
   StageLinqValue.EngineDeck3Play,
   StageLinqValue.EngineDeck3PlayState,
@@ -49,6 +71,10 @@ export const States = [
   StageLinqValue.EngineDeck3TrackTrackName,
   StageLinqValue.EngineDeck3CurrentBPM,
   StageLinqValue.EngineDeck3ExternalMixerVolume,
+  StageLinqValue.EngineDeck3TrackGenre,
+  StageLinqValue.EngineDeck3TrackCurrentKey,
+  StageLinqValue.EngineDeck3TrackTrackLength,
+  StageLinqValue.EngineDeck3TrackTrackURI,
 
   StageLinqValue.EngineDeck4Play,
   StageLinqValue.EngineDeck4PlayState,
@@ -61,6 +87,10 @@ export const States = [
   StageLinqValue.EngineDeck4TrackTrackName,
   StageLinqValue.EngineDeck4CurrentBPM,
   StageLinqValue.EngineDeck4ExternalMixerVolume,
+  StageLinqValue.EngineDeck4TrackGenre,
+  StageLinqValue.EngineDeck4TrackCurrentKey,
+  StageLinqValue.EngineDeck4TrackTrackLength,
+  StageLinqValue.EngineDeck4TrackTrackURI,
 
   StageLinqValue.ClientPreferencesLayerA,
   StageLinqValue.ClientPreferencesPlayer,

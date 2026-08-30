@@ -38,20 +38,26 @@ stagelinq.devices.on('trackUnloaded', (deck: DeckInfo) => {});
 
 ```ts
 interface PlayerStatus {
-  deck: string;           // 'A', 'B', 'C', 'D'
+  deck: string;           // e.g. '1A', '2B'
   title: string;
   artist: string;
-  album: string;
   genre: string;
-  label: string;
-  key: string;
-  bpm: number;
-  duration: number;
+  key: string;            // as Engine displays it, e.g. 'Am' or '8A'
+  currentBpm: number;
+  trackLength: number;    // seconds
+  trackUri: string;       // names the service for a streaming track
   trackPath: string;
   trackNetworkPath: string;
-  artwork?: string;
+  playState: boolean;
+  externalMixerVolume: number;
 }
 ```
+
+There is no `album`, `label` or `artwork` here: no Engine build publishes an
+album or label state (see [statemap.md](statemap.md)), and artwork comes from
+the track's own file over FileTransfer rather than from a state. Only the fields
+in [the subscription allowlist](statemap.md#what-this-library-subscribes-to)
+are ever populated; the full interface is in `types/player.ts`.
 
 ## State Events
 
@@ -71,7 +77,7 @@ stagelinq.devices.on('/Engine/Deck1/CurrentBPM', (value: number) => {});
 | **Track Info** | `/Engine/Deck1/ArtistName`, `/Engine/Deck1/SongName`, `/Engine/Deck1/TrackName`, `/Engine/Deck1/TrackURI`, `/Engine/Deck1/TrackNetworkPath`, `/Engine/Deck1/TrackLength` |
 | **Playback** | `/Engine/Deck1/Play`, `/Engine/Deck1/PlayState`, `/Engine/Deck1/CurrentBPM`, `/Engine/Deck1/Speed`, `/Engine/Deck1/SpeedRange` |
 | **Sync** | `/Engine/Deck1/SyncMode`, `/Engine/Deck1/DeckIsMaster`, `/Engine/Deck1/MasterTempo` |
-| **Key** | `/Engine/Deck1/CurrentKeyIndex`, `/Engine/Deck1/KeyLock` |
+| **Key** | `/Engine/Deck1/Track/CurrentKey`, `/Engine/Deck1/Track/CurrentKeyIndex`, `/Engine/Deck1/Track/KeyLock` |
 | **Loop** | `/Engine/Deck1/LoopEnableState`, `/Engine/Deck1/CurrentLoopInPosition`, `/Engine/Deck1/CurrentLoopOutPosition`, `/Engine/Deck1/CurrentLoopSizeInBeats` |
 | **Cue** | `/Engine/Deck1/CuePosition` |
 | **Mixer** | `/Engine/Deck1/ExternalMixerVolume`, `/Mixer/CrossfaderPosition` |
@@ -192,7 +198,7 @@ Engine build — see [statemap.md](statemap.md).
 - `DeckIsMaster`, `MasterTempo`
 
 ### Key States
-- `CurrentKeyIndex`, `KeyLock`
+- `CurrentKey`, `CurrentKeyIndex`, `OriginalKey`, `CurrentKeyCents`, `KeyLock`
 
 ### Loop States
 - `LoopEnableState`, `LoopIsActive`

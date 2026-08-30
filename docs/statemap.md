@@ -69,8 +69,14 @@ never publishes it over StageLinQ (NP3-364).
 
 | State | Type | Description |
 |-------|------|-------------|
+| `CurrentKey` | string | Musical key as Engine displays it |
 | `CurrentKeyIndex` | number | Musical key index |
 | `KeyLock` | boolean | Key lock enabled |
+
+`CurrentKey` is the one to read. `CurrentKeyIndex` is a position in Engine's own
+key ordering, and that ordering is not documented anywhere — turning it back
+into a key name means guessing a mapping, and a wrong key is worse than no key
+for anything that matches tracks against a catalogue.
 
 ### Loop
 
@@ -94,6 +100,39 @@ never publishes it over StageLinQ (NP3-364).
 |-------|------|-------------|
 | `ExternalMixerVolume` | number | Channel fader (0-1) |
 | `CrossfaderPosition` | number | Crossfader position |
+
+## What this library subscribes to
+
+Engine OS publishes roughly 115 states per deck, but a device only sends the
+ones you ask for. `States` in `services/StateMap.ts` is the allowlist, and it is
+deliberately small — 15 states per deck:
+
+| Purpose | States |
+|---------|--------|
+| Transport | `Play`, `PlayState`, `PlayStatePath` |
+| Track identity | `Track/SongLoaded`, `Track/SongName`, `Track/ArtistName`, `Track/TrackName`, `Track/TrackData`, `Track/TrackNetworkPath` |
+| Track metadata | `Track/Genre`, `Track/CurrentKey`, `Track/TrackLength`, `Track/TrackUri` |
+| Mixing | `CurrentBPM`, `ExternalMixerVolume` |
+
+Plus, once per device: the channel faders and crossfader, the channel
+assignments, `Client/Preferences/*`, `Client/Deck{1,2}/DeckIsMaster`,
+`Engine/Master/MasterTempo` and `Engine/Sync/Network/MasterStatus`.
+
+### Deliberately not subscribed to
+
+Most of what is left out is high-frequency transport data. `PlayPosition`,
+`TrackPosition`, `SongPosition`, `PlayheadPosition`, `Scratching`,
+`SlipModePosition`, the waveform-view states and the loop-region and quick-cue
+families all update every few milliseconds while a deck plays, and none of them
+says anything about *what* is playing. Subscribing to them would flood the state
+channel to no purpose.
+
+The rest are metadata states that exist but have nowhere to go: `Rating`,
+`SampleRate`, `FileName`, `AlbumArtPath`, `MetaDataBPM`, `OriginalKey`,
+`CurrentKeyCents`. Adding a subscription is cheap — `subscribeState` is a single
+fire-and-forget write, and a state the firmware does not publish simply never
+arrives — but a state nothing reads is still noise on the wire. Subscribe
+deliberately, not exhaustively.
 
 ## State Path Format
 
