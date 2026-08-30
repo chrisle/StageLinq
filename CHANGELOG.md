@@ -1,5 +1,10 @@
 # Change log
 
+## v3.3.3
+
+- docs: drop the player states no Engine firmware actually sends
+
+
 ## v3.3.2
 
 - fix: going offline no longer floods error reporting once a second
