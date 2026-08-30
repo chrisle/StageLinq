@@ -1,5 +1,10 @@
 # Change log
 
+## v3.4.0
+
+- feat: subscribe to Genre, CurrentKey, TrackLength and TrackUri
+
+
 ## v3.3.3
 
 - docs: drop the player states no Engine firmware actually sends
