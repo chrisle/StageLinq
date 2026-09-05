@@ -1,5 +1,12 @@
 # Change log
 
+## v3.5.0
+
+- docs: the state list no longer promises a record label the hardware never sends
+- perf: the first track is detected immediately instead of waiting on a database download
+- feat: apps embedding the library can read track metadata out of the Engine database
+
+
 ## v3.4.0
 
 - feat: subscribe to Genre, CurrentKey, TrackLength and TrackUri
