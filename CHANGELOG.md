@@ -1,5 +1,10 @@
 # Change log
 
+## v3.5.2
+
+- chore: lockfile records the metadata-connect 1.2.0 bump
+
+
 ## v3.5.1
 
 - fix: the SQLite driver keeps building under npm 12, which blocks install scripts by default
