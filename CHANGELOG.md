@@ -1,5 +1,10 @@
 # Change log
 
+## v3.5.1
+
+- fix: the SQLite driver keeps building under npm 12, which blocks install scripts by default
+
+
 ## v3.5.0
 
 - docs: the state list no longer promises a record label the hardware never sends
