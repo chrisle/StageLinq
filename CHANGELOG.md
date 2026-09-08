@@ -1,5 +1,10 @@
 # Change log
 
+## v3.5.4
+
+- ci: StageLinQ pull requests are tested the way main is
+
+
 ## v3.5.3
 
 - fix: depend on the published metadata-connect package instead of a local path (#12)
