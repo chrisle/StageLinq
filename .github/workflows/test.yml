@@ -20,7 +20,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Match the publish job. Node 20's bundled npm installs dependency
+          # scripts that npm 12 blocks, so a gate on it goes green over exactly
+          # the kind of breakage that then fails on main.
+          node-version: '24'
+
+      - name: Upgrade npm to match the publish job
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
