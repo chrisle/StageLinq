@@ -11,28 +11,4 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          # Match the publish job. Node 20's bundled npm installs dependency
-          # scripts that npm 12 blocks, so a gate on it goes green over exactly
-          # the kind of breakage that then fails on main.
-          node-version: '24'
-
-      - name: Upgrade npm to match the publish job
-        run: npm install -g npm@latest
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
+    uses: chrisle/connector-ci/.github/workflows/node-test.yml@main
