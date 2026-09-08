@@ -1,5 +1,10 @@
 # Change log
 
+## v3.5.5
+
+- ci: CI comes from the shared connector-ci workflows
+
+
 ## v3.5.4
 
 - ci: StageLinQ pull requests are tested the way main is
