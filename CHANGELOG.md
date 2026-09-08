@@ -1,5 +1,10 @@
 # Change log
 
+## v3.5.3
+
+- fix: depend on the published metadata-connect package instead of a local path (#12)
+
+
 ## v3.5.2
 
 - chore: lockfile records the metadata-connect 1.2.0 bump
