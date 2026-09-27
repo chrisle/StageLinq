@@ -1,5 +1,10 @@
 # Change log
 
+## v3.5.7
+
+- ci: retire release.js so fixes pushed to main reach npm (NP3-461)
+
+
 ## v3.5.6
 
 - fix: log StateMap connection timeouts instead of crashing when a device drops off the network (NP3-447)
