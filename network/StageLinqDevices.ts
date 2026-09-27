@@ -180,7 +180,16 @@ export class StageLinqDevices extends EventEmitter {
         this.logger.debug(`Devices found: ${values.length} ${JSON.stringify(entries)}`);
         this.deviceWatchTimeout = null;
         for (const cb of this.stateMapCallback) {
-          this.setupStateMap(cb.connectionInfo, cb.networkDevice);
+          // setupStateMap connects to the device's StateMap service, which can
+          // time out if the device dropped off the network between discovery
+          // and here. This runs detached inside a setTimeout, so an unhandled
+          // rejection would surface as an uncaught error and crash the app
+          // (NP3-447). Log and move on; the device is retried on rediscovery.
+          void this.setupStateMap(cb.connectionInfo, cb.networkDevice)
+            .catch((e) => {
+              this.logger.warn(`Could not set up StateMap for ` +
+                `${this.deviceId(cb.connectionInfo)}: ${e}`);
+            });
         }
         this.emit('ready');
       } else {

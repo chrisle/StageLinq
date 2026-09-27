@@ -157,3 +157,68 @@ describe("StageLinqDevices database download (NP3-364)", () => {
     expect(mockDownloadSourcesFromDevice).not.toHaveBeenCalled();
   });
 });
+
+describe("StageLinqDevices StateMap setup failure (NP3-447)", () => {
+  // setupStateMap runs detached from the device-watch timer. When the device
+  // drops off the network between discovery and StateMap setup, connecting to
+  // the StateMap service times out (connect ETIMEDOUT). That rejection must be
+  // logged, not surface as an uncaught error that crashes the app.
+
+  const connectionInfo = {
+    address: "192.168.2.108",
+    port: 46185,
+    source: "USB1",
+    token: new Uint8Array(16),
+    software: { name: "JP13" },
+  } as any;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("logs and stays up when the StateMap connection times out", async () => {
+    const logger = {
+      trace: vi.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as any;
+
+    const devices = new StageLinqDevices(
+      { actingAs: { source: "test-app" } } as any,
+      logger
+    );
+
+    const networkDevice = {
+      connectToService: vi
+        .fn()
+        .mockRejectedValue(
+          new Error("connect ETIMEDOUT 192.168.2.108:46185")
+        ),
+    } as any;
+
+    (devices as any).stateMapCallback.push({ connectionInfo, networkDevice });
+    // ConnectionStatus.CONNECTED === 1: makes the watch treat the device as
+    // ready so it fires setupStateMap.
+    (devices as any).discoveryStatus.set(
+      (devices as any).deviceId(connectionInfo),
+      1
+    );
+
+    const ready = vi.fn();
+    devices.on("ready", ready);
+
+    // Fire the scheduled device watch and flush the detached setupStateMap
+    // promise. This throws if the rejection is left unhandled.
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(networkDevice.connectToService).toHaveBeenCalled();
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+});
