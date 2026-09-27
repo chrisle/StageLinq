@@ -1,5 +1,9 @@
 # Change log
 
+## v3.5.6
+
+- fix: log StateMap connection timeouts instead of crashing when a device drops off the network (NP3-447)
+
 ## v3.5.5
 
 - ci: CI comes from the shared connector-ci workflows
