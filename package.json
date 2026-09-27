@@ -25,10 +25,7 @@
     "build": "tsc --build tsconfig.json",
     "watch": "tsc --build tsconfig.json -w",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build && npm test",
-    "release": "node .github/release.js",
-    "release:patch": "node .github/release.js --patch",
-    "release:major": "node .github/release.js --major"
+    "prepublishOnly": "npm run clean && npm run build && npm test"
   },
   "author": "Chris Le (TRIODE)",
   "license": "MIT",

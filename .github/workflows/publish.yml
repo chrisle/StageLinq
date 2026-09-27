@@ -3,6 +3,11 @@ name: Publish to npm
 # The body of this pipeline lives in chrisle/connector-ci, shared with every
 # other connector. Keep this file named publish.yml: npm trusted publishing
 # validates the calling workflow's filename, not the reusable one.
+#
+# Every push to main is a release: the workflow picks the bump from the commit
+# messages, tags, and publishes to npm via trusted publishing (OIDC). Do not
+# bump, tag, or `npm publish` by hand — a `chore: release v*` commit is
+# skipped here, so a hand-made release never reaches npm.
 on:
   push:
     branches:
