@@ -4,6 +4,7 @@ import { LISTEN_PORT, DISCOVERY_MESSAGE_MARKER } from '../types/common';
 import { ReadContext } from '../utils/ReadContext';
 import { strict as assert } from 'assert';
 import { getConfig } from '../config';
+import { EventEmitter } from 'events';
 
 type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
 
@@ -11,8 +12,12 @@ type DeviceDiscoveryCallback = (info: ConnectionInfo) => void;
  * Continuously listens for devices to announce themselves. When they do,
  * execute a callback.
  */
-export class StageLinqListener {
+export class StageLinqListener extends EventEmitter {
   private socket: Socket | null = null;
+
+  constructor() {
+    super();
+  }
 
   /**
    * Listen for new devices on the network and callback when a new one is found.
@@ -22,6 +27,7 @@ export class StageLinqListener {
 
     const client = createSocket({type: 'udp4', reuseAddr: true});
     this.socket = client;
+    client.on('error', (error) => this.emit('error', error));
     client.on('message', (p_announcement: Uint8Array, p_remote: RemoteInfo) => {
       const networkTap = getConfig().networkTap;
       if (networkTap) {

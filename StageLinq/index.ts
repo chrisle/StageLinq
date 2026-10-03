@@ -94,6 +94,7 @@ export class StageLinqInstance extends EventEmitter {
     }
 
     this.listener = new StageLinqListener();
+    this.listener.on('error', (error) => this.emit('error', error));
     const msg = createDiscoveryMessage(Action.Login, this.instanceOptions.actingAs);
     await announce(msg, this.instanceLogger);
     this.listener.listenForDevices(async (connectionInfo) => {
