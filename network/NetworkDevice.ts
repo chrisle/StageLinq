@@ -39,6 +39,9 @@ export class NetworkDevice {
   private connectionInfo: ConnectionInfo;
   private logger: Logger;
 
+  /** Called when the device closes the main connection (not when we disconnect). */
+  private lostHandler: (() => void) | null = null;
+
   /** Trailing bytes of a partially-received message, held for the next read. */
   private queue: Buffer | null = null;
 
@@ -76,10 +79,30 @@ export class NetworkDevice {
     this.logger.debug(`Attempting to connect to ${info.address}:${info.port}`);
     this.connection = await tcp.connect(info.address, info.port, this.logger);
     this.queue = null;
+    this.watchForClose();
     this.connection.socket.on('data', (p_message: Buffer) => {
       this.messageHandler(p_message);
     });
     await this.requestAllServicePorts();
+  }
+
+  /**
+   * Call `handler` when the device closes the main connection (switched off, rebooted, cable
+   * pulled). A disconnect() of ours does not call it.
+   */
+  onConnectionLost(handler: () => void): void {
+    this.lostHandler = handler;
+  }
+
+  private watchForClose(): void {
+    const connection = this.connection;
+    connection?.socket.once('close', () => {
+      // disconnect() clears this.connection before the socket's close event fires.
+      if (this.connection !== connection) return;
+      this.connection = null;
+      this.queue = null;
+      this.lostHandler?.();
+    });
   }
 
   disconnect(): void {

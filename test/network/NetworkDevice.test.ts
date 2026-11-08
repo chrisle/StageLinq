@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { EventEmitter } from 'events';
+import { describe, it, expect, vi } from 'vitest';
 import { NetworkDevice } from '../../network/NetworkDevice';
 import { MessageId } from '../../types';
 import type { ConnectionInfo, ServicePorts } from '../../types';
@@ -169,5 +170,40 @@ describe('NetworkDevice message framing', () => {
 
     d.feed(view);
     expect(d.ports()).toEqual({ TimeSynchronization: 36859 });
+  });
+});
+
+describe('NetworkDevice connection loss', () => {
+  const info = { address: '192.168.1.10', port: 51337 } as ConnectionInfo;
+
+  function withFakeConnection() {
+    const device = new NetworkDevice(info);
+    const socket = new EventEmitter();
+    // A real socket emits 'close' after destroy(), asynchronously.
+    const connection = { socket, destroy: () => queueMicrotask(() => socket.emit('close')) };
+    (device as any).connection = connection;
+    (device as any).watchForClose();
+    return { device, socket };
+  }
+
+  it('calls the handler when the device closes the connection', () => {
+    const { device, socket } = withFakeConnection();
+    const lost = vi.fn();
+    device.onConnectionLost(lost);
+
+    socket.emit('close');
+
+    expect(lost).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call it when we disconnect', async () => {
+    const { device } = withFakeConnection();
+    const lost = vi.fn();
+    device.onConnectionLost(lost);
+
+    device.disconnect();
+    await Promise.resolve();
+
+    expect(lost).not.toHaveBeenCalled();
   });
 });

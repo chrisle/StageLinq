@@ -38,6 +38,7 @@ export declare interface StageLinqDevices {
   on(event: 'message', listener: (connectionInfo: ConnectionInfo, message: ServiceMessage<StateData>) => void): this;
   on(event: 'beatMessage', listener: (connectionInfo: ConnectionInfo, data: BeatData) => void): this;
   on(event: 'ready', listener: () => void): this;
+  on(event: 'disconnect', listener: (connectionInfo: ConnectionInfo) => void): this;
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -237,6 +238,7 @@ export class StageLinqDevices extends EventEmitter {
           `Attempt ${attempt}/${maxRetries}`);
         const networkDevice = new NetworkDevice(connectionInfo, this.logger);
         await networkDevice.connect();
+        networkDevice.onConnectionLost(() => this.deviceLost(connectionInfo));
 
         // Setup file transfer service
         await this.setupFileTransferService(networkDevice, connectionInfo);
@@ -323,6 +325,20 @@ export class StageLinqDevices extends EventEmitter {
     const sources = await this.databases.downloadSourcesFromDevice(connectionInfo, networkDevice);
     this.logger.debug(`Database sources: ${sources.join(', ')}`);
     this.logger.debug(`Database download complete for ${connectionInfo.source}`);
+  }
+
+  /**
+   * The device closed its main connection: forget it, so its next announcement connects it again,
+   * and tell listeners ('disconnect').
+   */
+  private deviceLost(connectionInfo: ConnectionInfo) {
+    const id = this.deviceId(connectionInfo);
+    this.logger.info(`Lost connection to ${id}`);
+    this.discoveryStatus.delete(id);
+    this.devices.delete(`net://${this.sourceId(connectionInfo)}`);
+    this.stateMapCallback = this.stateMapCallback.filter(
+      (cb) => cb.connectionInfo !== connectionInfo);
+    this.emit('disconnect', connectionInfo);
   }
 
   private sourceId(connectionInfo: ConnectionInfo) {

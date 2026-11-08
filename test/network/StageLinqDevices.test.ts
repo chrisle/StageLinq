@@ -12,6 +12,8 @@ vi.mock("../../services", () => ({
 }));
 
 const mockDownloadSourcesFromDevice = vi.fn().mockResolvedValue([]);
+/** onConnectionLost handlers registered by connectToDevice, in order. */
+const mockLostHandlers: Array<() => void> = [];
 vi.mock("../../Databases", () => ({
   Databases: class {
     downloadSourcesFromDevice = (...args: unknown[]) =>
@@ -31,6 +33,9 @@ vi.mock("../../network", () => ({
   NetworkDevice: class {
     connect = vi.fn().mockResolvedValue(undefined);
     disconnect = vi.fn();
+    onConnectionLost = vi.fn((handler: () => void) => {
+      mockLostHandlers.push(handler);
+    });
     connectToService = vi.fn().mockResolvedValue({});
   },
 }));
@@ -220,5 +225,48 @@ describe("StageLinqDevices StateMap setup failure (NP3-447)", () => {
     expect(networkDevice.connectToService).toHaveBeenCalled();
     expect(ready).toHaveBeenCalledTimes(1);
     expect(logger.warn).toHaveBeenCalled();
+  });
+});
+
+describe("StageLinqDevices when a device goes away", () => {
+  // A player that is switched off (or rebooted, or unplugged) closes its main
+  // connection. Listeners need a device-level event for it, and the device must
+  // be forgotten so its next announcement connects it again.
+
+  const connectionInfo = {
+    address: "192.168.1.10",
+    port: 51337,
+    source: "JP13",
+    token: new Uint8Array(16),
+    software: { name: "SC6000" },
+  } as any;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    mockLostHandlers.length = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("emits 'disconnect' and forgets the device when its connection is lost", async () => {
+    const devices = new StageLinqDevices({
+      actingAs: { source: "test-app" },
+      enableFileTranfer: false,
+      maxRetries: 1,
+    } as any);
+    const lost = vi.fn();
+    devices.on("disconnect", lost);
+
+    await (devices as any).connectToDevice(connectionInfo);
+    expect((devices as any).isConnected(connectionInfo)).toBe(true);
+    expect(mockLostHandlers).toHaveLength(1);
+
+    mockLostHandlers[0]();
+
+    expect(lost).toHaveBeenCalledWith(connectionInfo);
+    expect((devices as any).isConnected(connectionInfo)).toBe(false);
+    expect((devices as any).isConnecting(connectionInfo)).toBe(false);
   });
 });
