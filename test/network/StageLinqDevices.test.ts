@@ -222,3 +222,51 @@ describe("StageLinqDevices StateMap setup failure (NP3-447)", () => {
     expect(logger.warn).toHaveBeenCalled();
   });
 });
+
+describe("StageLinqDevices StateMap for devices that connect after ready", () => {
+  // StateMap is set up from the device-watch callback, which runs once: it emits
+  // 'ready' and is not scheduled again. A device that connects later (a second
+  // player, or the same one after a reboot) must still get its StateMap, or it
+  // never reports a track.
+
+  const first = {
+    address: "192.168.1.10",
+    port: 51337,
+    source: "JP13",
+    token: new Uint8Array(16),
+    software: { name: "SC6000" },
+  } as any;
+  const later = { ...first, port: 51338 } as any;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("sets up StateMap at once for a device that connects after ready", async () => {
+    const devices = new StageLinqDevices({
+      actingAs: { source: "test-app" },
+      enableFileTranfer: false,
+      maxRetries: 1,
+    } as any);
+    const setup = vi
+      .spyOn(devices as any, "setupStateMap")
+      .mockResolvedValue(undefined);
+    const ready = vi.fn();
+    devices.on("ready", ready);
+
+    await (devices as any).connectToDevice(first);
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(setup).toHaveBeenCalledTimes(1);
+
+    await (devices as any).connectToDevice(later);
+    await vi.advanceTimersByTimeAsync(3000);
+
+    expect(setup).toHaveBeenCalledTimes(2);
+    expect(setup.mock.calls[1][0]).toBe(later);
+  });
+});
