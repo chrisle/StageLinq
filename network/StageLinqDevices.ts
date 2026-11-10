@@ -61,6 +61,11 @@ export class StageLinqDevices extends EventEmitter {
   private deviceWatchTimeout: NodeJS.Timeout | null = null;
   private deviceWatchInterval: number = WAIT_FOR_DEVICES_INITIAL_MS;
   private stateMapCallback: { connectionInfo: ConnectionInfo, networkDevice: NetworkDevice }[] = [];
+  /**
+   * True once 'ready' has fired. The device watch isn't scheduled again after that, so a device
+   * that connects later gets its StateMap at once instead of waiting for a callback that never runs.
+   */
+  private readyEmitted = false;
 
   constructor(options: StageLinqOptions, logger: Logger = noopLogger) {
     super();
@@ -191,6 +196,7 @@ export class StageLinqDevices extends EventEmitter {
                 `${this.deviceId(cb.connectionInfo)}: ${e}`);
             });
         }
+        this.readyEmitted = true;
         this.emit('ready');
       } else {
         // Log at trace when idle (no devices), debug when devices are connecting
@@ -264,8 +270,17 @@ export class StageLinqDevices extends EventEmitter {
         // after all entries in this.discoveryStatus return
         // ConnectionStatus.CONNECTED
 
-        // Append to the list of states we need to setup later.
-        this.stateMapCallback.push({ connectionInfo, networkDevice });
+        // Append to the list of states we need to setup later, or, once 'ready' has fired (a
+        // second player, or one back after a reboot), set it up now: nothing reads the list again.
+        if (this.readyEmitted) {
+          void this.setupStateMap(connectionInfo, networkDevice)
+            .catch((e) => {
+              this.logger.warn(`Could not set up StateMap for ` +
+                `${this.deviceId(connectionInfo)}: ${e}`);
+            });
+        } else {
+          this.stateMapCallback.push({ connectionInfo, networkDevice });
+        }
 
         // Mark this device as connected.
         this.discoveryStatus.set(this.deviceId(connectionInfo), ConnectionStatus.CONNECTED);
