@@ -36,6 +36,7 @@ vi.mock("../../network", () => ({
   NetworkDevice: class {
     connect = connectMock;
     disconnect = vi.fn();
+    onConnectionLost = vi.fn();
     connectToService = vi.fn().mockResolvedValue({});
   },
 }));
